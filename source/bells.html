@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bell Sequence (diatonic, 1 = highest)</title>
+<style>
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0f172a;color:#e5e7eb;
+       display:grid;min-height:100vh;place-items:center}
+  .wrap{width:min(700px,92vw);background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  h1{margin:0 0 10px;font-size:1.2rem}
+  p{margin:.2rem 0 .8rem;color:#9aa4b3}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+  input[type="text"]{flex:1 1 220px;padding:12px;border-radius:10px;border:1px solid #303949;background:#0b1220;color:#e5e7eb;font-weight:600}
+  button{appearance:none;border:none;padding:12px 14px;border-radius:10px;font-weight:800;cursor:pointer;letter-spacing:.01em}
+  .primary{background:#60a5fa;color:#0b1023}
+  .secondary{background:#1f2937;color:#e5e7eb}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #2a3550;background:#0b1220;color:#9fb5d1;font-size:.8rem}
+  label{font-size:.9rem;color:#a8b0bf}
+  input[type="number"],input[type="range"]{padding:8px;border-radius:10px;border:1px solid #303949;background:#0b1220;color:#e5e7eb}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🔔 x Bell Sequence (diatonic, 1 = highest)</h1>
+    <p>Enter digits <b>1–8</b>. <b>1 is the highest note</b> (C5), … <b>8 is the lowest</b> (C4). Notes are tuned to a C major scale.</p>
+
+    <div class="row">
+      <input id="seq" type="text" placeholder="e.g. 12345678 or 152531" inputmode="numeric" />
+      <button id="play" class="primary">▶️ Play</button>
+      <button id="stop" class="secondary">⏹ Stop</button>
+      <button id="beep" class="secondary">🔊 Test Beep</button>
+    </div>
+
+    <div class="row">
+      <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value="224" style="width:90px"></label>
+      <label>Strike (s) <input id="len" type="number" min="0.1" max="3" step="0.05" value="1.0" style="width:90px"></label>
+      <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+      <span id="status" class="pill">idle</span>
+    </div>
+  </div>
+
+<script>
+let AC=null, master=null;
+
+// Diatonic C major, 1 = C5 (highest) down to 8 = C4 (lowest)
+const BELL_FREQS = [
+  // treble 1343
+  // tenor 669
+  //523.25, // 1 -> C5
+  1343.1, // stags! from dan/doves
+  1257.3,
+  1122.2,
+  1001.9,
+  893.9,
+  842.8,
+  748.7,
+  669.2
+
+  // 493.88, // 2 -> B4
+  // 440.00, // 3 -> A4
+  // 392.00, // 4 -> G4
+  // 349.23, // 5 -> F4
+  // 329.63, // 6 -> E4
+  // 293.66, // 7 -> D4
+  // 261.63,  // 8 -> C4
+];
+
+const $=id=>document.getElementById(id);
+function updateStatus(s){$("status").textContent=s;}
+
+async function ensureAudio(){
+  if(!AC || AC.state==="closed"){
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain();
+    master.gain.value=parseFloat($("vol").value);
+    master.connect(AC.destination);
+  }
+  try{ await AC.resume(); }catch{}
+}
+
+function parseSeq(s){
+  const t=(s||"").replace(/\s+/g,"");
+  if(!t) return [];
+  if(!/^[1-8]+$/.test(t)) return null;
+  return t.split("").map(d=>+d);
+}
+
+// Bell-like synth (simple FM)
+function scheduleSynthBell(freq, when, dur){
+  const c=AC.createOscillator();
+  const m=AC.createOscillator();
+  const modGain=AC.createGain();
+  const amp=AC.createGain();
+
+  c.type="sine";
+  m.type="sine";
+
+  // Slight inharmonicity typical of bells
+  c.frequency.value=freq / 2;
+  // m.frequency.value=freq*2.41;
+  modGain.gain.value=freq*1.9;
+
+  // Envelope tuned for a crisp bell strike
+  const t0=when;
+  const attack=Math.min(0.006, dur*0.12);
+  amp.gain.setValueAtTime(0.0001,t0);
+  amp.gain.exponentialRampToValueAtTime(1.0,t0+attack);
+  amp.gain.exponentialRampToValueAtTime(0.0001,t0+Math.max(0.22,dur));
+
+  // Gentle tonal shaping
+  // const tilt = AC.createBiquadFilter();
+  // tilt.type="lowpass"; tilt.frequency.value=Math.min(12000, freq*14);
+
+  // const hp = AC.createBiquadFilter();
+  // hp.type="highpass"; hp.frequency.value=160;
+
+  // m.connect(modGain).connect(c.frequency);
+  // c.connect(amp).connect(tilt).connect(hp).connect(master);
+  c.connect(amp).connect(master);
+
+  c.start(t0); m.start(t0);
+  const stopAt=t0+dur+0.25;
+  c.stop(stopAt); m.stop(stopAt);
+}
+
+async function play(){
+  const digits=parseSeq($("seq").value);
+  if(digits===null){ updateStatus("invalid (use digits 1–8)"); return; }
+  if(!digits.length){ updateStatus("nothing to play"); return; }
+
+  await ensureAudio();
+
+  const bpm=Math.max(30,Math.min(300, Number($("bpm").value)||240));
+  const beat=60/bpm;
+  const dur=Math.max(0.1, Math.min(3, Number($("len").value)||1.0));
+
+  master.gain.setTargetAtTime(parseFloat($("vol").value), AC.currentTime, 0.01);
+
+  const start=AC.currentTime+0.05;
+
+  digits.forEach((n,i)=>{
+    const when=start+i*beat;
+    const freq=BELL_FREQS[n-1]; // 1 is highest (C5), 8 is lowest (C4)
+    scheduleSynthBell(freq, when, dur);
+  });
+
+  updateStatus(`playing (${digits.length} notes @ ${bpm} BPM)`);
+}
+
+function stopAll(){
+  if(!AC) return;
+  const now=AC.currentTime;
+  master.gain.setTargetAtTime(0.0001, now, 0.02);
+  setTimeout(()=>{ try{AC.close();}catch{} AC=null; master=null; updateStatus("stopped"); }, 120);
+}
+
+$("play").onclick=play;
+$("stop").onclick=stopAll;
+$("beep").onclick=async ()=>{
+  await ensureAudio();
+  const now=AC.currentTime+0.02;
+  const o=AC.createOscillator(); const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.6, now+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.15);
+  o.type="sine"; o.frequency.value=440;
+  o.connect(g).connect(master);
+  o.start(now); o.stop(now+0.2);
+  updateStatus("beep");
+};
+
+$("seq").value="12345678"; // demonstrates descending scale
+$("vol").addEventListener("input",e=>{
+  if(master && AC) master.gain.setTargetAtTime(parseFloat(e.target.value), AC.currentTime, 0.01);
+});
+</script>
+</body>
+</html>
