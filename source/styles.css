@@ -27,3 +27,7 @@ input[type="range"] { width:160px; }
 #notationOutput { max-height:220px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.95rem; line-height:1.4; }
 #notationOutput ol, #notationOutput ul { margin:0; padding-left:1.4rem; }
 .muted { color:#9aa4b3; }
+
+/* highlight currently playing row */
+.row-item { padding: 2px 6px; border-radius: 6px; }
+.row-item.playing { background: #1e293b; } /* slate-800 */

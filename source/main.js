@@ -18,6 +18,24 @@ function el(id) {
 }
 function updateStatus(text) { el("status").textContent = text; }
 
+// Helpers
+function clearRowHighlight() {
+  document.querySelectorAll('#notationOutput .row-item.playing')
+    .forEach(el => el.classList.remove('playing'));
+}
+function highlightRow(i) {
+  const selector = `#notationOutput .row-item[data-row="${i}"]`;
+  const el = document.querySelector(selector);
+  if (!el) {
+    console.debug("highlightRow: element not found for index", i, "selector:", selector);
+    return;
+  }
+  clearRowHighlight();
+  el.classList.add('playing');
+  // keep visible without jumping
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
 /* -------------------- Manual player (sequence box) -------------------- */
 let manualPlaying = false;
 let manualTimer = null;
@@ -86,6 +104,7 @@ function setRowControls({ playing, paused }) {
   el("stopRows").disabled  = !playing;
 }
 
+// Renderer
 function renderGeneratedList(list) {
   const out = el("notationOutput");
   if (!list || !list.length) {
@@ -93,8 +112,12 @@ function renderGeneratedList(list) {
     return;
   }
   const stage = clampStage(el("stage").value);
-  // Strictly show stage-length rows (no tenor in UI)
-  out.innerHTML = list.map(s => `<div><code>${s.slice(0, stage)}</code></div>`).join("");
+  out.innerHTML = list
+    .map((s, i) => `<div class="row-item" data-row="${i}"><code>${s.slice(0, stage)}</code></div>`)
+    .join("");
+
+  // tiny yield so DOM is ready before first possible highlight
+  requestAnimationFrame(() => {});
 }
 
 function wireNotation() {
@@ -104,6 +127,7 @@ function wireNotation() {
     el("stage").value = stage;
     generatedRows = generateList({ pnString, stage });
     renderGeneratedList(generatedRows);
+    clearRowHighlight(); // reset highlight when regenerating
   });
 
   el("playRows").addEventListener("click", async () => {
@@ -113,6 +137,7 @@ function wireNotation() {
       const stage = clampStage(el("stage").value);
       generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage });
       renderGeneratedList(generatedRows);
+      clearRowHighlight();
     }
     if (!generatedRows.length) return;
 
@@ -144,6 +169,7 @@ function wireNotation() {
     playState.playing = false;
     setRowControls({ playing: false, paused: false });
     stopAll();
+    clearRowHighlight(); // remove highlight when stopped
     updateStatus("stopped");
   });
 
@@ -220,6 +246,9 @@ async function playAllRows() {
     }
     if (playState.abort) break;
 
+    highlightRow(i);
+    console.debug("Playing row", i, generatedRows[i]);
+
     const row = generatedRows[i];
     const places = rowToPlaces(row, stage);
 
@@ -253,6 +282,9 @@ async function playAllRows() {
       await waitBeatsDynamic(gapBeats, checkPausedAbort);
     }
   }
+
+  clearRowHighlight();
+    
 
   if (!playState.abort) updateStatus("done");
   playState.playing = false;
