@@ -5,20 +5,21 @@
 let AC = null;
 let master = null;
 
-// Diatonic C major descending: C5..C4..B3..A3..G3..F3  (1..12)
+// Diatonic scale with bell 12 as the root (C major by default).
+// Index: 1 = highest ... 12 = lowest (tonic)
 export const BELL_FREQS = [
-  523.25, // 1 -> C5
-  493.88, // 2 -> B4
-  440.00, // 3 -> A4
-  392.00, // 4 -> G4
-  349.23, // 5 -> F4
-  329.63, // 6 -> E4
-  293.66, // 7 -> D4
-  261.63, // 8 -> C4
-  246.94, // 9 -> B3
-  220.00, // 10 -> A3  (symbol '0')
-  196.00, // 11 -> G3  (symbol 'E')
-  174.61, // 12 -> F3  (symbol 'T')
+  392.00, // 1 -> G4
+  349.23, // 2 -> F4
+  329.63, // 3 -> E4
+  293.66, // 4 -> D4
+  261.63, // 5 -> C4
+  246.94, // 6 -> B3
+  220.00, // 7 -> A3
+  196.00, // 8 -> G3
+  174.61, // 9 -> F3
+  164.81, // 10 -> E3   (symbol '0')
+  146.83, // 11 -> D3   (symbol 'E')
+  130.81, // 12 -> C3   (symbol 'T', tonic)
 ];
 
 export async function ensureAudio(volume = 0.9) {
@@ -88,7 +89,8 @@ export async function playSequence(indices, { bpm = 224, strike = 0.6, volume = 
   indices.forEach((place, i) => {
     if (place < 1 || place > BELL_FREQS.length) return; // ignore out-of-range
     const when = start + i * beat;
-    const freq = BELL_FREQS[place - 1];
+    // up a fifth
+    const freq = 1.5 * BELL_FREQS[place - 1];
     scheduleSineWithEnvelope(freq, when, dur);
   });
 }
