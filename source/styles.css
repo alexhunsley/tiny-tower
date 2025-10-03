@@ -1,13 +1,50 @@
 :root { --bg:#0f172a; --panel:#111827; --accent:#60a5fa; --muted:#94a3b8; --text:#e5e7eb; }
+
 * { box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
-body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(--text);
-       display:grid; min-height:100vh; place-items:center; }
-.wrap { width:min(900px,92vw); background:var(--panel); border:1px solid #1f2937; border-radius:16px;
-        padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
-h1 { margin:0 0 10px; font-size:1.2rem; }
-p { margin:.2rem 0 .8rem; color:var(--muted); }
+html, body { height:100%; }
+body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(--text); }
+
+/* Layout: app fills viewport, toolbar sticks, workspace expands */
+.app { min-height:100vh; display:flex; flex-direction:column; }
+
+/* Sticky header with its own background so content doesn't "jump" */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid #1f2937;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+.toolbar .bar { width:min(1000px, 96vw); margin:0 auto; padding:16px 0; }
+.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }
+.toolbar p { margin:0 0 12px; color:var(--muted); }
+
+/* Workspace uses all remaining vertical space */
+.workspace {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 16px;
+}
+.panel {
+  width:min(1000px, 96vw);
+  border:1px solid #273244; background:#0b1220;
+  border-radius:12px; padding:12px;
+  display:flex; flex-direction:column;
+  min-height: 0; /* allow child to control overflow */
+}
+
+/* Generated rows list fills panel and scrolls */
+#notationOutput {
+  flex: 1 1 auto;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem; line-height: 1.4;
+}
+
+/* Common UI bits */
 .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:.5rem 0; }
-.rule { border:none; border-top:1px solid #273244; margin:14px 0; }
 
 input[type="text"], input[type="number"]{
   padding:12px; border-radius:10px; border:1px solid #303949; background:#0b1220; color:var(--text); font-weight:600;
@@ -19,15 +56,13 @@ button { appearance:none; border:none; padding:12px 14px; border-radius:10px; fo
 .primary { background:var(--accent); color:#0b1023; }
 .secondary { background:#1f2937; color:var(--text); }
 .ghost { background:#0b1220; border:1px solid #2a3550; color:#cfe1ff; }
+button:disabled { opacity:.55; cursor:not-allowed; }
+
 .pill { display:inline-block; padding:4px 8px; border-radius:999px; border:1px solid #2a3550; background:#0b1220; color:#9fb5d1; font-size:.8rem; }
 label { font-size:.9rem; color:#a8b0bf; }
 input[type="range"] { width:160px; }
+.rule { border:none; border-top:1px solid #273244; margin:10px 0; }
 
-.panel { border:1px solid #273244; background:#0b1220; border-radius:12px; padding:12px; }
-#notationOutput { max-height:220px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.95rem; line-height:1.4; }
-#notationOutput ol, #notationOutput ul { margin:0; padding-left:1.4rem; }
-.muted { color:#9aa4b3; }
-
-/* highlight currently playing row */
-.row-item { padding: 2px 6px; border-radius: 6px; }
-.row-item.playing { background: #1e293b; } /* slate-800 */
+/* highlight (also defined inline in index.html for cache-proofing) */
+#notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
+#notationOutput .row-item.playing { background: #1e293b; }

@@ -1,64 +1,67 @@
 <!doctype html>
 <html lang="en">
 <head>
-	<style>
-	  /* row highlight (strong specificity + !important) */
-	  #notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
-	  #notationOutput .row-item.playing { background-color: #1e293b !important; }
-	</style>
   <meta charset="utf-8" />
   <title>Bell Player + Place Notation (modular)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="./styles.css" rel="stylesheet" />
+  <style>
+    /* inline highlight style to be bullet-proof */
+    #notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
+    #notationOutput .row-item.playing { background-color: #1e293b !important; }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>🔔 Bell Sequence (diatonic, 1 = highest) + Place Notation Generator</h1>
-    <p>Enter digits <b>1–8</b> (1 is the highest note). Play uses a C major scale (C5 → C4). Below that, enter a Place Notation string and a Stage (4–12), then press <b>Generate</b>. For now it outputs only the first entry: <i>rounds</i>.</p>
+  <div class="app">
 
-    <!-- PLAYER CONTROLS -->
-    <div class="row">
-      <input id="seq" type="text" placeholder="Digits 1–8, e.g. 12345678 or 152531" inputmode="numeric" />
-      <button id="play" class="primary">▶️ Play</button>
-      <button id="stop" class="secondary">⏹ Stop</button>
-      <button id="beep" class="ghost">🔊 Test Beep</button>
-      <span id="status" class="pill">idle</span>
-    </div>
+    <!-- Sticky toolbar at the very top -->
+    <header class="toolbar">
+      <div class="bar">
+        <h1>🔔 Bell Sequence (diatonic, 1 = highest) + Place Notation Generator</h1>
+        <p class="muted">Enter digits 1–8 (1 is the highest note). Set Place Notation and Stage, then Generate. Playback adds a cover on odd stages only during audio.</p>
 
-	<div class="row">
-	  <label>Tempo (BPM) 
-	    <input id="bpm" type="number" min="30" max="300" value="224">
-	  </label>
-	  <label>Strike (s) 
-	    <input id="len" type="number" min="0.1" max="3" step="0.05" value="1.0">
-	  </label>
-	  <label>Volume 
-	    <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9">
-	  </label>
-	</div>
+        <!-- PLAYER CONTROLS -->
+        <div class="row">
+          <input id="seq" type="text" placeholder="Digits 1–8, e.g. 12345678 or 152531" inputmode="numeric" />
+          <button id="play" class="primary">▶️ Play</button>
+          <button id="stop" class="secondary">⏹ Stop</button>
+          <button id="beep" class="ghost">🔊 Test Beep</button>
+          <span id="status" class="pill">idle</span>
+        </div>
 
-    <hr class="rule">
+        <div class="row">
+          <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value="224"></label>
+          <label>Strike (s) <input id="len" type="number" min="0.1" max="3" step="0.05" value="0.6"></label>
+          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+        </div>
 
-    <!-- PLACE NOTATION + STAGE -->
-    <div class="row">
-	  <input id="placeNotation" type="text"
-	         value="x16x16x16x16x16x16"
-	         placeholder="Place Notation (e.g. x12.16.34x)"
-	         style="flex:1 1 320px">
-	  <label>Stage
-        <input id="stage" type="number" min="4" max="12" step="1" value="6" />
-      </label>
-      <button id="generate" class="primary">Generate</button>
-    </div>
+        <hr class="rule">
 
-	  <!-- NEW controls for generated rows playback -->
-	  <button id="playRows" class="secondary" title="Play generated rows">▶️ Play Rows</button>
-	  <button id="pauseRows" class="ghost" title="Pause playback">⏸ Pause</button>
-	  <button id="stopRows" class="ghost" title="Stop playback">⏹ Stop</button>
+        <!-- PLACE NOTATION + STAGE -->
+        <div class="row">
+          <input id="placeNotation" type="text"
+                 value="x16x16x16x16x16x16"
+                 placeholder="Place Notation (e.g. x12.16.34x)"
+                 style="flex:1 1 320px">
+          <label>Stage
+            <input id="stage" type="number" min="4" max="12" step="1" value="6" />
+          </label>
+          <button id="generate" class="primary">Generate</button>
 
-    <div class="panel">
-      <div id="notationOutput"><em class="muted">(click generate to see rows)</em></div>
-    </div>
+          <!-- Generated rows playback -->
+          <button id="playRows" class="secondary" title="Play generated rows">▶️ Play Rows</button>
+          <button id="pauseRows" class="ghost" title="Pause playback">⏸ Pause</button>
+          <button id="stopRows" class="ghost" title="Stop playback">⏹ Stop</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Workspace fills all remaining viewport height -->
+    <main class="workspace">
+      <div class="panel">
+        <div id="notationOutput"><em class="muted">— nothing generated yet —</em></div>
+      </div>
+    </main>
   </div>
 
   <script type="module" src="./main.js"></script>
