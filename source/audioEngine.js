@@ -1,11 +1,11 @@
 // audioEngine.js
 // Pure sine tones with a simple amplitude envelope (attack + decay).
-// Mapping: 1 = highest, 8 = lowest (C major descending C5..C4).
+// Mapping: 1 = highest, ... up to 12 = lowest (C major descending).
 
 let AC = null;
 let master = null;
 
-// Diatonic C major descending: C5..C4 (1..8)
+// Diatonic C major descending: C5..C4..B3..A3..G3..F3  (1..12)
 export const BELL_FREQS = [
   523.25, // 1 -> C5
   493.88, // 2 -> B4
@@ -14,7 +14,11 @@ export const BELL_FREQS = [
   349.23, // 5 -> F4
   329.63, // 6 -> E4
   293.66, // 7 -> D4
-  261.63  // 8 -> C4
+  261.63, // 8 -> C4
+  246.94, // 9 -> B3
+  220.00, // 10 -> A3  (symbol '0')
+  196.00, // 11 -> G3  (symbol 'E')
+  174.61, // 12 -> F3  (symbol 'T')
 ];
 
 export async function ensureAudio(volume = 0.9) {
@@ -41,6 +45,13 @@ export function stopAll() {
   setTimeout(() => { try { AC.close(); } catch {} AC = null; master = null; }, 120);
 }
 
+export async function pause() {
+  if (AC && AC.state === "running") { try { await AC.suspend(); } catch {} }
+}
+export async function resume() {
+  if (AC && AC.state === "suspended") { try { await AC.resume(); } catch {} }
+}
+
 // Pure sine with minimal envelope to avoid clicks and add decay
 function scheduleSineWithEnvelope(freq, when, dur) {
   const osc = AC.createOscillator();
@@ -50,8 +61,8 @@ function scheduleSineWithEnvelope(freq, when, dur) {
   osc.frequency.value = freq;
 
   // Envelope: tiny attack, smooth decay to near-zero by the end
-  const attack = Math.min(0.005, dur * 0.1);    // ~5ms or 10% of dur (whichever smaller)
-  const releasePad = 0.01;                      // small pad after decay before stop
+  const attack = Math.min(0.005, dur * 0.1);
+  const releasePad = 0.01;
   const t0 = when;
   const tAttackEnd = t0 + attack;
   const tDecayEnd  = t0 + dur;
@@ -65,8 +76,8 @@ function scheduleSineWithEnvelope(freq, when, dur) {
   osc.stop(tDecayEnd + releasePad);
 }
 
-export async function playSequence(digits, { bpm = 224, strike = 0.6, volume = 0.9 } = {}) {
-  if (!Array.isArray(digits) || !digits.length) return;
+export async function playSequence(indices, { bpm = 224, strike = 0.6, volume = 0.9 } = {}) {
+  if (!Array.isArray(indices) || !indices.length) return;
   await ensureAudio(volume);
   setVolume(volume);
 
@@ -74,14 +85,15 @@ export async function playSequence(digits, { bpm = 224, strike = 0.6, volume = 0
   const dur  = Math.max(0.05, Math.min(3, strike));
   const start = AC.currentTime + 0.05;
 
-  digits.forEach((n, i) => {
-    if (n < 1 || n > 8) return;
+  indices.forEach((place, i) => {
+    if (place < 1 || place > BELL_FREQS.length) return; // ignore out-of-range
     const when = start + i * beat;
-    const freq = BELL_FREQS[n - 1];
+    const freq = BELL_FREQS[place - 1];
     scheduleSineWithEnvelope(freq, when, dur);
   });
 }
 
+// Convenience beep
 export async function testBeep() {
   await ensureAudio();
   const now = AC.currentTime + 0.02;

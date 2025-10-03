@@ -36,12 +36,20 @@
 
     <!-- PLACE NOTATION + STAGE -->
     <div class="row">
-      <input id="placeNotation" type="text" placeholder="Place Notation (e.g. x16x16x16 ...)" style="flex:1 1 320px">
-      <label>Stage
+	  <input id="placeNotation" type="text"
+	         value="x16x16x16x16x16x16"
+	         placeholder="Place Notation (e.g. x12.16.34x)"
+	         style="flex:1 1 320px">
+	  <label>Stage
         <input id="stage" type="number" min="4" max="12" step="1" value="6" />
       </label>
       <button id="generate" class="primary">Generate</button>
     </div>
+
+	  <!-- NEW controls for generated rows playback -->
+	  <button id="playRows" class="secondary" title="Play generated rows">▶️ Play Rows</button>
+	  <button id="pauseRows" class="ghost" title="Pause playback">⏸ Pause</button>
+	  <button id="stopRows" class="ghost" title="Stop playback">⏹ Stop</button>
 
     <div class="panel">
       <div class="muted" style="margin-bottom:6px">Generated list (scrollable):</div>
