@@ -155,17 +155,33 @@ function wireNotation() {
   setRowControls({ playing: false, paused: false });
 }
 
-// Convert a row string (e.g. "123456") to GLOBAL bell indexes [1..12],
-// mapping stage N → deepest N bells: offset = 12 - N, so local 1..N → (offset+1)..12
+// Convert a row string to GLOBAL bell indexes [1..12] for playback.
+// For odd stages, add a "cover" bell at the lowest end so playback uses an even count.
+// Mapping rule: for effectiveStage M (M = stage if even else stage+1),
+// local places 1..M map to global (12 - M) + local  → the deepest M of 12.
+// For odd stage, we append the cover bell (local = M) at the end.
 function rowToPlaces(row, stage) {
-  const offset = 12 - stage; // stage 6 -> +6 => 1..6 -> 7..12   | stage 4 -> +8 => 1..4 -> 9..12
+  const effectiveStage = (stage % 2 === 0) ? stage : stage + 1;   // evenized stage for playback
+  const offset = 12 - effectiveStage;                             // map onto deepest M bells
   const out = [];
+
+  // Map the row's digits (1..stage) onto global bells within the deepest set
   for (const ch of row) {
-    const local = symbolToIndex(ch); // 1..stage
+    const local = symbolToIndex(ch);      // 1..stage (or symbol set)
     if (!local) continue;
-    const global = offset + local;   // 1..12
+    // Ignore any symbol beyond the declared stage (defensive)
+    if (local < 1 || local > stage) continue;
+
+    const global = offset + local;        // 1..12
     if (global >= 1 && global <= 12) out.push(global);
   }
+
+  // If stage is odd, append the cover bell at the lowest end (local = effectiveStage)
+  if (stage % 2 === 1) {
+    const coverGlobal = offset + effectiveStage; // this is 12 (the lowest) in the mapped set
+    if (coverGlobal >= 1 && coverGlobal <= 12) out.push(coverGlobal);
+  }
+
   return out;
 }
 
