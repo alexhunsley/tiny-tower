@@ -1,0 +1,89 @@
+// audioEngine.js
+// Pure sine tones with a simple amplitude envelope (attack + decay).
+// Mapping: 1 = highest, 8 = lowest (C major descending C5..C4).
+
+let AC = null;
+let master = null;
+
+// Diatonic C major descending: C5..C4 (1..8)
+export const BELL_FREQS = [
+  523.25, // 1 -> C5
+  493.88, // 2 -> B4
+  440.00, // 3 -> A4
+  392.00, // 4 -> G4
+  349.23, // 5 -> F4
+  329.63, // 6 -> E4
+  293.66, // 7 -> D4
+  261.63  // 8 -> C4
+];
+
+export async function ensureAudio(volume = 0.9) {
+  if (!AC || AC.state === "closed") {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain();
+    master.gain.value = Number.isFinite(volume) ? volume : 0.9;
+    master.connect(AC.destination);
+  }
+  try { await AC.resume(); } catch {}
+  return AC;
+}
+
+export function setVolume(v) {
+  if (!AC || !master) return;
+  const now = AC.currentTime;
+  master.gain.setTargetAtTime(Math.max(0, Math.min(1, v)), now, 0.01);
+}
+
+export function stopAll() {
+  if (!AC) return;
+  const now = AC.currentTime;
+  master.gain.setTargetAtTime(0.0001, now, 0.02);
+  setTimeout(() => { try { AC.close(); } catch {} AC = null; master = null; }, 120);
+}
+
+// Pure sine with minimal envelope to avoid clicks and add decay
+function scheduleSineWithEnvelope(freq, when, dur) {
+  const osc = AC.createOscillator();
+  const amp = AC.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = freq;
+
+  // Envelope: tiny attack, smooth decay to near-zero by the end
+  const attack = Math.min(0.005, dur * 0.1);    // ~5ms or 10% of dur (whichever smaller)
+  const releasePad = 0.01;                      // small pad after decay before stop
+  const t0 = when;
+  const tAttackEnd = t0 + attack;
+  const tDecayEnd  = t0 + dur;
+
+  amp.gain.setValueAtTime(0.0001, t0);
+  amp.gain.linearRampToValueAtTime(1.0, tAttackEnd);
+  amp.gain.exponentialRampToValueAtTime(0.0001, tDecayEnd);
+
+  osc.connect(amp).connect(master);
+  osc.start(t0);
+  osc.stop(tDecayEnd + releasePad);
+}
+
+export async function playSequence(digits, { bpm = 224, strike = 0.6, volume = 0.9 } = {}) {
+  if (!Array.isArray(digits) || !digits.length) return;
+  await ensureAudio(volume);
+  setVolume(volume);
+
+  const beat = 60 / Math.max(30, Math.min(300, bpm));
+  const dur  = Math.max(0.05, Math.min(3, strike));
+  const start = AC.currentTime + 0.05;
+
+  digits.forEach((n, i) => {
+    if (n < 1 || n > 8) return;
+    const when = start + i * beat;
+    const freq = BELL_FREQS[n - 1];
+    scheduleSineWithEnvelope(freq, when, dur);
+  });
+}
+
+export async function testBeep() {
+  await ensureAudio();
+  const now = AC.currentTime + 0.02;
+  scheduleSineWithEnvelope(880, now, 0.25);
+}
