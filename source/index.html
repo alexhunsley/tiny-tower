@@ -25,7 +25,7 @@
 	    <input id="bpm" type="number" min="30" max="300" value="224">
 	  </label>
 	  <label>Strike (s) 
-	    <input id="len" type="number" min="0.1" max="3" step="0.05" value="0.6">
+	    <input id="len" type="number" min="0.1" max="3" step="0.05" value="1.0">
 	  </label>
 	  <label>Volume 
 	    <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9">
@@ -52,8 +52,7 @@
 	  <button id="stopRows" class="ghost" title="Stop playback">⏹ Stop</button>
 
     <div class="panel">
-      <div class="muted" style="margin-bottom:6px">Generated list (scrollable):</div>
-      <div id="notationOutput"><em class="muted">— nothing generated yet —</em></div>
+      <div id="notationOutput"><em class="muted">(click generate to see rows)</em></div>
     </div>
   </div>
 
