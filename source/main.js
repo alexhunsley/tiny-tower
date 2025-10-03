@@ -1,11 +1,12 @@
 // main.js
 import {
-  playSequence,
+  playSequence,   // still used by manual player
   stopAll,
   testBeep,
   setVolume,
   pause as pauseAudio,
   resume as resumeAudio,
+  triggerPlace,   // used by live, note-by-note scheduler
 } from "./audioEngine.js";
 import { parseDigits } from "./utils.js";
 import { generateList, clampStage, symbolToIndex } from "./notation.js";
@@ -17,21 +18,13 @@ function el(id) {
 }
 function updateStatus(text) { el("status").textContent = text; }
 
-// --- UI state helpers ---
-function setManualControls({ playing }) {
-  el("play").disabled = !!playing;
-  // Stop/Beep stay available for manual case
-}
-function setRowControls({ playing, paused }) {
-  el("playRows").disabled  = !!playing && !paused;  // disabled if actively playing
-  el("pauseRows").disabled = !playing || paused;    // can pause only when playing & not paused
-  el("stopRows").disabled  = !playing;              // stop only when playing
-}
-
-// --- Player (manual sequence input) ---
+/* -------------------- Manual player (sequence box) -------------------- */
 let manualPlaying = false;
 let manualTimer = null;
 
+function setManualControls({ playing }) {
+  el("play").disabled = !!playing;
+}
 function wirePlayer() {
   el("play").addEventListener("click", async () => {
     if (manualPlaying) return; // prevent double start
@@ -50,9 +43,9 @@ function wirePlayer() {
     await playSequence(digits, { bpm, strike, volume });
     updateStatus(`playing (${digits.length} notes @ ${bpm} BPM)`);
 
-    // Estimate when manual playback ends to re-enable the button
+    // Estimate end to re-enable Play
     const beat = 60 / bpm;
-    const estMs = (digits.length * beat + 0.2) * 1000; // 0.2s small tail
+    const estMs = (digits.length * beat + 0.2) * 1000;
     clearTimeout(manualTimer);
     manualTimer = setTimeout(() => {
       manualPlaying = false;
@@ -83,9 +76,15 @@ function wirePlayer() {
   setManualControls({ playing: false });
 }
 
-// --- Notation generation + playback of generated rows ---
+/* -------------------- Notation + generated rows playback -------------------- */
 let generatedRows = [];
 const playState = { playing: false, paused: false, abort: false };
+
+function setRowControls({ playing, paused }) {
+  el("playRows").disabled  = !!playing && !paused;
+  el("pauseRows").disabled = !playing || paused;
+  el("stopRows").disabled  = !playing;
+}
 
 function renderGeneratedList(list) {
   const out = el("notationOutput");
@@ -93,29 +92,26 @@ function renderGeneratedList(list) {
     out.innerHTML = '<em class="muted">— nothing generated —</em>';
     return;
   }
-  // Un-numbered rows (no prefixes)
-  out.innerHTML = list.map(s => `<div><code>${s}</code></div>`).join("");
+  const stage = clampStage(el("stage").value);
+  // Strictly show stage-length rows (no tenor in UI)
+  out.innerHTML = list.map(s => `<div><code>${s.slice(0, stage)}</code></div>`).join("");
 }
 
 function wireNotation() {
   el("generate").addEventListener("click", () => {
     const pnString = (el("placeNotation").value || "").trim();
     const stage = clampStage(el("stage").value);
-    el("stage").value = stage; // normalize
+    el("stage").value = stage;
     generatedRows = generateList({ pnString, stage });
     renderGeneratedList(generatedRows);
   });
 
   el("playRows").addEventListener("click", async () => {
-    // Prevent double start: if already playing and not paused, ignore
-    if (playState.playing && !playState.paused) return;
+    if (playState.playing && !playState.paused) return; // prevent double start
 
     if (!generatedRows.length) {
       const stage = clampStage(el("stage").value);
-      generatedRows = generateList({
-        pnString: (el("placeNotation").value || "").trim(),
-        stage,
-      });
+      generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage });
       renderGeneratedList(generatedRows);
     }
     if (!generatedRows.length) return;
@@ -127,7 +123,6 @@ function wireNotation() {
       return;
     }
 
-    // Start fresh
     playState.playing = true;
     playState.paused  = false;
     playState.abort   = false;
@@ -155,78 +150,107 @@ function wireNotation() {
   setRowControls({ playing: false, paused: false });
 }
 
-// Convert a row string to GLOBAL bell indexes [1..12] for playback.
-// For odd stages, add a "cover" bell at the lowest end so playback uses an even count.
-// Mapping rule: for effectiveStage M (M = stage if even else stage+1),
-// local places 1..M map to global (12 - M) + local  → the deepest M of 12.
-// For odd stage, we append the cover bell (local = M) at the end.
+// Map a row string to GLOBAL bell indexes [1..12] for playback.
+// Odd stages: append a cover bell (lowest of the mapped set) for playback only.
+// Mapping: effectiveStage M = evenized stage (stage or stage+1).
+// Local 1..M → global (12 - M) + local (deepest M).
 function rowToPlaces(row, stage) {
-  const effectiveStage = (stage % 2 === 0) ? stage : stage + 1;   // evenized stage for playback
-  const offset = 12 - effectiveStage;                             // map onto deepest M bells
+  const effectiveStage = (stage % 2 === 0) ? stage : stage + 1;
+  const offset = 12 - effectiveStage;
   const out = [];
 
-  // Map the row's digits (1..stage) onto global bells within the deepest set
   for (const ch of row) {
-    const local = symbolToIndex(ch);      // 1..stage (or symbol set)
+    const local = symbolToIndex(ch);
     if (!local) continue;
-    // Ignore any symbol beyond the declared stage (defensive)
-    if (local < 1 || local > stage) continue;
-
-    const global = offset + local;        // 1..12
+    if (local < 1 || local > stage) continue; // ignore symbols outside stage (defensive)
+    const global = offset + local;
     if (global >= 1 && global <= 12) out.push(global);
   }
 
-  // If stage is odd, append the cover bell at the lowest end (local = effectiveStage)
   if (stage % 2 === 1) {
-    const coverGlobal = offset + effectiveStage; // this is 12 (the lowest) in the mapped set
+    const coverGlobal = offset + effectiveStage; // lowest of the mapped set
     if (coverGlobal >= 1 && coverGlobal <= 12) out.push(coverGlobal);
   }
-
   return out;
 }
 
-async function playAllRows() {
-  const bpm    = Math.max(30, Math.min(300, Number(el("bpm").value) || 224));
-  const strike = Math.max(0.05, Math.min(3,   Number(el("len").value) || 0.6));
-  const volume = Math.max(0,    Math.min(1,   Number(el("vol").value) || 0.9));
-  const stage  = clampStage(el("stage").value);
+/* -------------------- Live, note-by-note scheduler -------------------- */
 
-  const beat = 60 / bpm; // time between note starts inside a row
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+// Wait for a number of beats, reading BPM live and respecting pause/abort
+async function waitBeatsDynamic(beatsTarget, checkPausedAbort) {
+  let elapsedBeats = 0;
+  let last = performance.now();
+  while (elapsedBeats < beatsTarget) {
+    if (checkPausedAbort("abort")) return;
+    while (checkPausedAbort("paused")) {
+      await sleep(60);
+      if (checkPausedAbort("abort")) return;
+      last = performance.now(); // reset timing after pause
+    }
+    await sleep(20);
+    const now = performance.now();
+    const dtSec = (now - last) / 1000;
+    last = now;
+
+    const bpm = Math.max(30, Math.min(300, Number(el("bpm").value) || 224));
+    const secPerBeat = 60 / bpm;
+    elapsedBeats += dtSec / secPerBeat;
+  }
+}
+
+async function playAllRows() {
+  const stage  = clampStage(el("stage").value);
+  const volume = Math.max(0, Math.min(1, Number(el("vol").value) || 0.9));
+
+  const checkPausedAbort = (mode) => {
+    if (mode === "abort") return playState.abort;
+    if (mode === "paused") return playState.paused;
+    return playState.abort || playState.paused;
+  };
 
   for (let i = 0; i < generatedRows.length; i++) {
     if (playState.abort) break;
 
+    // Respect pause before each row
     while (playState.paused) {
-      await sleep(80);
+      await sleep(60);
       if (playState.abort) break;
     }
     if (playState.abort) break;
 
     const row = generatedRows[i];
-    const places = rowToPlaces(row, stage); // <-- pass stage here
+    const places = rowToPlaces(row, stage);
 
-    await playSequence(places, { bpm, strike, volume });
-    updateStatus(`row ${i + 1}/${generatedRows.length} @ ${bpm} BPM`);
-
-    if (i < generatedRows.length - 1) {
-      // Inter-row timing: same rules as before
-      const baseBeats = places.length;              // to 1 beat after last note start
-      const longGapExtra = (i % 2 === 0) ? 1 : 0;   // long gap after rounds, then alternate
-      const totalBeats = baseBeats + longGapExtra;
-
-      let waitedMs = 0;
-      const waitMs = totalBeats * beat * 1000;
-      while (waitedMs < waitMs) {
+    // NOTE-BY-NOTE: re-read BPM/Strike live; DO NOT wait after the last note here
+    for (let k = 0; k < places.length; k++) {
+      if (playState.abort) break;
+      while (playState.paused) {
+        await sleep(60);
         if (playState.abort) break;
-        while (playState.paused) {
-          await sleep(80);
-          if (playState.abort) break;
-        }
-        if (playState.abort) break;
-        const chunk = Math.min(100, waitMs - waitedMs);
-        await sleep(chunk);
-        waitedMs += chunk;
       }
+      if (playState.abort) break;
+
+      const strike = Math.max(0.05, Math.min(3, Number(el("len").value) || 0.6));
+      await triggerPlace(places[k], { strike, volume });
+
+      // Wait exactly 1 beat between notes INSIDE the row,
+      // but not after the final note — that’s what caused the gap regression.
+      if (k < places.length - 1) {
+        await waitBeatsDynamic(1, checkPausedAbort);
+      }
+    }
+
+    updateStatus(`row ${i + 1}/${generatedRows.length}`);
+
+    // INTER-ROW GAPS (from last note START of row i to first note START of row i+1):
+    // - short gap: 1 beat
+    // - long gap (silent bell): 2 beats
+    // Start with LONG after rounds (i=0), then alternate: 2,1,2,1,...
+    if (i < generatedRows.length - 1) {
+      const gapBeats = (i % 2 === 0) ? 2 : 1;
+      await waitBeatsDynamic(gapBeats, checkPausedAbort);
     }
   }
 
@@ -237,8 +261,7 @@ async function playAllRows() {
   setRowControls({ playing: false, paused: false });
 }
 
-function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
-
+/* -------------------- init -------------------- */
 function init() {
   try {
     [

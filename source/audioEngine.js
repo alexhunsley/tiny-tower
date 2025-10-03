@@ -22,6 +22,38 @@ export const BELL_FREQS = [
   130.81, // 12 -> C3   (symbol 'T', tonic)
 ];
 
+// Add this near the other exports
+export async function triggerPlace(place, { strike = 0.6, volume = 0.9 } = {}) {
+  if (place < 1 || place > BELL_FREQS.length) return;
+  await ensureAudio(volume);
+  setVolume(volume);
+
+  const freq = BELL_FREQS[place - 1] * 1.5;
+  const dur  = Math.max(0.05, Math.min(3, strike));
+
+  // Start immediately
+  const when = (AC ? AC.currentTime : 0);
+  // Reuse the same envelope as playSequence()
+  const osc = AC.createOscillator();
+  const amp = AC.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = freq;
+
+  const attack = Math.min(0.005, dur * 0.1);
+  const t0 = when;
+  const tAttackEnd = t0 + attack;
+  const tDecayEnd  = t0 + dur;
+
+  amp.gain.setValueAtTime(0.0001, t0);
+  amp.gain.linearRampToValueAtTime(1.0, tAttackEnd);
+  amp.gain.exponentialRampToValueAtTime(0.0001, tDecayEnd);
+
+  osc.connect(amp).connect(master);
+  osc.start(t0);
+  osc.stop(tDecayEnd + 0.01);
+}
+
 export async function ensureAudio(volume = 0.9) {
   if (!AC || AC.state === "closed") {
     AC = new (window.AudioContext || window.webkitAudioContext)();
