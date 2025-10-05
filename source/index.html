@@ -30,9 +30,9 @@
         </div>
 
         <div class="row">
-          <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value="224"></label>
-          <label>Strike (s) <input id="len" type="number" min="0.1" max="3" step="0.05" value="0.6"></label>
-          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+          <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value=""></label>
+          <label>Strike (s) <input id="len" type="number" min="0.1" max="3" step="0.05" value=""></label>
+          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value=""></label>
         </div>
 
         <hr class="rule">
@@ -40,11 +40,11 @@
         <!-- PLACE NOTATION + STAGE -->
         <div class="row">
           <input id="placeNotation" type="text"
-                 value="x10x10x10x10x10x10x10x10x10x10"
+                 value=""
                  placeholder="Place Notation (e.g. x12.16.34x)"
                  style="flex:1 1 320px">
           <label>Stage
-            <input id="stage" type="number" min="4" max="12" step="1" value="6" />
+            <input id="stage" type="number" min="4" max="12" step="1" value="" />
           </label>
           <button id="generate" class="primary">Generate</button>
 

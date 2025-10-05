@@ -1,4 +1,5 @@
 // main.js
+import { DEFAULTS } from "./defaults.js";
 import {
   playSequence,   // still used by manual player
   stopAll,
@@ -34,6 +35,19 @@ function writeURLParams({ pn, stage }) {
   const newUrl = `${location.pathname}?${q.toString()}${location.hash}`;
   history.replaceState(null, "", newUrl); // no reload
 }
+
+function applyDefaultsToControls() {
+  // Only set if empty, so URL values (if any) win
+  if (!el("placeNotation").value) el("placeNotation").value = DEFAULTS.placeNotation;
+  if (!el("stage").value)         el("stage").value         = DEFAULTS.stage;
+  if (!el("bpm").value)           el("bpm").value           = DEFAULTS.bpm;
+  if (!el("len").value)           el("len").value           = DEFAULTS.strike;
+  if (!el("vol").value)           el("vol").value           = DEFAULTS.volume;
+}
+
+function getLiveBpm()    { return Math.max(30, Math.min(300, Number(el("bpm").value) || DEFAULTS.bpm)); }
+function getLiveStrike() { return Math.max(0.05, Math.min(3, Number(el("len").value) || DEFAULTS.strike)); }
+function getLiveVol()    { return Math.max(0, Math.min(1, Number(el("vol").value) || DEFAULTS.volume)); }
 
 // simple debounce to avoid spamming history
 function debounce(fn, ms = 250) {
@@ -343,22 +357,35 @@ async function playAllRows() {
 /* -------------------- init -------------------- */
 function init() {
   try {
+    // Ensure required elements exist
     [
       "seq","play","stop","beep","status","bpm","len","vol",
       "placeNotation","stage","generate","notationOutput",
       "playRows","pauseRows","stopRows"
     ].forEach(id => el(id));
 
+    // Prefill from URL, then fill any blanks from DEFAULTS
+    const { pn, stage } = readURLParams();
+    if (pn) el("placeNotation").value = pn;
+    if (stage != null) el("stage").value = clampStage(stage);
+    applyDefaultsToControls(); // uses DEFAULTS.* for any empty fields
+
+    // Auto-generate rows if URL provided pn/stage; otherwise respect DEFAULTS flag
+    if (pn || stage != null || DEFAULTS.autoGenerateOnLoad) {
+      const s = clampStage(el("stage").value);
+      generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage: s });
+      renderGeneratedList(generatedRows);
+      clearRowHighlight();
+    }
+
+    // Wire up UI
     wirePlayer();
     wireNotation();
-      // Prefill controls from URL if present; else keep your defaults
-  const { pn, stage } = readURLParams();
-  if (pn) el("placeNotation").value = pn;
-  if (stage != null) el("stage").value = clampStage(stage);
-    if (pn || stage != null) {
-      generatedRows = generateList({ pnString: el("placeNotation").value, stage: clampStage(el("stage").value) });
-      renderGeneratedList(generatedRows);
-    }
+
+    // Keep the blue trace synced on resize/scroll
+    window.addEventListener("resize", () => requestAnimationFrame(updateBlueTrace));
+    el("notationOutput").addEventListener("scroll", () => requestAnimationFrame(updateBlueTrace));
+
     updateStatus("idle");
   } catch (err) {
     console.error(err);
