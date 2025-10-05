@@ -16,6 +16,32 @@ function el(id) {
   if (!n) throw new Error(`Element #${id} not found. Check index.html IDs and cache.`);
   return n;
 }
+
+// --- URL <-> controls sync ---
+function readURLParams() {
+  const q = new URLSearchParams(location.search);
+  // URLSearchParams already decodes (so x16x16... is fine)
+  const pn = q.get("pn") || "";
+  const st = q.get("st");
+  const stage = st != null ? Number(st) : null;
+  return { pn, stage };
+}
+
+function writeURLParams({ pn, stage }) {
+  const q = new URLSearchParams(location.search);
+  if (pn && pn.trim()) q.set("pn", pn.trim()); else q.delete("pn");
+  q.set("st", String(clampStage(stage)));
+  const newUrl = `${location.pathname}?${q.toString()}${location.hash}`;
+  history.replaceState(null, "", newUrl); // no reload
+}
+
+// simple debounce to avoid spamming history
+function debounce(fn, ms = 250) {
+  let t; 
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+const writeURLParamsDebounced = debounce(writeURLParams, 250);
+
 function updateStatus(text) { el("status").textContent = text; }
 
 // Helpers
@@ -121,13 +147,33 @@ function renderGeneratedList(list) {
 }
 
 function wireNotation() {
+  // keep URL updated as user types/changes
+  el("placeNotation").addEventListener("input", () => {
+    writeURLParamsDebounced({
+      pn: el("placeNotation").value,
+      stage: el("stage").value
+    });
+  });
+  el("stage").addEventListener("input", () => {
+    // clamp and reflect back in the box so URL stays clean
+    const s = clampStage(el("stage").value);
+    el("stage").value = s;
+    writeURLParamsDebounced({
+      pn: el("placeNotation").value,
+      stage: s
+    });
+  });
+
   el("generate").addEventListener("click", () => {
     const pnString = (el("placeNotation").value || "").trim();
     const stage = clampStage(el("stage").value);
     el("stage").value = stage;
     generatedRows = generateList({ pnString, stage });
     renderGeneratedList(generatedRows);
-    clearRowHighlight(); // reset highlight when regenerating
+    clearRowHighlight();
+
+    // also push the current state into the URL immediately
+    writeURLParams({ pn: pnString, stage });
   });
 
   el("playRows").addEventListener("click", async () => {
@@ -138,6 +184,7 @@ function wireNotation() {
       generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage });
       renderGeneratedList(generatedRows);
       clearRowHighlight();
+      writeURLParams({ pn: el("placeNotation").value, stage });
     }
     if (!generatedRows.length) return;
 
@@ -169,7 +216,7 @@ function wireNotation() {
     playState.playing = false;
     setRowControls({ playing: false, paused: false });
     stopAll();
-    clearRowHighlight(); // remove highlight when stopped
+    clearRowHighlight();
     updateStatus("stopped");
   });
 
@@ -304,6 +351,14 @@ function init() {
 
     wirePlayer();
     wireNotation();
+      // Prefill controls from URL if present; else keep your defaults
+  const { pn, stage } = readURLParams();
+  if (pn) el("placeNotation").value = pn;
+  if (stage != null) el("stage").value = clampStage(stage);
+    if (pn || stage != null) {
+      generatedRows = generateList({ pnString: el("placeNotation").value, stage: clampStage(el("stage").value) });
+      renderGeneratedList(generatedRows);
+    }
     updateStatus("idle");
   } catch (err) {
     console.error(err);
