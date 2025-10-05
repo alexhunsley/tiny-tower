@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bell Player + Place Notation (modular)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <style>
+    /* inline highlight style to be bullet-proof */
+    #notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
+    #notationOutput .row-item.playing { background-color: #1e293b !important; }
+  </style>
+<style>
+:root { --bg:#0f172a; --panel:#111827; --accent:#60a5fa; --muted:#94a3b8; --text:#e5e7eb; }
+
+* { box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+html, body { height:100%; }
+body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(--text); }
+
+/* Layout: app fills viewport, toolbar sticks, workspace expands */
+.app { min-height:100vh; display:flex; flex-direction:column; }
+
+/* Sticky header with its own background so content doesn't "jump" */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid #1f2937;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+.toolbar .bar { width:min(1000px, 96vw); margin:0 auto; padding:16px 0; }
+.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }
+.toolbar p { margin:0 0 12px; color:var(--muted); }
+
+/* Workspace uses all remaining vertical space */
+.workspace {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 16px;
+}
+.panel {
+  width:min(1000px, 96vw);
+  border:1px solid #273244; background:#0b1220;
+  border-radius:12px; padding:12px;
+  display:flex; flex-direction:column;
+  min-height: 0; /* allow child to control overflow */
+}
+
+/* Generated rows list fills panel and scrolls */
+#notationOutput {
+  flex: 1 1 auto;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem; line-height: 1.4;
+}
+
+/* Common UI bits */
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:.5rem 0; }
+
+input[type="text"], input[type="number"]{
+  padding:12px; border-radius:10px; border:1px solid #303949; background:#0b1220; color:var(--text); font-weight:600;
+}
+input[type="number"] { width:100px; }
+input::placeholder { color:#6b778d; }
+
+button { appearance:none; border:none; padding:12px 14px; border-radius:10px; font-weight:800; cursor:pointer; letter-spacing:.01em; }
+.primary { background:var(--accent); color:#0b1023; }
+.secondary { background:#1f2937; color:var(--text); }
+.ghost { background:#0b1220; border:1px solid #2a3550; color:#cfe1ff; }
+button:disabled { opacity:.55; cursor:not-allowed; }
+
+.pill { display:inline-block; padding:4px 8px; border-radius:999px; border:1px solid #2a3550; background:#0b1220; color:#9fb5d1; font-size:.8rem; }
+label { font-size:.9rem; color:#a8b0bf; }
+input[type="range"] { width:160px; }
+.rule { border:none; border-top:1px solid #273244; margin:10px 0; }
+
+/* highlight (also defined inline in index.html for cache-proofing) */
+#notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
+#notationOutput .row-item.playing { background: #1e293b; }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Sticky toolbar at the very top -->
+    <header class="toolbar">
+      <div class="bar">
+        <h1>🔔 Bell Sequence (diatonic, 1 = highest) + Place Notation Generator</h1>
+        <p class="muted">Enter digits 1–8 (1 is the highest note). Set Place Notation and Stage, then Generate. Playback adds a cover on odd stages only during audio.</p>
+
+        <!-- PLAYER CONTROLS -->
+        <div class="row">
+          <input id="seq" type="text" placeholder="Digits 1–8, e.g. 12345678 or 152531" inputmode="numeric" />
+          <button id="play" class="primary">▶️ Play</button>
+          <button id="stop" class="secondary">⏹ Stop</button>
+          <button id="beep" class="ghost">🔊 Test Beep</button>
+          <span id="status" class="pill">idle</span>
+        </div>
+
+        <div class="row">
+          <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value="224"></label>
+          <label>Strike (s) <input id="len" type="number" min="0.1" max="3" step="0.05" value="0.6"></label>
+          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+        </div>
+
+        <hr class="rule">
+
+        <!-- PLACE NOTATION + STAGE -->
+        <div class="row">
+          <input id="placeNotation" type="text"
+                 value="x10x10x10x10x10x10x10x10x10x10"
+                 placeholder="Place Notation (e.g. x12.16.34x)"
+                 style="flex:1 1 320px">
+          <label>Stage
+            <input id="stage" type="number" min="4" max="12" step="1" value="6" />
+          </label>
+          <button id="generate" class="primary">Generate</button>
+
+          <!-- Generated rows playback -->
+          <button id="playRows" class="secondary" title="Play generated rows">▶️ Play Rows</button>
+          <button id="pauseRows" class="ghost" title="Pause playback">⏸ Pause</button>
+          <button id="stopRows" class="ghost" title="Stop playback">⏹ Stop</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Workspace fills all remaining viewport height -->
+    <main class="workspace">
+      <div class="panel">
+        <div id="notationOutput"><em class="muted">— nothing generated yet —</em></div>
+      </div>
+    </main>
+  </div>
+
+  
+<script>
+(()=>{var u=null,g=null,b=[392,349.23,329.63,293.66,261.63,246.94,220,196,174.61,164.81,146.83,130.81];async function O(t,{strike:e=.6,volume:r=.9}={}){if(t<1||t>b.length)return;await k(r),x(r);let a=b[t-1]*1.5,o=Math.max(.05,Math.min(3,e)),s=u?u.currentTime:0,i=u.createOscillator(),n=u.createGain();i.type="sine",i.frequency.value=a;let p=Math.min(.005,o*.1),f=s,E=f+p,q=f+o;n.gain.setValueAtTime(1e-4,f),n.gain.linearRampToValueAtTime(1,E),n.gain.exponentialRampToValueAtTime(1e-4,q),i.connect(n).connect(g),i.start(f),i.stop(q+.01)}async function k(t=.9){(!u||u.state==="closed")&&(u=new(window.AudioContext||window.webkitAudioContext),g=u.createGain(),g.gain.value=Number.isFinite(t)?t:.9,g.connect(u.destination));try{await u.resume()}catch{}return u}function x(t){if(!u||!g)return;let e=u.currentTime;g.gain.setTargetAtTime(Math.max(0,Math.min(1,t)),e,.01)}function S(){if(!u)return;let t=u.currentTime;g.gain.setTargetAtTime(1e-4,t,.02),setTimeout(()=>{try{u.close()}catch{}u=null,g=null},120)}async function B(){if(u&&u.state==="running")try{await u.suspend()}catch{}}async function C(){if(u&&u.state==="suspended")try{await u.resume()}catch{}}function P(t,e,r){let a=u.createOscillator(),o=u.createGain();a.type="sine",a.frequency.value=t;let s=Math.min(.005,r*.1),i=.01,n=e,p=n+s,f=n+r;o.gain.setValueAtTime(1e-4,n),o.gain.linearRampToValueAtTime(1,p),o.gain.exponentialRampToValueAtTime(1e-4,f),a.connect(o).connect(g),a.start(n),a.stop(f+i)}async function V(t,{bpm:e=224,strike:r=.6,volume:a=.9}={}){if(!Array.isArray(t)||!t.length)return;await k(a),x(a);let o=60/Math.max(30,Math.min(300,e)),s=Math.max(.05,Math.min(3,r)),i=u.currentTime+.05;t.forEach((n,p)=>{if(n<1||n>b.length)return;let f=i+p*o,E=1.5*b[n-1];P(E,f,s)})}async function $(){await k();let t=u.currentTime+.02;P(880,t,.25)}function D(t){let e=String(t||"").replace(/\s+/g,"");return e?/^[1-8]+$/.test(e)?e.split("").map(r=>parseInt(r,10)):null:[]}var A="1234567890ET";function h(t){let e=Number(t);return Math.max(4,Math.min(12,Number.isFinite(e)?e:6))}function j(t){console.debug("ROUNDS FOR STAGE!");let e=h(t);return A.substring(0,e)}function H(t){let e=String(t||"").trim();if(!e)return[];let r=new Set([...A,"e","t","E","T"]),a=[],o="",s=()=>{o&&(a.push(o),o="")};for(let i=0;i<e.length;i++){let n=e[i];if(n==="."){s();continue}if(n==="x"||n==="X"){s(),a.push("x");continue}/\s/.test(n)||r.has(n)&&(o+=n==="e"?"E":n==="t"?"T":n)}return s(),a}function R(t){let e=A.indexOf(t);return e>=0?e+1:null}function _(t,e,r){let a=t.length,o=t.split(""),s=o.slice();if(e==="x"){for(let p=0;p+1<a;p+=2)s[p]=o[p+1],s[p+1]=o[p];return s.join("")}let i=new Set;for(let p of e){let f=R(p);f&&f>=1&&f<=r&&i.add(f)}let n=1;for(;n<=a;){let p=n+1;if(i.has(n)){s[n-1]=o[n-1],n+=1;continue}if(p>a){s[n-1]=o[n-1],n+=1;continue}if(i.has(p)){s[n-1]=o[n-1],n+=1;continue}s[n-1]=o[p-1],s[p-1]=o[n-1],n+=2}return s.join("")}function L({pnString:t,stage:e,maxLeads:r=12}){let a=h(e),o=j(a),s=H(t);if(!s.length)return[o];let i=[o],n=o,p=0;for(;p<r;){for(let f of s)n=_(n,f,a),i.push(n);if(p+=1,n===o)break}return i}function l(t){let e=document.getElementById(t);if(!e)throw new Error(`Element #${t} not found. Check index.html IDs and cache.`);return e}function m(t){l("status").textContent=t}function y(){document.querySelectorAll("#notationOutput .row-item.playing").forEach(t=>t.classList.remove("playing"))}function z(t){let e=`#notationOutput .row-item[data-row="${t}"]`,r=document.querySelector(e);if(!r){console.debug("highlightRow: element not found for index",t,"selector:",e);return}y(),r.classList.add("playing"),r.scrollIntoView({block:"nearest",inline:"nearest"})}var v=!1,N=null;function T({playing:t}){l("play").disabled=!!t}function Q(){l("play").addEventListener("click",async()=>{if(v)return;let t=D(l("seq").value);if(t===null){m("invalid (use digits 1\u20138)");return}if(!t.length){m("nothing to play");return}let e=Math.max(30,Math.min(300,Number(l("bpm").value)||224)),r=Math.max(.05,Math.min(3,Number(l("len").value)||.6)),a=Math.max(0,Math.min(1,Number(l("vol").value)||.9));v=!0,T({playing:!0}),await V(t,{bpm:e,strike:r,volume:a}),m(`playing (${t.length} notes @ ${e} BPM)`);let o=60/e,s=(t.length*o+.2)*1e3;clearTimeout(N),N=setTimeout(()=>{v=!1,T({playing:!1}),m("idle")},s)}),l("stop").addEventListener("click",()=>{S(),v=!1,clearTimeout(N),T({playing:!1}),m("stopped")}),l("beep").addEventListener("click",async()=>{await $(),m("beep")}),l("vol").addEventListener("input",t=>{let e=Math.max(0,Math.min(1,Number(t.target.value)||.9));x(e)}),l("seq").value="12345678",T({playing:!1})}var d=[],c={playing:!1,paused:!1,abort:!1};function w({playing:t,paused:e}){l("playRows").disabled=!!t&&!e,l("pauseRows").disabled=!t||e,l("stopRows").disabled=!t}function F(t){let e=l("notationOutput");if(!t||!t.length){e.innerHTML='<em class="muted">\u2014 nothing generated \u2014</em>';return}let r=h(l("stage").value);e.innerHTML=t.map((a,o)=>`<div class="row-item" data-row="${o}"><code>${a.slice(0,r)}</code></div>`).join(""),requestAnimationFrame(()=>{})}function U(){l("generate").addEventListener("click",()=>{let t=(l("placeNotation").value||"").trim(),e=h(l("stage").value);l("stage").value=e,d=L({pnString:t,stage:e}),F(d),y()}),l("playRows").addEventListener("click",async()=>{if(!(c.playing&&!c.paused)){if(!d.length){let t=h(l("stage").value);d=L({pnString:(l("placeNotation").value||"").trim(),stage:t}),F(d),y()}if(d.length){if(c.paused){c.paused=!1,w({playing:!0,paused:!1}),await C();return}c.playing=!0,c.paused=!1,c.abort=!1,w({playing:!0,paused:!1}),X().catch(t=>console.error(t))}}}),l("pauseRows").addEventListener("click",async()=>{!c.playing||c.paused||(c.paused=!0,w({playing:!0,paused:!0}),await B())}),l("stopRows").addEventListener("click",()=>{c.playing&&(c.abort=!0,c.paused=!1,c.playing=!1,w({playing:!1,paused:!1}),S(),y(),m("stopped"))}),w({playing:!1,paused:!1})}function W(t,e){let r=e%2===0?e:e+1,a=12-r,o=[];for(let s of t){let i=R(s);if(!i||i<1||i>e)continue;let n=a+i;n>=1&&n<=12&&o.push(n)}if(e%2===1){let s=a+r;s>=1&&s<=12&&o.push(s)}return o}function M(t){return new Promise(e=>setTimeout(e,t))}async function G(t,e){let r=0,a=performance.now();for(;r<t;){if(e("abort"))return;for(;e("paused");){if(await M(60),e("abort"))return;a=performance.now()}await M(20);let o=performance.now(),s=(o-a)/1e3;a=o;let n=60/Math.max(30,Math.min(300,Number(l("bpm").value)||224));r+=s/n}}async function X(){let t=h(l("stage").value),e=Math.max(0,Math.min(1,Number(l("vol").value)||.9)),r=a=>a==="abort"?c.abort:a==="paused"?c.paused:c.abort||c.paused;for(let a=0;a<d.length&&!c.abort;a++){for(;c.paused&&(await M(60),!c.abort););if(c.abort)break;z(a),console.debug("Playing row",a,d[a]);let o=d[a],s=W(o,t);for(let i=0;i<s.length&&!c.abort;i++){for(;c.paused&&(await M(60),!c.abort););if(c.abort)break;let n=Math.max(.05,Math.min(3,Number(l("len").value)||.6));await O(s[i],{strike:n,volume:e}),i<s.length-1&&await G(1,r)}if(m(`row ${a+1}/${d.length}`),a<d.length-1){let i=a%2===0?2:1;await G(i,r)}}y(),c.abort||m("done"),c.playing=!1,c.paused=!1,c.abort=!1,w({playing:!1,paused:!1})}function I(){try{["seq","play","stop","beep","status","bpm","len","vol","placeNotation","stage","generate","notationOutput","playRows","pauseRows","stopRows"].forEach(t=>l(t)),Q(),U(),m("idle")}catch(t){console.error(t),alert(t.message+`
+
+Tip: hard-reload (Ctrl+F5 / Cmd+Shift+R) to bust cache.`)}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",I,{once:!0}):I();})();
+
+</script>
+</body>
+</html>

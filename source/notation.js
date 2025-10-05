@@ -11,6 +11,11 @@ export function clampStage(n) {
 }
 
 export function roundsForStage(stage) {
+  console.debug("ROUNDS FOR STAGE!");
+
+  // tittums style order
+  // return "1627384950"
+
   const s = clampStage(stage);
   return STAGE_SYMBOLS.substring(0, s);
 }
