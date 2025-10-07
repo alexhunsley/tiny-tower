@@ -1,10 +1,3 @@
-// notation.js
-// - Tokenization: '.' splits, 'x' is a token+split, whitespace ignored, E/T normalized.
-// - NEW: commas split the PN into segments; each segment is tokenized then mirrored
-//        (palindrome without duplicating the last token). If no commas present, no mirroring.
-// - Row generation: start at rounds; apply each token; repeat whole "lead token list"
-//   until back to rounds or safety cutoff (maxLeads).
-
 const STAGE_SYMBOLS = "1234567890ET"; // positions: 1..12 (10=0, 11=E, 12=T)
 
 export function clampStage(n) {
@@ -17,9 +10,9 @@ export function roundsForStage(stage) {
   return STAGE_SYMBOLS.substring(0, s);
 }
 
-// ---- Base tokenizer for a single segment (no commas) ----
+/* ---------------- Base tokenizer for a single segment (no commas) ---------------- */
 // Splits on '.' and treats 'x'/'X' as its own token AND delimiter. Keeps 'x' tokens.
-function tokenizeSegment(pnSegment) {
+export function tokenizeSegment(pnSegment) {
   const src = String(pnSegment || "").trim();
   if (!src) return [];
   const allowed = new Set([...STAGE_SYMBOLS, "e", "t", "E", "T"]);
@@ -46,40 +39,79 @@ function tokenizeSegment(pnSegment) {
   return tokens;
 }
 
-// ---- Expand PN with comma semantics ----
-// If there are commas: split, tokenize each, then mirror each segment
-// by appending reverse(tokensWithoutLast). Concatenate all segments.
-// If no commas: just tokenize the whole string (no mirroring).
-function expandPlaceNotation(pnString) {
-  const raw = String(pnString || "").trim();
-  if (!raw) return [];
-
-  if (!raw.includes(",")) {
-    return tokenizeSegment(raw);
-  }
-
-  const segments = raw.split(",").map(s => s.trim()).filter(Boolean);
-  const out = [];
-
-  for (const seg of segments) {
-    const toks = tokenizeSegment(seg);
-    if (!toks.length) continue;
-    // Mirror without duplicating the last token (palindrome)
-    const mirror = toks.slice(0, -1).reverse();
-    out.push(...toks, ...mirror);
-  }
-  return out;
-}
-
-// ---- Utilities used by row application ----
+// Utility: symbol <-> index (1-based)
 export function symbolToIndex(sym) {
   const idx = STAGE_SYMBOLS.indexOf(sym);
   return idx >= 0 ? idx + 1 : null; // 1-based
 }
+function indexToSymbol(pos) {
+  // pos is 1..12
+  return STAGE_SYMBOLS[pos - 1] || "";
+}
 
-// Apply a single token to a row per your rules:
-// 1) token === "x": swap adjacent pairs, last stays if odd.
-// 2) token like "34": those places stay; all other adjacent pairs swap.
+/* ----------- NEW: map token's places via i -> (stage + 1 - i), keep 'x' ----------- */
+function mirrorPlacesWithinToken(token, stage) {
+  if (token === "x") return "x";
+  const places = [];
+  for (const ch of token) {
+    const i = symbolToIndex(ch);
+    if (!i) continue;
+    const j = stage + 1 - i;      // position reversal within the stage
+    places.push(j);
+  }
+  // Sort ascending and convert back to symbols (so 5,1 -> "14"; 8,7 -> "78")
+  places.sort((a, b) => a - b);
+  return places.map(indexToSymbol).join("");
+}
+
+/* ---------------- Expand with commas and the special ';' semantics ---------------- */
+// If there's exactly one ';', apply the special rule described.
+// Otherwise, old behavior:
+//   - with commas: per-segment palindromes (tokens + reverse(tokensWithoutLast))
+//   - without commas: just tokenize (no mirroring)
+export function expandPlaceNotation(pnString, stage) {
+  const raw = String(pnString || "").trim();
+  if (!raw) return [];
+
+  // Handle special ';' case
+  const semiIdx = raw.indexOf(";");
+  if (semiIdx !== -1) {
+    // split into LEFT ; RIGHT (ignore any extra ';' beyond the first)
+    const leftRaw  = raw.slice(0, semiIdx).trim();
+    const rightRaw = raw.slice(semiIdx + 1).trim();
+
+    const leftTokens = tokenizeSegment(leftRaw);
+    const rightTokens = tokenizeSegment(rightRaw);
+
+    // Build S1: leftTokens + reverse(leftTokensWithoutLast) with per-token place reversal
+    const leftTail = leftTokens.slice(0, -1).reverse()
+      .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
+    const S1 = [...leftTokens, ...leftTail];
+
+    // Final lead token list per your spec:
+    // S1 + RIGHT + reverse(S1) + RIGHT
+    const S1rev = S1.slice().reverse();
+    return [...S1, ...rightTokens, ...S1rev, ...rightTokens];
+  }
+
+  // Legacy comma behavior (unchanged)
+  if (raw.includes(",")) {
+    const segments = raw.split(",").map(s => s.trim()).filter(Boolean);
+    const out = [];
+    for (const seg of segments) {
+      const toks = tokenizeSegment(seg);
+      if (!toks.length) continue;
+      const mirror = toks.slice(0, -1).reverse(); // plain mirror (no place reversal)
+      out.push(...toks, ...mirror);
+    }
+    return out;
+  }
+
+  // No commas: simple tokenize, no mirroring
+  return tokenizeSegment(raw);
+}
+
+/* ---------------- Apply a token to a row (unchanged) ---------------- */
 function applyTokenToRow(row, token, stage) {
   const n = row.length;
   const src = row.split("");
@@ -114,23 +146,17 @@ function applyTokenToRow(row, token, stage) {
   return out.join("");
 }
 
-/**
- * Generate rows by repeating the lead token list until we return to rounds,
- * or we hit maxLeads (default 12).
- *
- * @param {Object} opts
- * @param {string} opts.pnString - place notation (commas optional)
- * @param {number} opts.stage - 4..12
- * @param {number} [opts.maxLeads=12] - safety cutoff (# of full PN passes)
- * @returns {string[]} rows beginning with rounds; includes the final rounds if reached
- */
+/* ---------------- Generate rows by repeating the lead token list ---------------- */
 export function generateList({ pnString, stage, maxLeads = 12 }) {
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
 
-  const leadTokens = expandPlaceNotation(pnString); // NEW comma-aware expansion
+  // NOTE: expandPlaceNotation now needs stage (for the ';' mapping)
+  const leadTokens = expandPlaceNotation(pnString, s);
   if (!leadTokens.length) return [rounds];
 
+  console.log("Expanded PN tokens:", leadTokens);
+  
   const rows = [rounds];
   let current = rounds;
   let leads = 0;
