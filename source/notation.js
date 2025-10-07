@@ -49,6 +49,13 @@ function indexToSymbol(pos) {
   return STAGE_SYMBOLS[pos - 1] || "";
 }
 
+function mirroredNotate(notate, stage) {
+  const mirroredTokens = [...notate].reverse().map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
+  console.log("Mirrored tokens = ", mirroredTokens);
+  console.log("Mirrored tokens.join() = ", mirroredTokens.join(""));
+  return mirroredTokens.join("");
+}
+
 /* ----------- NEW: map token's places via i -> (stage + 1 - i), keep 'x' ----------- */
 function mirrorPlacesWithinToken(token, stage) {
   if (token === "x") return "x";
@@ -81,7 +88,9 @@ export function expandPlaceNotation(pnString, stage) {
     const rightRaw = raw.slice(semiIdx + 1).trim();
 
     const leftTokens = tokenizeSegment(leftRaw);
-    const rightTokens = tokenizeSegment(rightRaw);
+    const rightTokens = mirroredNotate(rightRaw, clampStage(stage));
+
+    console.log("right raw, right tokens = ", rightRaw, ",", rightTokens);
 
     // Build S1: leftTokens + reverse(leftTokensWithoutLast) with per-token place reversal
     const leftTail = leftTokens.slice(0, -1).reverse()
@@ -91,7 +100,7 @@ export function expandPlaceNotation(pnString, stage) {
     // Final lead token list per your spec:
     // S1 + RIGHT + reverse(S1) + RIGHT
     const S1rev = S1.slice().reverse();
-    return [...S1, ...rightTokens, ...S1rev, ...rightTokens];
+    return [...S1, rightTokens, ...S1rev, rightRaw];
   }
 
   // Legacy comma behavior (unchanged)
