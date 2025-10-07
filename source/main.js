@@ -1,5 +1,6 @@
 // main.js
 import { DEFAULTS } from "./defaults.js";
+import { formatRowForDisplay } from "./displayMap.js";
 import {
   playSequence,   // still used by manual player
   stopAll,
@@ -152,12 +153,13 @@ function renderGeneratedList(list) {
     return;
   }
   const stage = clampStage(el("stage").value);
-  out.innerHTML = list
-    .map((s, i) => `<div class="row-item" data-row="${i}"><code>${s.slice(0, stage)}</code></div>`)
-    .join("");
 
-  // tiny yield so DOM is ready before first possible highlight
-  requestAnimationFrame(() => {});
+  out.innerHTML = list
+    .map((row, i) => {
+      const display = formatRowForDisplay(row, stage);
+      return `<div class="row-item" data-row="${i}"><code>${display}</code></div>`;
+    })
+    .join("");
 }
 
 function wireNotation() {
