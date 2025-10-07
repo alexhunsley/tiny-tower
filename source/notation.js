@@ -155,8 +155,8 @@ export function generateList({ pnString, stage, maxLeads = 12 }) {
   const leadTokens = expandPlaceNotation(pnString, s);
   if (!leadTokens.length) return [rounds];
 
-  console.log("Expanded PN tokens:", leadTokens);
-  
+  console.log("Expanded PN tokens:", collapsePlaceNotation(leadTokens));
+
   const rows = [rounds];
   let current = rounds;
   let leads = 0;
@@ -170,4 +170,25 @@ export function generateList({ pnString, stage, maxLeads = 12 }) {
     if (current === rounds) break; // back to rounds
   }
   return rows;
+}
+
+/**
+ * Collapse an expanded token list back into a compact PN string.
+ * Example: ["x","12","56","x","78"] => "x12.56x78"
+ */
+export function collapsePlaceNotation(tokens) {
+  if (!tokens || !tokens.length) return "";
+  let out = "";
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    const prev = i > 0 ? tokens[i - 1] : null;
+
+    // If both prev and current are numbers/places, insert a dot
+    const isNum = t => t !== "x";
+    if (prev && isNum(prev) && isNum(tok)) {
+      out += ".";
+    }
+    out += tok;
+  }
+  return out;
 }
