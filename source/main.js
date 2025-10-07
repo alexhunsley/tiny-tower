@@ -384,10 +384,6 @@ function init() {
     wirePlayer();
     wireNotation();
 
-    // Keep the blue trace synced on resize/scroll
-    window.addEventListener("resize", () => requestAnimationFrame(updateBlueTrace));
-    el("notationOutput").addEventListener("scroll", () => requestAnimationFrame(updateBlueTrace));
-
     updateStatus("idle");
   } catch (err) {
     console.error(err);
