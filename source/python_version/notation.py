@@ -1,7 +1,10 @@
 # notation.py
 # notation.py (canonical)
 
+from itertools import combinations
 from typing import List, Iterable
+import sys
+import math
 
 STAGE_SYMBOLS = "1234567890ET"  # positions: 1..12 (10=0, 11=E, 12=T)
 STAGE_MIN = 3
@@ -93,6 +96,18 @@ def mirror_places_within_token(token: str, stage: int) -> str:
         places.append(s + 1 - i)
     places.sort()
     return "".join(index_to_symbol(p) for p in places)
+
+
+def is_odd(number: int) -> bool:
+    return (number % 2) == 1
+
+def is_double_notate(token: str, stage: int) -> bool:
+    if token == 'x' and is_odd(stage):
+        return False
+
+    mirror = mirror_places_within_token(token, stage)
+    print(f"\nMirror, str = {mirror} {token}")
+    return token == mirror
 
 
 # --------- Comma & semicolon expansion ---------
@@ -275,10 +290,48 @@ def are_rotation_of_each_other(pn_string1: str, pn_string2: str, stage: int) -> 
     return pn1_canonical == pn2_canonical
 
 
+def n_choose_r(n: int, r: int) -> List[List[int]]:
+    """
+    Generate all r-element combinations of range(n), 
+    returned as a list of index lists.
+    
+    Example: n_choose_r(3,2) -> [[0,1],[0,2],[1,2]]
+    """
+    return [list(c) for c in combinations(range(n), r)]
+
+def all_possible_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
+    # n = stage - (stage - places) + 1
+    # r = places
+
+    n = stage - int((stage - places)/2)
+    r = places
+
+    # print(f"\nn, r = {n} {r}")
+    choices = n_choose_r(n, r)
+    # print(choices)
+    results = []
+    for choice in choices:
+        index = 0
+        result = ""
+        for i in range(0, n):
+            # print(f"CHECK: {i} in {choice}")
+            if i in choice:
+                result += place_str
+                index += 1
+            else:
+                result += swap_str
+                index += 2
+            if index > n+1: 
+                break
+        results.append(result)
+
+    print("\n".join(results))
+    return results
 
 # --------- Self-tests (run: python notation.py) ---------
 if __name__ == "__main__":
     import unittest
+
 
     class TestNotationCanonical(unittest.TestCase):
         def test_rounds(self):
@@ -475,5 +528,66 @@ if __name__ == "__main__":
             self.assertEqual(False, are_rotation_of_each_other(";1", "1.1", 3))
             self.assertEqual(False, are_rotation_of_each_other(";1", "1", 3))
             self.assertEqual(False, are_rotation_of_each_other(";1", "3.1.3", 3))
+
+        def test_double_detection(self):
+            self.assertEqual(True, is_double_notate("14", 4))
+            self.assertEqual(True, is_double_notate("123", 3))
+
+            self.assertEqual(True, is_double_notate("x", 4))
+            self.assertEqual(True, is_double_notate("x", 6))
+            self.assertEqual(True, is_double_notate("x", 8))
+            self.assertEqual(True, is_double_notate("x", 10))
+            self.assertEqual(True, is_double_notate("x", 12))
+
+            self.assertEqual(True, is_double_notate("1234", 4))
+            self.assertEqual(True, is_double_notate("14", 4))
+            self.assertEqual(True, is_double_notate("1256", 6))
+            self.assertEqual(True, is_double_notate("16", 6))
+            self.assertEqual(True, is_double_notate("34", 6))
+
+            self.assertEqual(False, is_double_notate("x", 3))
+            self.assertEqual(False, is_double_notate("x", 5))
+            self.assertEqual(False, is_double_notate("x", 7))
+            self.assertEqual(False, is_double_notate("x", 9))
+            self.assertEqual(False, is_double_notate("x", 11))
+
+            self.assertEqual(False, is_double_notate("1", 3))
+            # weirdly formed, but technically double?
+            self.assertEqual(True, is_double_notate("2", 3))
+            self.assertEqual(False, is_double_notate("3", 3))
+
+            self.assertEqual(False, is_double_notate("1256", 8))
+            self.assertEqual(False, is_double_notate("16", 8))
+
+        def test_generate_pn(self):
+            self.assertEqual(["||"],
+                all_possible_notation(stage=2, places=2))
+
+            self.assertEqual(["*"],
+                all_possible_notation(stage=2, places=0))
+
+            self.assertEqual(["||*", "|*|", "*||"],
+                all_possible_notation(stage=4, places=2))
+
+            self.assertEqual(["|||*", "||*|", "|*||", "*|||"],
+                all_possible_notation(stage=5, places=3))
+
+            self.assertEqual(["|||||"],
+                all_possible_notation(stage=5, places=5))
+
+            self.assertEqual(["|**", "*|*", "**|"],
+                all_possible_notation(stage=5, places=1))
+
+            self.assertEqual(["||**", "|*|*", "|**|", "*||*", "*|*|", "**||"],
+                all_possible_notation(stage=6, places=2))
+
+            self.assertEqual(15,
+                len(all_possible_notation(stage=8, places=4)))
+
+            self.assertEqual(10,
+                len(all_possible_notation(stage=7, places=3)))
+
+            self.assertEqual(4,
+                len(all_possible_notation(stage=7, places=1)))
 
     unittest.main(verbosity=2)
