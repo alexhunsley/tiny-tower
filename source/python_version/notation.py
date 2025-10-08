@@ -239,6 +239,43 @@ def collapse_place_notation(tokens: Iterable[str]) -> str:
     return "".join(pieces)
 
 
+def rotation_as_string_list(pn_string: str, stage: int, amount: int) -> [str]:
+    str_list = expand_place_notation_to_string_list(pn_string, stage)
+    length = len(str_list)
+    if amount < 0:
+        amount = length - abs(amount)
+    pivot = length - amount
+    res = str_list[pivot:] + str_list[:pivot]
+    return res
+
+def all_rotations(pn_string: str, stage: int) -> [str]:
+    notation_list = expand_place_notation_to_string_list(pn_string, stage)
+    return [collapse_place_notation(rotation_as_string_list(pn_string, stage, rot_amount)) for rot_amount in range(0, len(notation_list))]
+
+
+def canonical_form(pn_string: str, stage: int) -> str:
+    canon_form_list = canonical_form_list(pn_string, stage)
+    return canon_form_list[0] if len(canon_form_list) > 0 else ""
+
+
+
+def canonical_form_list(pn_string: str, stage: int) -> str:
+    return sorted(all_rotations(pn_string, stage))
+
+
+def are_rotation_of_each_other(pn_string1: str, pn_string2: str, stage: int) -> [str]:
+    boof = expand_place_notation_to_string_list(pn_string1, stage)
+    print(f"boof: {boof}")
+    # pn1_canonical = canonical_form_list(expand_place_notation_to_string_list(pn_string1, stage), stage)
+    # pn2_canonical = canonical_form_list(expand_place_notation_to_string_list(pn_string2, stage), stage)
+    
+    pn1_canonical = canonical_form_list(pn_string1, stage)
+    pn2_canonical = canonical_form_list(pn_string2, stage)
+    print(f"PN canon: {pn1_canonical}, {pn2_canonical}")
+    return pn1_canonical == pn2_canonical
+
+
+
 # --------- Self-tests (run: python notation.py) ---------
 if __name__ == "__main__":
     import unittest
@@ -341,7 +378,6 @@ if __name__ == "__main__":
             self.assertEqual(expand_rotation_notation_to_palindrome_string_list(";1", 7), ["7", ",", "1"])
             self.assertEqual(expand_rotation_notation_to_palindrome_string_list(";1", 11), ["E", ",", "1"])
 
-
         def test_semicolon_on_bristol_simplify_to_comma_string(self):
 
             # bristol = ['x', '58', 'x', '14', '58', 'x', '58', '36', '14', 'x', '14', '58', 'x', '14', 'x', '18', 'x', '14', 'x', '58', '14', 'x', '14', '36', '58', 'x', '58', '14', 'x', '58', 'x', '18']
@@ -351,12 +387,10 @@ if __name__ == "__main__":
             bristol_palindrome_notation = "x58x14.58x58.36.14x14.58x14x18,18"
             self.assertEqual(expand_rotation_notation_to_palindrome_notation("x58x14.58x58.36;18", 8), bristol_palindrome_notation)
 
-
         def test_semicolon_on_bristol_simplify_to_notaton_list(self):
 
             bristol_palindrome_notate_list = ['x', '58', 'x', '14', '58', 'x', '58', '36', '14', 'x', '14', '58', 'x', '14', 'x', '18', ',', '18']
             self.assertEqual(expand_rotation_notation_to_palindrome_string_list("x58x14.58x58.36;18", 8), bristol_palindrome_notate_list)
-
 
         def test_semicolon(self):
             self.assertEqual(
@@ -381,5 +415,58 @@ if __name__ == "__main__":
             self.assertEqual(collapse_place_notation(["x", "12", "56", "x", "78"]), "x12.56x78")
             orig = "x12.16.34x"
             self.assertEqual(collapse_place_notation(tokenize_segment(orig)), orig)
+
+        def test_canonical_form(self):
+            self.assertEqual(canonical_form("", stage=8), "")
+            self.assertEqual(canonical_form("x", stage=8), "x")
+            self.assertEqual(canonical_form("x12", stage=8), "12x")
+
+        def test_rotation(self):
+            self.assertEqual(rotation_as_string_list("", 4, 0), [])
+            self.assertEqual(rotation_as_string_list("", 4, 1), [])
+            self.assertEqual(rotation_as_string_list("", 4, -1), [])
+
+            self.assertEqual(rotation_as_string_list("x", 2, 0), ["x"])
+            self.assertEqual(rotation_as_string_list("x", 6, 1), ["x"])
+            self.assertEqual(rotation_as_string_list("x", 10, -1), ["x"])
+
+
+            self.assertEqual(rotation_as_string_list("1278", 8, 0), ["1278"])
+            self.assertEqual(rotation_as_string_list("1278", 8, 1), ["1278"])
+            self.assertEqual(rotation_as_string_list("1278", 8, -1), ["1278"])
+
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 0), ["12", "34", "56"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 1), ["56", "12", "34"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 2), ["34", "56", "12"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 3), ["12", "34", "56"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 6), ["12", "34", "56"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, 99), ["12", "34", "56"])
+
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, -2), ["56", "12", "34"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, -1), ["34", "56", "12"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, -3), ["12", "34", "56"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, -6), ["12", "34", "56"])
+            self.assertEqual(rotation_as_string_list("12.34.56", 6, -99), ["12", "34", "56"])
+
+            self.assertEqual(all_rotations("", 6), [])
+            self.assertEqual(all_rotations("12x", 6), ["12x", "x12"])
+            self.assertEqual(all_rotations("12.34.56", 6), ["12.34.56", "56.12.34", "34.56.12"])
+
+            all_rots = all_rotations("12.34.56", 6), ["12.34.56", "56.12.34", "34.56.12"]
+            print("Sorted: ", sorted(all_rots))
+
+            self.assertEqual(True, are_rotation_of_each_other("", "", 8))
+            self.assertEqual(True, are_rotation_of_each_other("x", "x", 8))
+            self.assertEqual(True, are_rotation_of_each_other("12x", "12x", 8))
+            self.assertEqual(True, are_rotation_of_each_other("3478", "3478", 8))
+
+            self.assertEqual(True, are_rotation_of_each_other("12x", "x12", 8))
+            self.assertEqual(True, are_rotation_of_each_other("34.78", "78.34", 8))
+
+            self.assertEqual(True, are_rotation_of_each_other("12x12x14", "12x12x14", 8))
+            self.assertEqual(True, are_rotation_of_each_other("12x12x14", "x12x14.12", 8))
+            self.assertEqual(True, are_rotation_of_each_other("12x12x14", "12x12x14", 8))
+            self.assertEqual(True, are_rotation_of_each_other("12x12x14", "14.12x12x", 8))
+
 
     unittest.main(verbosity=2)
