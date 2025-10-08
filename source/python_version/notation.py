@@ -82,7 +82,6 @@ def mirror_places_within_token(token: str, stage: int) -> str:
     'x' stays 'x'. Returns places sorted ascending.
     Examples at stage 8: '12'->'78', '58'->'14', '16'->'38'.
     """
-    print(f"mirror_places_within_token called with |{token}|, {stage}")
     if token == "x":
         return "x"
     s = clamp_stage(stage)
@@ -115,25 +114,15 @@ def expand_rotation_notation_to_palindrome_string_list(pn_string: str, stage: in
         return ""
 
     left_raw, right_raw = (part.strip() for part in raw.split(";", 1))
-    print(f"\nleft, right raw: |{left_raw}|  |{right_raw}|")
     left_tokens = tokenize_segment(left_raw)
     right_tokens = tokenize_segment(right_raw)
-
-    print(f"\nleft_tokens, right_tokens: {left_tokens}{right_tokens}")
 
     s = clamp_stage(stage)
     left_rev_trunc = list(reversed(left_tokens[:-1-(stage%2)]))  # exclude last token
 
-    print(f"left_trunc: {left_rev_trunc}")
-
     left_rev_trunc_mirrored = [mirror_places_within_token(tok, s) for tok in left_rev_trunc]
-    print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
 
     right_mirrored = [mirror_places_within_token(tok, s) for tok in right_tokens]
-
-    print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
-    print(f"left_tokens: {left_tokens}")
-    print(f"right_tokens: {right_tokens}")
 
     palindrome_part = left_tokens + left_rev_trunc_mirrored
 
@@ -294,7 +283,6 @@ if __name__ == "__main__":
 
             for stage in range(STAGE_MIN, STAGE_MAX+1):
                 place_char = STAGE_SYMBOLS[stage-1]
-                print(f"PLACE CHAR: {place_char}")
                 self.assertEqual(mirror_places_within_token(mirror_places_within_token(place_char, stage), stage), place_char)
 
             self.assertEqual(mirror_places_within_token("1234567890ET", stage=12), "1234567890ET")
@@ -382,8 +370,6 @@ if __name__ == "__main__":
 
             pn = "x14x14x14x12"
             rows = generate_list(pn, stage=4, max_leads=12)
-            print("rows: ", len(rows))
-            print("\n".join(rows))
             r = rounds_for_stage(4)
             self.assertEqual(rows[0], r)
             self.assertEqual(rows[-1], r)
