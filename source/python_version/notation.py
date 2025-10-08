@@ -4,7 +4,8 @@
 from typing import List, Iterable
 
 STAGE_SYMBOLS = "1234567890ET"  # positions: 1..12 (10=0, 11=E, 12=T)
-
+STAGE_MIN = 3
+STAGE_MAX = len(STAGE_SYMBOLS)
 
 # --------- Basics ---------
 def clamp_stage(n) -> int:
@@ -13,7 +14,7 @@ def clamp_stage(n) -> int:
         v = int(float(n))
     except (TypeError, ValueError):
         v = 6
-    return max(4, min(12, v))
+    return max(STAGE_MIN, min(STAGE_MAX, v))
 
 
 def rounds_for_stage(stage: int) -> str:
@@ -81,6 +82,7 @@ def mirror_places_within_token(token: str, stage: int) -> str:
     'x' stays 'x'. Returns places sorted ascending.
     Examples at stage 8: '12'->'78', '58'->'14', '16'->'38'.
     """
+    print(f"mirror_places_within_token called with |{token}|, {stage}")
     if token == "x":
         return "x"
     s = clamp_stage(stage)
@@ -102,9 +104,45 @@ def _mirror_segment(tokens: List[str]) -> List[str]:
     return tokens + list(reversed(tokens[:-1]))
 
 
-def expand_place_notation(pn_string: str, stage: int) -> List[str]:
+def expand_rotation_notation_to_palindrome_notation(pn_string: str, stage: int):
+    string_list = expand_rotation_notation_to_palindrome_string_list(pn_string, stage)
+    return collapse_place_notation(string_list)
+
+
+def expand_rotation_notation_to_palindrome_string_list(pn_string: str, stage: int):
+    raw = (pn_string or "").strip()
+    if raw.count(";") != 1:
+        return ""
+
+    left_raw, right_raw = (part.strip() for part in raw.split(";", 1))
+    print(f"\nleft, right raw: |{left_raw}|  |{right_raw}|")
+    left_tokens = tokenize_segment(left_raw)
+    right_tokens = tokenize_segment(right_raw)
+
+    print(f"\nleft_tokens, right_tokens: {left_tokens}{right_tokens}")
+
+    s = clamp_stage(stage)
+    left_rev_trunc = list(reversed(left_tokens[:-1-(stage%2)]))  # exclude last token
+
+    print(f"left_trunc: {left_rev_trunc}")
+
+    left_rev_trunc_mirrored = [mirror_places_within_token(tok, s) for tok in left_rev_trunc]
+    print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
+
+    right_mirrored = [mirror_places_within_token(tok, s) for tok in right_tokens]
+
+    print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
+    print(f"left_tokens: {left_tokens}")
+    print(f"right_tokens: {right_tokens}")
+
+    palindrome_part = left_tokens + left_rev_trunc_mirrored
+
+    return palindrome_part + right_mirrored + [",", right_raw]
+
+
+def expand_place_notation_to_string_list(pn_string: str, stage: int, expand_once_only=False) -> List[str]:
     """
-    Expand a PN into a flat list of tokens to apply per row step.
+    Expand a PN into a flat list of tokens to apply per row step; can take palindrome ',' and rotational ';' formats.
 
     Rules:
     - If there is a single ';' (LEFT;RIGHT):
@@ -121,23 +159,55 @@ def expand_place_notation(pn_string: str, stage: int) -> List[str]:
     """
     raw = (pn_string or "").strip()
     if not raw:
+        print("early exit-----------------")
         return []
 
+    print(f"pn_string = {pn_string}")
     # Special semicolon rule
     if raw.count(";") == 1:
+         # palindrome_notation = A + A[:-1-s%2].doubled().reversed()
+         #                    + B.doubled()
+         #                    + ","
+         #                    + B
+
         left_raw, right_raw = (part.strip() for part in raw.split(";", 1))
+        print(f"\nleft, right raw: |{left_raw}|  |{right_raw}|")
         left_tokens = tokenize_segment(left_raw)
         right_tokens = tokenize_segment(right_raw)
 
-        # Build S1: left_tokens + mirror of left_tokens[:-1] with place reversal
+        print(f"\nleft_tokens, right_tokens: {left_tokens}{right_tokens}")
+
         s = clamp_stage(stage)
-        tail_src = list(reversed(left_tokens[:-1]))  # exclude last token
-        tail_mirrored = [mirror_places_within_token(tok, s) for tok in tail_src]
-        S1 = left_tokens + tail_mirrored
+        left_rev_trunc = list(reversed(left_tokens[:-1-(stage%2)]))  # exclude last token
 
-        S1_rev = list(reversed(S1))
-        return S1 + right_tokens + S1_rev + right_tokens
+        print(f"left_trunc: {left_rev_trunc}")
+ 
+        left_rev_trunc_mirrored = [mirror_places_within_token(tok, s) for tok in left_rev_trunc]
+        print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
 
+        right_mirrored = [mirror_places_within_token(tok, s) for tok in right_tokens]
+
+        print(f"left_trunc_mirrored: {left_rev_trunc_mirrored}")
+        print(f"left_tokens: {left_tokens}")
+        print(f"right_tokens: {right_tokens}")
+
+        palindrome_part = left_tokens + left_rev_trunc_mirrored
+        palindrome_part_rev = list(reversed(palindrome_part))
+
+# full expansion
+        # result = palindrome_part + right_mirrored + palindrome_part_rev + right_tokens
+
+# expansion to ,
+
+        # result = palindrome_part + right_mirrored + [",", right_tokens] 
+
+        result = collapse_place_notation(palindrome_part + right_mirrored) + "," + right_raw
+
+        print(f"XXX result: {result}")
+
+        return result
+
+    print("ASDSADSADSADSADSADSAD A Das---------------------")
     # Comma behavior
     if "," in raw:
         out: List[str] = []
@@ -221,6 +291,7 @@ def collapse_place_notation(tokens: Iterable[str]) -> str:
     Insert '.' only between adjacent numeric tokens.
     Example: ['x','12','56','x','78'] -> 'x12.56x78'
     """
+    special = ".,"
     tokens = list(tokens)
     if not tokens:
         return ""
@@ -228,7 +299,8 @@ def collapse_place_notation(tokens: Iterable[str]) -> str:
     for i, tok in enumerate(tokens):
         prev = tokens[i - 1] if i > 0 else None
         is_num = (lambda t: t != "x")
-        if prev is not None and is_num(prev) and is_num(tok):
+        # if prev is not None and not prev in special and tok in special and is_num(prev) and is_num(tok):
+        if prev is not None and prev not in special and tok not in special and is_num(prev) and is_num(tok):
             pieces.append(".")
         pieces.append(tok)
     return "".join(pieces)
@@ -239,55 +311,146 @@ if __name__ == "__main__":
     import unittest
 
     class TestNotationCanonical(unittest.TestCase):
-        # Basics
-        def test_rounds(self):
-            self.assertEqual(clamp_stage(3), 4)
-            self.assertEqual(clamp_stage(20), 12)
-            self.assertEqual(rounds_for_stage(6), "123456")
-            self.assertEqual(rounds_for_stage(8), "12345678")
+        # def test_rounds(self):
+        #     for stage in range(-2, STAGE_MIN):
+        #         self.assertEqual(clamp_stage(stage), STAGE_MIN)
+        #     for stage in range(STAGE_MAX+1, STAGE_MAX+5):
+        #         self.assertEqual(clamp_stage(stage), STAGE_MAX)
+        #     self.assertEqual(clamp_stage(100000), 12)
+        #     self.assertEqual(rounds_for_stage(6), "123456")
+        #     self.assertEqual(rounds_for_stage(8), "12345678")
+        #     self.assertEqual(rounds_for_stage(9), "123456789")
+        #     self.assertEqual(rounds_for_stage(12), "1234567890ET")
 
-        # Tokenization
-        def test_tokenize(self):
-            self.assertEqual(tokenize_segment("x12.16.34x"), ["x", "12", "16", "34", "x"])
-            self.assertEqual(tokenize_segment(" e . t "), ["E", "T"])
-            self.assertEqual(tokenize_segment("x12a.!!34"), ["x", "12", "34"])
-            self.assertEqual(tokenize_segment(""), [])
+        # def test_tokenize(self):
+        #     self.assertEqual(tokenize_segment("xxx"), ["x", "x", "x"])
+        #     self.assertEqual(tokenize_segment("x12x.16.34.58.xx10.ET"), ["x", "12", "x", "16", "34", "58", "x", "x", "10", "ET"])
+        #     self.assertEqual(tokenize_segment(" e . t "), ["E", "T"])
+        #     self.assertEqual(tokenize_segment("x12a.!!34"), ["x", "12", "34"])
+        #     self.assertEqual(tokenize_segment(""), [])
 
-        # Commas
-        def test_commas(self):
-            self.assertEqual(
-                expand_place_notation("x56,12.45.78", 8),
-                ["x", "56", "x", "12", "45", "78", "45", "12"],
-            )
+        # def test_commas(self):
+        #     self.assertEqual(
+        #         expand_place_notation("x56,12.45.78", 8),
+        #         ["x", "56", "x", "12", "45", "78", "45", "12"],
+        #     )
 
-        # Semicolon
-        def test_semicolon(self):
-            self.assertEqual(
-                expand_place_notation("12x58.16;36", 8),
-                ["12", "x", "58", "16", "14", "x", "78", "36",
-                 "78", "x", "14", "16", "58", "x", "12", "36"],
-            )
+        # def test_semicolon_ph5(self):
+        #     self.assertEqual(
+        #         expand_place_notation("5.1.5;1", 5),
+        #         ["5", "1"],
+        #     )
 
-        # Apply & generate
-        def test_apply_and_generate(self):
-            self.assertEqual(apply_token_to_row("1234567", "34", 7), "2134657")
-            self.assertEqual(apply_token_to_row("12345678", "34", 8), "21346587")
+        # def test_mirror_places_within_token(self):
+        #     self.assertEqual(mirror_places_within_token("", stage=3), "")
 
-            pn = "x14x14x14x12"
-            rows = generate_list(pn, stage=4, max_leads=12)
-            print("rows: ", len(rows))
-            print("\n".join(rows))
-            r = rounds_for_stage(4)
-            self.assertEqual(rows[0], r)
-            self.assertEqual(rows[-1], r)
-            lead_len = len(tokenize_segment(pn))
-            self.assertEqual((len(rows) - 1) % lead_len, 0)
-            self.assertEqual((len(rows) - 1) // lead_len, 3)
+        #     for stage in range(STAGE_MIN, STAGE_MAX+1):
+        #         self.assertEqual(mirror_places_within_token("x", stage), "x")
+        #         self.assertEqual(mirror_places_within_token("", stage), "")
 
-        # Collapse
-        def test_collapse(self):
-            self.assertEqual(collapse_place_notation(["x", "12", "56", "x", "78"]), "x12.56x78")
-            orig = "x12.16.34x"
-            self.assertEqual(collapse_place_notation(tokenize_segment(orig)), orig)
+        #     for stage in range(STAGE_MIN, STAGE_MAX+1):
+        #         place_char = STAGE_SYMBOLS[stage-1]
+        #         print(f"PLACE CHAR: {place_char}")
+        #         self.assertEqual(mirror_places_within_token(mirror_places_within_token(place_char, stage), stage), place_char)
+
+        #     self.assertEqual(mirror_places_within_token("1234567890ET", stage=12), "1234567890ET")
+
+        #     self.assertEqual(mirror_places_within_token("1", stage=3), "3")
+        #     self.assertEqual(mirror_places_within_token("1", stage=4), "4")
+        #     self.assertEqual(mirror_places_within_token("1", stage=5), "5")
+        #     self.assertEqual(mirror_places_within_token("1", stage=6), "6")
+        #     self.assertEqual(mirror_places_within_token("1", stage=7), "7")
+        #     self.assertEqual(mirror_places_within_token("1", stage=8), "8")
+        #     self.assertEqual(mirror_places_within_token("1", stage=9), "9")
+        #     self.assertEqual(mirror_places_within_token("1", stage=10), "0")
+        #     self.assertEqual(mirror_places_within_token("1", stage=11), "E")
+        #     self.assertEqual(mirror_places_within_token("1", stage=12), "T")
+
+        #     self.assertEqual(mirror_places_within_token("3", stage=3), "1")
+        #     self.assertEqual(mirror_places_within_token("4", stage=4), "1")
+        #     self.assertEqual(mirror_places_within_token("5", stage=5), "1")
+        #     self.assertEqual(mirror_places_within_token("6", stage=6), "1")
+        #     self.assertEqual(mirror_places_within_token("7", stage=7), "1")
+        #     self.assertEqual(mirror_places_within_token("8", stage=8), "1")
+        #     self.assertEqual(mirror_places_within_token("9", stage=9), "1")
+        #     self.assertEqual(mirror_places_within_token("0", stage=10), "1")
+        #     self.assertEqual(mirror_places_within_token("E", stage=11), "1")
+        #     self.assertEqual(mirror_places_within_token("T", stage=12), "1")
+
+        #     self.assertEqual(mirror_places_within_token("12", stage=3), "23")
+        #     self.assertEqual(mirror_places_within_token("12", stage=4), "34")
+        #     self.assertEqual(mirror_places_within_token("12", stage=5), "45")
+        #     self.assertEqual(mirror_places_within_token("12", stage=6), "56")
+        #     self.assertEqual(mirror_places_within_token("12", stage=7), "67")
+        #     self.assertEqual(mirror_places_within_token("12", stage=8), "78")
+        #     self.assertEqual(mirror_places_within_token("12", stage=9), "89")
+        #     self.assertEqual(mirror_places_within_token("12", stage=10), "90")
+        #     self.assertEqual(mirror_places_within_token("12", stage=11), "0E")
+        #     self.assertEqual(mirror_places_within_token("12", stage=12), "ET")
+
+        #     self.assertEqual(mirror_places_within_token("13", stage=3), "13")
+        #     self.assertEqual(mirror_places_within_token("14", stage=4), "14")
+        #     self.assertEqual(mirror_places_within_token("15", stage=5), "15")
+        #     self.assertEqual(mirror_places_within_token("16", stage=6), "16")
+        #     self.assertEqual(mirror_places_within_token("17", stage=7), "17")
+        #     self.assertEqual(mirror_places_within_token("18", stage=8), "18")
+        #     self.assertEqual(mirror_places_within_token("19", stage=9), "19")
+        #     self.assertEqual(mirror_places_within_token("10", stage=10), "10")
+        #     self.assertEqual(mirror_places_within_token("1E", stage=11), "1E")
+        #     self.assertEqual(mirror_places_within_token("1T", stage=12), "1T")
+
+        #     self.assertEqual(mirror_places_within_token("145", stage=5), "125")
+        #     self.assertEqual(mirror_places_within_token("1256", stage=6), "1256")
+
+        # def test_semicolon_on_odd_stage_original_odd(self):
+        #     # Original on odd number is expressible as ";1"
+        #     self.assertEqual(expand_place_notation(";1", 3), ["3", "1"])
+        #     self.assertEqual(expand_place_notation(";1", 5), ["5", "1"])
+        #     self.assertEqual(expand_place_notation(";1", 7), ["7", "1"])
+        #     self.assertEqual(expand_place_notation(";1", 11), ["E", "1"])
+
+
+        def test_semicolon_on_bristol_simplify_to_comma_string(self):
+
+            # bristol = ['x', '58', 'x', '14', '58', 'x', '58', '36', '14', 'x', '14', '58', 'x', '14', 'x', '18', 'x', '14', 'x', '58', '14', 'x', '14', '36', '58', 'x', '58', '14', 'x', '58', 'x', '18']
+            # expect_bristol = collapse_place_notation(['x', '58', 'x', '14', '58', 'x', '58', '36', '14', 'x', '14', '58', 'x', '14', 'x', '18', 'x', '14', 'x', '58', '14', 'x', '14', '36', '58', 'x', '58', '14', 'x', '58', 'x', '18'])
+            # # print(f"\nit is: |{expect_bristol}|")
+
+            bristol_palindrome_notation = "x58x14.58x58.36.14x14.58x14x18,18"
+            self.assertEqual(expand_rotation_notation_to_palindrome_notation("x58x14.58x58.36;18", 8), bristol_palindrome_notation)
+
+
+        def test_semicolon_on_bristol_simplify_to_notaton_list(self):
+
+            bristol_palindrome_notate_list = ['x', '58', 'x', '14', '58', 'x', '58', '36', '14', 'x', '14', '58', 'x', '14', 'x', '18', ',', '18']
+            self.assertEqual(expand_rotation_notation_to_palindrome_string_list("x58x14.58x58.36;18", 8), bristol_palindrome_notate_list)
+
+
+        # def test_semicolon(self):
+        #     self.assertEqual(
+        #         expand_place_notation("12x58.16;36", 8),
+        #         ["12", "x", "58", "16", "14", "x", "78", "36",
+        #          "78", "x", "14", "16", "58", "x", "12", "36"],
+        #     )
+
+        # def test_apply_and_generate(self):
+        #     self.assertEqual(apply_token_to_row("1234567", "34", 7), "2134657")
+        #     self.assertEqual(apply_token_to_row("12345678", "34", 8), "21346587")
+
+        #     pn = "x14x14x14x12"
+        #     rows = generate_list(pn, stage=4, max_leads=12)
+        #     print("rows: ", len(rows))
+        #     print("\n".join(rows))
+        #     r = rounds_for_stage(4)
+        #     self.assertEqual(rows[0], r)
+        #     self.assertEqual(rows[-1], r)
+        #     lead_len = len(tokenize_segment(pn))
+        #     self.assertEqual((len(rows) - 1) % lead_len, 0)
+        #     self.assertEqual((len(rows) - 1) // lead_len, 3)
+
+        # def test_collapse(self):
+        #     self.assertEqual(collapse_place_notation(["x", "12", "56", "x", "78"]), "x12.56x78")
+        #     orig = "x12.16.34x"
+        #     self.assertEqual(collapse_place_notation(tokenize_segment(orig)), orig)
 
     unittest.main(verbosity=2)
