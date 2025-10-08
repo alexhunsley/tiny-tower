@@ -452,9 +452,10 @@ if __name__ == "__main__":
             self.assertEqual(all_rotations("12x", 6), ["12x", "x12"])
             self.assertEqual(all_rotations("12.34.56", 6), ["12.34.56", "56.12.34", "34.56.12"])
 
-            all_rots = all_rotations("12.34.56", 6), ["12.34.56", "56.12.34", "34.56.12"]
-            print("Sorted: ", sorted(all_rots))
+            # all_rots = all_rotations("12.34.56", 6), ["12.34.56", "56.12.34", "34.56.12"]
+            # print("Sorted: ", sorted(all_rots))
 
+            # TODO get rid of stage where not needed!
             self.assertEqual(True, are_rotation_of_each_other("", "", 8))
             self.assertEqual(True, are_rotation_of_each_other("x", "x", 8))
             self.assertEqual(True, are_rotation_of_each_other("12x", "12x", 8))
@@ -468,5 +469,11 @@ if __name__ == "__main__":
             self.assertEqual(True, are_rotation_of_each_other("12x12x14", "12x12x14", 8))
             self.assertEqual(True, are_rotation_of_each_other("12x12x14", "14.12x12x", 8))
 
+            self.assertEqual(True, are_rotation_of_each_other(";1", "3.1", 3))
+            self.assertEqual(True, are_rotation_of_each_other(";1", "1.3", 3))
+            self.assertEqual(False, are_rotation_of_each_other(";1", "3.3", 3))
+            self.assertEqual(False, are_rotation_of_each_other(";1", "1.1", 3))
+            self.assertEqual(False, are_rotation_of_each_other(";1", "1", 3))
+            self.assertEqual(False, are_rotation_of_each_other(";1", "3.1.3", 3))
 
     unittest.main(verbosity=2)
