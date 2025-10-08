@@ -299,7 +299,7 @@ def n_choose_r(n: int, r: int) -> List[List[int]]:
     """
     return [list(c) for c in combinations(range(n), r)]
 
-def all_possible_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
+def all_possible_notation_schemes(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
     # n = stage - (stage - places) + 1
     # r = places
 
@@ -561,33 +561,33 @@ if __name__ == "__main__":
 
         def test_generate_pn(self):
             self.assertEqual(["||"],
-                all_possible_notation(stage=2, places=2))
+                all_possible_notation_schemes(stage=2, places=2))
 
             self.assertEqual(["*"],
-                all_possible_notation(stage=2, places=0))
+                all_possible_notation_schemes(stage=2, places=0))
 
             self.assertEqual(["||*", "|*|", "*||"],
-                all_possible_notation(stage=4, places=2))
+                all_possible_notation_schemes(stage=4, places=2))
 
             self.assertEqual(["|||*", "||*|", "|*||", "*|||"],
-                all_possible_notation(stage=5, places=3))
+                all_possible_notation_schemes(stage=5, places=3))
 
             self.assertEqual(["|||||"],
-                all_possible_notation(stage=5, places=5))
+                all_possible_notation_schemes(stage=5, places=5))
 
             self.assertEqual(["|**", "*|*", "**|"],
-                all_possible_notation(stage=5, places=1))
+                all_possible_notation_schemes(stage=5, places=1))
 
             self.assertEqual(["||**", "|*|*", "|**|", "*||*", "*|*|", "**||"],
-                all_possible_notation(stage=6, places=2))
+                all_possible_notation_schemes(stage=6, places=2))
 
             self.assertEqual(15,
-                len(all_possible_notation(stage=8, places=4)))
+                len(all_possible_notation_schemes(stage=8, places=4)))
 
             self.assertEqual(10,
-                len(all_possible_notation(stage=7, places=3)))
+                len(all_possible_notation_schemes(stage=7, places=3)))
 
             self.assertEqual(4,
-                len(all_possible_notation(stage=7, places=1)))
+                len(all_possible_notation_schemes(stage=7, places=1)))
 
     unittest.main(verbosity=2)
