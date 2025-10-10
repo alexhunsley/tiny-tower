@@ -306,12 +306,6 @@ def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_st
     print(f"stage {stage // 2} places {places // 2}: LHS combos: {lhs} ")
     return [x + mirror_places_within_token(x, stage, x_mirrors_to_empty_str=True) for x in lhs]
 
-# def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
-#     lhs = all_possible_notation(stage // 2 - 1, places // 2)
-#     print(f"LHS: {lhs} stage {stage // 2 - 1} places {places // 2}")
-#     return [x + mirror_places_within_token(x, stage) for x in lhs]
-
-
 def all_possible_notation_schemes(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
     # n = stage - (stage - places) + 1
     # r = places
@@ -359,18 +353,18 @@ def all_possible_notation(stage: int, places: int, place_str="|", swap_str="*") 
     results = []
     for choice in choices:
         print(f"= doing choice = {choice}")
-        index = 0
+        index = 1
         result = ""
         for i in range(0, n):
             print(f"CHECK: {i} in {choice}. idx = {index}")
             if i in choice:
-                result += str(index+1)
+                result += str(index)
                 index += 1
             else:
                 index += 2
             # if index > n: 
-            if index > 1+stage//2: # n:
-                print(f"\n=====- breaking because index {index} > {n}")
+            if index > stage: # n:
+                print(f"\n=====- breaking because index {index} > {n}, result = {result}")
                 break
 
         if len(result) == 0:
@@ -663,45 +657,62 @@ if __name__ == "__main__":
         #         len(all_possible_notation_schemes(stage=7, places=1)))
 
         def test_generate_mirror_pn(self):
-            # self.assertEqual(["12"],
-            #     all_possible_notation(stage=2, places=2))
+            # s2
+            self.assertEqual([],
+                all_possible_notation(stage=2, places=0))
 
-            # self.assertEqual(["1234"],
-            #     all_possible_mirror_notation(stage=4, places=4))
+            self.assertEqual(["12"],
+                all_possible_notation(stage=2, places=2))
+
+            # s4
+            self.assertEqual([],
+                all_possible_mirror_notation(stage=4, places=0))
 
             self.assertEqual(["14"],
                 all_possible_mirror_notation(stage=4, places=2))
 
-#works:
-            # self.assertEqual(["16", "34"],
-            #     all_possible_mirror_notation(stage=6, places=2))
-
-            # self.assertEqual(["18", "36"],
-            #     all_possible_mirror_notation(stage=8, places=2))
-
-            # self.assertEqual(["12345678"],
-            #     all_possible_mirror_notation(stage=8, places=8))
-
-            # self.assertEqual(["1278", "1458", "3456"],
-            #     all_possible_mirror_notation(stage=8, places=4))
-
-            # self.assertEqual(["123456"],
-            #     all_possible_mirror_notation(stage=6, places=6))
-
-            # # missing 456789!
-            # self.assertEqual(['1230ET', '1258ET', '14589T', '345890'],
-            #     all_possible_mirror_notation(stage=12, places=6))
+            self.assertEqual(["1234"],
+                all_possible_mirror_notation(stage=4, places=4))
 
 
+            # s6
+            self.assertEqual(["16", "34"],
+                all_possible_mirror_notation(stage=6, places=2))
+
+            self.assertEqual(["123456"],
+                all_possible_mirror_notation(stage=6, places=6))
+
+            # s8
+            self.assertEqual(["12345678"],
+                all_possible_mirror_notation(stage=8, places=8))
+
+            self.assertEqual(["18", "36"],
+                all_possible_mirror_notation(stage=8, places=2))
+
+            self.assertEqual(["1278", "1458", "3456"],
+                all_possible_mirror_notation(stage=8, places=4))
+
+            self.assertEqual(["12345678"],
+                all_possible_mirror_notation(stage=8, places=8))
+
+            # s10
+            self.assertEqual(['1290', '1470', '3478'],
+                all_possible_mirror_notation(stage=10, places=4))
+
+            # s12
+            self.assertEqual(['1T', '30', '58'],
+                all_possible_mirror_notation(stage=12, places=2))
+
+            self.assertEqual(['12ET', '149T', '167T', '3490', '3670', '5678'],
+                all_possible_mirror_notation(stage=12, places=4))
+
+            self.assertEqual(['1230ET', '1258ET', '14589T', '345890'],
+                all_possible_mirror_notation(stage=12, places=6))
+
+            # odd stages
             # self.assertEqual([""],
             #     all_possible_mirror_notation(stage=7, places=1))
 
 
-
-            # self.assertEqual(["12345678"],
-            #     all_possible_mirror_notation(stage=8, places=8))
-
-            # self.assertEqual(["1"],
-            #     all_possible_mirror_notation(stage=10, places=4))
 
     unittest.main(verbosity=2)
