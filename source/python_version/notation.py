@@ -6,7 +6,7 @@ from typing import List, Iterable
 import sys
 import math
 
-STAGE_SYMBOLS = "1234567890ET"  # positions: 1..12 (10=0, 11=E, 12=T)
+STAGE_SYMBOLS = "1234567890ETABCD"  # positions: 1..12 (10=0, 11=E, 12=T)
 STAGE_MIN = 3
 STAGE_MAX = len(STAGE_SYMBOLS)
 
@@ -302,9 +302,19 @@ def n_choose_r(n: int, r: int) -> List[List[int]]:
     return [list(c) for c in combinations(range(n), r)]
 
 def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
+    if stage%2 != places%2:
+        raise ValueError("Parity of stage and places must match")
+    if places > stage:
+        raise ValueError("places must be <= stage")
+
     lhs = all_possible_notation(stage // 2, places // 2)
     print(f"stage {stage // 2} places {places // 2}: LHS combos: {lhs} ")
-    return [x + mirror_places_within_token(x, stage, x_mirrors_to_empty_str=True) for x in lhs]
+    mid_place_insertion = "" if (places%2 == 0) else f"{(stage//2)+1}"
+
+    if len(lhs) == 0 and stage%2 == 1:
+        return [mid_place_insertion]
+
+    return [x + mid_place_insertion + mirror_places_within_token(x, stage, x_mirrors_to_empty_str=True) for x in lhs]
 
 def all_possible_notation_schemes(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
     # n = stage - (stage - places) + 1
@@ -700,6 +710,10 @@ if __name__ == "__main__":
                 all_possible_mirror_notation(stage=10, places=4))
 
             # s12
+            # assert that this throws?
+            # self.assertEqual(['1T', '30', '58'],
+            #     all_possible_mirror_notation(stage=12, places=1))
+
             self.assertEqual(['1T', '30', '58'],
                 all_possible_mirror_notation(stage=12, places=2))
 
@@ -710,9 +724,109 @@ if __name__ == "__main__":
                 all_possible_mirror_notation(stage=12, places=6))
 
             # odd stages
-            # self.assertEqual([""],
-            #     all_possible_mirror_notation(stage=7, places=1))
 
+            # s3
+            self.assertEqual(['123'],
+                all_possible_mirror_notation(stage=3, places=3))
+
+            # s5
+            self.assertEqual(['3'],
+                all_possible_mirror_notation(stage=5, places=1))
+
+            self.assertEqual(['135'],
+                all_possible_mirror_notation(stage=5, places=3))
+
+            self.assertEqual(['12345'],
+                all_possible_mirror_notation(stage=5, places=5))
+
+            # s7
+            self.assertEqual(['4'],
+                all_possible_mirror_notation(stage=7, places=1))
+
+            self.assertEqual(['147', '345'],
+                all_possible_mirror_notation(stage=7, places=3))
+
+            self.assertEqual(['12467'],
+                all_possible_mirror_notation(stage=7, places=5))
+
+            # s9
+            self.assertEqual(['5'],
+                all_possible_mirror_notation(stage=9, places=1))
+
+            self.assertEqual(['159', '357'],
+                all_possible_mirror_notation(stage=9, places=3))
+
+            self.assertEqual(['12589', '14569', '34567'],
+                all_possible_mirror_notation(stage=9, places=5))
+
+            self.assertEqual(['1235789'],
+                all_possible_mirror_notation(stage=9, places=7))
+
+            self.assertEqual(['123456789'],
+                all_possible_mirror_notation(stage=9, places=9))
+
+            # s11
+            self.assertEqual(['6'],
+                all_possible_mirror_notation(stage=11, places=1))
+
+            self.assertEqual(['16E', '369', '567'],
+                all_possible_mirror_notation(stage=11, places=3))
+
+            self.assertEqual(['1260E', '1468E', '34689'],
+                all_possible_mirror_notation(stage=11, places=5))
+
+            self.assertEqual(['123690E', '125670E', '145678E', '3456789'],
+                all_possible_mirror_notation(stage=11, places=7))
+
+            self.assertEqual(['12346890E'],
+                all_possible_mirror_notation(stage=11, places=9))
+
+            # s15
+            self.assertEqual(['8'],
+                all_possible_mirror_notation(stage=15, places=1))
+
+            self.assertEqual(['18C', '38A', '58E', '789'],
+                all_possible_mirror_notation(stage=15, places=3))
+
+            self.assertEqual(['128BC', '148TC', '1680C', '348TA', '3680A', '5680E'],
+                all_possible_mirror_notation(stage=15, places=5))
+
+            self.assertEqual(['1238ABC', '1258EBC', '12789BC', '1458ETC', '14789TC', '167890C', '3458ETA', '34789TA', '367890A', '567890E'],
+                all_possible_mirror_notation(stage=15, places=7))
+
+            self.assertEqual(['12348TABC', '123680ABC', '125680EBC', '145680ETC', '345680ETA'],
+                all_possible_mirror_notation(stage=15, places=9))
+
+            self.assertEqual(['123458ETABC', '1234789TABC', '12367890ABC', '12567890EBC', '14567890ETC', '34567890ETA'],
+                all_possible_mirror_notation(stage=15, places=11))
+
+            self.assertEqual(['12345680ETABC'],
+                all_possible_mirror_notation(stage=15, places=13))
+
+            # s16
+            self.assertEqual(['1D', '3B', '5T', '70'],
+                all_possible_mirror_notation(stage=16, places=2))
+
+            self.assertEqual(['12CD', '14AD', '16ED', '189D', '34AB', '36EB', '389B', '56ET', '589T', '7890'],
+                all_possible_mirror_notation(stage=16, places=4))
+
+            self.assertEqual(['123BCD', '125TCD', '1270CD', '145TAD', '1470AD', '1670ED', '345TAB', '3470AB', '3670EB', '5670ET'],
+                all_possible_mirror_notation(stage=16, places=6))
+
+            self.assertEqual(['1234ABCD', '1236EBCD', '12389BCD', '1256ETCD', '12589TCD', '127890CD', '1456ETAD', '14589TAD', '147890AD', '167890ED', '3456ETAB', '34589TAB', '347890AB', '367890EB', '567890ET'],
+                all_possible_mirror_notation(stage=16, places=8))
+
+            self.assertEqual(['12345TABCD', '123470ABCD', '123670EBCD', '125670ETCD', '145670ETAD', '345670ETAB'],
+                all_possible_mirror_notation(stage=16, places=10))
+
+            self.assertEqual(['123456ETABCD', '1234589TABCD', '12347890ABCD', '12367890EBCD', '12567890ETCD', '14567890ETAD', '34567890ETAB'],
+                all_possible_mirror_notation(stage=16, places=12))
+
+            self.assertEqual(['12345670ETABCD'],
+                all_possible_mirror_notation(stage=16, places=14))
+
+            self.assertEqual(['1234567890ETABCD'],
+                all_possible_mirror_notation(stage=16, places=16))
 
 
     unittest.main(verbosity=2)
