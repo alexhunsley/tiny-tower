@@ -93,7 +93,14 @@ export function expandPlaceNotation(pnString, stage) {
     console.log("right raw, right tokens = ", rightRaw, ",", rightTokens);
 
     // Build S1: leftTokens + reverse(leftTokensWithoutLast) with per-token place reversal
-    const leftTail = leftTokens.slice(0, -1).reverse()
+
+    const leftTail = leftTokens.slice(0, -1-stage%2).reverse()
+    // odd stages
+    // const leftTail = leftTokens.slice(0, -2).reverse()
+    // even stages
+    // const leftTail = leftTokens.slice(0, -1).reverse()
+
+    // const leftTail = leftTokens.reverse()
       .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
     const S1 = [...leftTokens, ...leftTail];
 
