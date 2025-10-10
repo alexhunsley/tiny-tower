@@ -5,6 +5,8 @@ from itertools import combinations
 from typing import List, Iterable
 import sys
 import math
+from itertools import islice
+
 
 STAGE_SYMBOLS = "1234567890ETABCD"  # positions: 1..12 (10=0, 11=E, 12=T)
 STAGE_MIN = 3
@@ -301,6 +303,13 @@ def n_choose_r(n: int, r: int) -> List[List[int]]:
     """
     return [list(c) for c in combinations(range(n), r)]
 
+def all_possible_mirror_notation_ranged(stage: int, min_places: int, max_places: int) -> [str]:
+    pn_results = []
+    for places in range(min_places, max_places + 1, 2):
+        pn_results += all_possible_mirror_notation(stage, places)
+    return pn_results
+
+
 def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
     if stage%2 != places%2:
         raise ValueError("Parity of stage and places must match")
@@ -309,7 +318,7 @@ def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_st
 
     lhs = all_possible_notation(stage // 2, places // 2)
 
-    print(f"stage {stage // 2} places {places // 2}: LHS combos: {lhs} ")
+    # print(f"stage {stage // 2} places {places // 2}: LHS combos: {lhs} ")
     mid_place_insertion = "" if (stage%2 == 0) else f"{(stage//2)+1}"
 
     if lhs == ['x'] and stage%2 == 1:
@@ -349,8 +358,18 @@ def all_possible_notation_schemes(stage: int, places: int, place_str="|", swap_s
     print("\n".join(results))
     return results
 
+
+def all_possible_notation_ranged(stage: int, min_places: int, max_places: int) -> [str]:
+    result_notates = []
+    for places in range(min_places, max_places + 1, 2):
+        # print(f" Places: {places}")
+        result_notates += all_possible_notation(stage, places)
+
+    return result_notates
+
+
 # s:2, p:1
-def all_possible_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
+def all_possible_notation(stage: int, places: int) -> [str]:
     # n = stage - (stage - places) + 1
     # r = places
 
@@ -358,33 +377,107 @@ def all_possible_notation(stage: int, places: int, place_str="|", swap_str="*") 
     # n = int((stage - places)/2)
     r = places
 
-    print(f"\n___ n, r = {n} {r}")
+    # print(f"\n___ n, r = {n} {r}")
     choices = n_choose_r(n, r)
-    print(f"\nChoices: ", choices)
+    # print(f"\nChoices: ", choices)
     results = []
     for choice in choices:
-        print(f"= doing choice = {choice}")
+        # print(f"= doing choice = {choice}")
         index = 1
         result = ""
         for i in range(0, n):
-            print(f"CHECK: {i} in {choice}. idx = {index}")
+            # print(f"CHECK: {i} in {choice}. idx = {index}")
             if i in choice:
                 result += str(index)
                 index += 1
             else:
                 index += 2
             if index > stage:
-                print(f"\n=====- breaking because index {index} > {n}, result = {result}")
+                # print(f"\n=====- breaking because index {index} > {n}, result = {result}")
                 break
 
         if len(result) == 0 and places == 0:
             results.append('x')
         elif len(result) == places:
-            print(f"Adding correct length bit: {result}")
+            # print(f"Adding correct length bit: {result}")
             results.append(result)
 
-    print("\nmirror bits found:".join(results))
+    # print("\nmirror bits found:".join(results))
     return results
+
+from typing import Iterator, Sequence, Tuple, Optional
+
+from typing import Iterator, Sequence, Tuple, Optional
+
+def _min_rotation(tokens: Sequence[str]) -> Tuple[str, ...]:
+    """
+    Booth's algorithm generalized to sequences (not just strings).
+    Returns the lexicographically smallest rotation as a tuple.
+    """
+    n = len(tokens)
+    if n == 0:
+        return tuple()
+
+    i, j, k = 0, 1, 0
+    while i < n and j < n and k < n:
+        a = tokens[(i + k) % n]
+        b = tokens[(j + k) % n]
+        if a == b:
+            k += 1
+            continue
+        if a > b:
+            i = i + k + 1
+            if i == j:
+                i += 1
+        else:
+            j = j + k + 1
+            if i == j:
+                j += 1
+        k = 0
+    start = min(i, j)
+    return tuple(tokens[start:]) + tuple(tokens[:start])
+
+def iter_notate_combos_no_rotations(
+    notates: Sequence[str], rows: int
+) -> Iterator[Tuple[str, ...]]:
+    """
+    Stream all valid sequences (length = rows) under the rules:
+      • For i > 0, seq[i] != seq[i-1]
+      • For the last index i == rows-1, seq[i] != seq[0]
+    BUT emit only one representative per rotation-equivalence class
+    (i.e., sequences that are rotations of each other are considered duplicates).
+
+    Yields:
+      Tuples of strings, one at a time (canonical representatives).
+    """
+    if rows <= 0 or not notates:
+        return
+    if rows == 1:
+        # The only row is both first and last; last can't match first -> no solutions.
+        return
+
+    seq: list[Optional[str]] = [None] * rows
+    seen_canonicals: set[Tuple[str, ...]] = set()
+
+    def backtrack(i: int) -> Iterator[Tuple[str, ...]]:
+        if i == rows:
+            combo = tuple(seq)  # type: ignore[arg-type]
+            canonical = _min_rotation(combo)
+            if canonical not in seen_canonicals:
+                seen_canonicals.add(canonical)
+                yield combo
+            return
+
+        for token in notates:
+            if i > 0 and token == seq[i - 1]:
+                continue
+            if i == rows - 1 and token == seq[0]:
+                continue
+            seq[i] = token
+            yield from backtrack(i + 1)
+
+    yield from backtrack(0)
+
 
 # --------- Self-tests (run: python notation.py) ---------
 if __name__ == "__main__":
@@ -662,7 +755,7 @@ if __name__ == "__main__":
             self.assertEqual(4,
                 len(all_possible_notation_schemes(stage=7, places=1)))
 
-        def test_generate_mirror_pn(self):
+        def test_generate_mirror_pn_even_stages(self):
             # s2
             self.assertEqual(['x'],
                 all_possible_notation(stage=2, places=0))
@@ -718,8 +811,7 @@ if __name__ == "__main__":
             self.assertEqual(['1230ET', '1258ET', '14589T', '345890'],
                 all_possible_mirror_notation(stage=12, places=6))
 
-            # odd stages
-
+        def test_generate_mirror_pn_odd_stages(self):
             # s3
             self.assertEqual(['123'],
                 all_possible_mirror_notation(stage=3, places=3))
@@ -824,4 +916,48 @@ if __name__ == "__main__":
                 all_possible_mirror_notation(stage=16, places=16))
 
 
-    unittest.main(verbosity=2)
+    # unittest.main(verbosity=2)
+
+    # These two are rotations of each other:
+    # ('A','B','C') and ('B','C','A') -> only one will be yielded.
+
+
+    # counts:
+    #
+    # s8, 0-2 places: 166870
+    # s8, 0-4 places: 
+
+    # all_pn = all_possible_notation(stage=5, places=1)
+    # all_pn = all_possible_notation_ranged(stage=5, min_places=1, max_places=3)
+    all_pn = all_possible_notation_ranged(stage=8, min_places=0, max_places=2)
+    # print(f"all pn ranged: ", all_pn)
+
+    count = 0
+
+    # all_mirror_changes = all_possible_mirror_notation_ranged(stage=8, min_places=2, max_places=4)
+    all_mirror_changes = all_possible_mirror_notation_ranged(stage=8, min_places=2, max_places=4)
+
+
+    # print(all_mirror_changes)
+
+    # take first 8
+    all_double_method_4_changes_on_8 = list(islice(iter_notate_combos_no_rotations(all_pn, 4), 512))
+
+    # print(list(all_double_method_4_changes_on_8))
+
+    for pn in all_double_method_4_changes_on_8:
+        # print(pn)
+        for mirror_change in all_mirror_changes:
+            double_method_pn = collapse_place_notation(pn) + ';' + mirror_change
+            expanded_pn = expand_rotation_notation_to_palindrome_string_list(double_method_pn, 8)
+            str_pn = collapse_place_notation(expanded_pn)
+            print(f"{double_method_pn} --> {str_pn}")
+
+    # for combo in iter_notate_combos_no_rotations(all_pn, 4):
+    #     print(combo)
+    #     count += 1
+    #     # if count % 10000 == 0:
+    #     #     print(count)
+
+    # print(f"\nCount: {count}")
+
