@@ -13,79 +13,7 @@ from .encode_decode import *
 from .pn_mirror import *
 from .pn_canonical import *
 from .enumerate import *
-
-def _min_rotation(tokens: Sequence[str]) -> Tuple[str, ...]:
-    """
-    Booth's algorithm generalized to sequences (not just strings).
-    Returns the lexicographically smallest rotation as a tuple.
-    """
-    n = len(tokens)
-    if n == 0:
-        return tuple()
-
-    i, j, k = 0, 1, 0
-    while i < n and j < n and k < n:
-        a = tokens[(i + k) % n]
-        b = tokens[(j + k) % n]
-        if a == b:
-            k += 1
-            continue
-        if a > b:
-            i = i + k + 1
-            if i == j:
-                i += 1
-        else:
-            j = j + k + 1
-            if i == j:
-                j += 1
-        k = 0
-    start = min(i, j)
-    return tuple(tokens[start:]) + tuple(tokens[:start])
-
-def iter_notate_combos_no_rotations(
-    notates: Sequence[str], rows: int
-) -> Iterator[Tuple[str, ...]]:
-    """
-    Stream all valid sequences (length = rows) under the rules:
-      • For i > 0, seq[i] != seq[i-1]
-      • For the last index i == rows-1, seq[i] != seq[0]
-    BUT emit only one representative per rotation-equivalence class
-    (i.e., sequences that are rotations of each other are considered duplicates).
-
-    Yields:
-      Tuples of strings, one at a time (canonical representatives).
-    """
-    if rows <= 0 or not notates:
-        return
-    if rows == 1:
-        # The only row is both first and last; last can't match first -> no solutions.
-        return
-
-    seq: list[Optional[str]] = [None] * rows
-    seen_canonicals: set[Tuple[str, ...]] = set()
-
-    def backtrack(i: int) -> Iterator[Tuple[str, ...]]:
-        if i == rows:
-            combo = tuple(seq)  # type: ignore[arg-type]
-            canonical = _min_rotation(combo)
-            if canonical not in seen_canonicals:
-                seen_canonicals.add(canonical)
-                yield combo
-            return
-
-        for token in notates:
-            if i > 0 and token == seq[i - 1]:
-                continue
-            if i == rows - 1 and token == seq[0]:
-                continue
-            seq[i] = token
-            yield from backtrack(i + 1)
-
-    yield from backtrack(0)
-
-
-def say_hello():
-    print("\nhello from say_hello\n")
+from .method_generation import *
 
 
 # --------- Self-tests (run: python notation.py) ---------
@@ -522,10 +450,6 @@ if __name__ == "__main__":
 
             self.assertEqual(['1234567890ETABCD'],
                 all_possible_mirror_notation(stage=16, places=16))
-
-
-    say_hello()
-    # print("HELLO from main")
 
 
 
