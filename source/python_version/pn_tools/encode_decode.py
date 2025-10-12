@@ -1,7 +1,8 @@
 from typing import List, Iterable
-from .defs import *
-from .helpers import *
-from .pn_mirror import *
+from pn_tools.defs import *
+from pn_tools.helpers import *
+# from pn_util.pn_mirror import *
+from pn_tools.pn_mirror import mirror_places_within_token, mirror_segment
 
 # --------- Tokenization (single segment; no commas) ---------
 def tokenize_segment(pn_segment: str) -> List[str]:
@@ -86,7 +87,7 @@ def expand_place_notation_to_string_list(pn_string: str, stage: int, expand_once
         out: List[str] = []
         for seg in (p.strip() for p in raw.split(",") if p.strip()):
             toks = tokenize_segment(seg)
-            out.extend(_mirror_segment(toks))
+            out.extend(mirror_segment(toks))
         return out
 
     # no symmetry marker present

@@ -1,6 +1,6 @@
 from typing import List, Iterable
-from .defs import *
 from itertools import combinations
+from pn_tools.defs import *
 
 def is_odd(number: int) -> bool:
     return (number % 2) == 1
@@ -34,6 +34,8 @@ def index_to_symbol(pos: int) -> str:
 
 
 def is_double_notate(token: str, stage: int) -> bool:
+    from pn_tools.pn_mirror import mirror_places_within_token, mirror_segment
+
     if token == 'x' and is_odd(stage):
         return False
 

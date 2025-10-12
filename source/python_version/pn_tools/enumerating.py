@@ -1,5 +1,7 @@
-from .helpers import *
-from .pn_mirror import *
+# from . import helpers
+# from . import pn_mirror
+
+from pn_tools.helpers import n_choose_r
 
 def all_possible_notation_schemes(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
     # n = stage - (stage - places) + 1
@@ -45,6 +47,8 @@ def all_possible_notation_ranged(stage: int, min_places: int, max_places: int) -
 
 # s:2, p:1
 def all_possible_notation(stage: int, places: int) -> [str]:
+    from pn_tools.helpers import n_choose_r
+
     # n = stage - (stage - places) + 1
     # r = places
 
@@ -89,6 +93,8 @@ def all_possible_mirror_notation_ranged(stage: int, min_places: int, max_places:
 
 
 def all_possible_mirror_notation(stage: int, places: int, place_str="|", swap_str="*") -> [str]:
+    from pn_tools.pn_mirror import mirror_places_within_token
+
     if stage%2 != places%2:
         raise ValueError("Parity of stage and places must match")
     if places > stage:

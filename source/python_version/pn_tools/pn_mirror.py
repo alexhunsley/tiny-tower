@@ -1,5 +1,8 @@
 from typing import List, Iterable
-from .helpers import *
+from pn_tools.helpers import clamp_stage, symbol_to_index, index_to_symbol
+from pn_tools.defs import *
+
+# from . import helpers
 
 # --------- Token-level place mirroring ---------
 def mirror_places_within_token(token: str, stage: int, x_mirrors_to_empty_str=False) -> str:
@@ -24,10 +27,8 @@ def mirror_places_within_token(token: str, stage: int, x_mirrors_to_empty_str=Fa
 
 
 # --------- Comma & semicolon expansion ---------
-def _mirror_segment(tokens: List[str]) -> List[str]:
+def mirror_segment(tokens: List[str]) -> List[str]:
     """Plain mirror: append reversed(tokens[:-1])."""
     if not tokens:
         return []
     return tokens + list(reversed(tokens[:-1]))
-
-

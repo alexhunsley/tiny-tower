@@ -1,6 +1,13 @@
 from typing import List, Iterable, Iterator, Sequence, Tuple, Optional
+# from pn_tools.encode_decode import expand_place_notation_to_string_list
+from pn_tools.encode_decode import *
+
+# from . import encode_decode
+# from . import pn_mirror
 
 def rotation_as_string_list(pn_string: str, stage: int, amount: int) -> [str]:
+    from pn_tools.encode_decode import expand_place_notation_to_string_list
+
     str_list = expand_place_notation_to_string_list(pn_string, stage)
     length = len(str_list)
     if amount < 0:
@@ -55,3 +62,15 @@ def min_rotation(tokens: Sequence[str]) -> Tuple[str, ...]:
         k = 0
     start = min(i, j)
     return tuple(tokens[start:]) + tuple(tokens[:start])
+
+
+# canonical form
+
+def canonical_form(pn_string: str, stage: int) -> str:
+    canon_form_list = canonical_form_list(pn_string, stage)
+    return canon_form_list[0] if len(canon_form_list) > 0 else ""
+
+
+def canonical_form_list(pn_string: str, stage: int) -> str:
+    return sorted(all_rotations(pn_string, stage))
+

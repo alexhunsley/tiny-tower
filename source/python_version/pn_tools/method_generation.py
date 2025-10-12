@@ -1,13 +1,15 @@
 from typing import List, Iterable, Iterator, Sequence, Tuple, Optional
-from .pn_rotation import *
-
-# from .defs import *
-# from .helpers import *
-# from .encode_decode import *
+# from . import pn_rotation
+# from . import helpers
+# from . import encode_decode
 # from .pn_mirror import *
+from pn_tools.helpers import *
+from pn_tools.defs import *
 
 # --------- Apply tokens to rows ---------
 def apply_token_to_row(row: str, token: str, stage: int) -> str:
+    from pn_tools.helpers import symbol_to_index
+
     """
     Apply one token to a row:
       - token == 'x': swap adjacent pairs (last remains if odd length)
@@ -47,6 +49,7 @@ def apply_token_to_row(row: str, token: str, stage: int) -> str:
 
 # --------- Generation ---------
 def generate_rows(pn_string: str, stage: int, max_leads: int = 12) -> List[str]:
+    from pn_tools.encode_decode import expand_place_notation_to_string_list
     """
     Generate rows by repeating the expanded lead token list until we return
     to rounds or hit max_leads. Always starts with rounds.
@@ -83,6 +86,8 @@ def iter_notate_combos_no_rotations(
     Yields:
       Tuples of strings, one at a time (canonical representatives).
     """
+    from pn_tools.pn_rotation import min_rotation
+
     if rows <= 0 or not notates:
         return
     if rows == 1:
