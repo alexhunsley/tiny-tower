@@ -7,10 +7,7 @@ import sys
 import math
 from itertools import islice
 
-
-STAGE_SYMBOLS = "1234567890ETABCD"  # positions: 1..12 (10=0, 11=E, 12=T)
-STAGE_MIN = 3
-STAGE_MAX = len(STAGE_SYMBOLS)
+from .defs import *
 
 # --------- Basics ---------
 def clamp_stage(n) -> int:
@@ -479,10 +476,13 @@ def iter_notate_combos_no_rotations(
     yield from backtrack(0)
 
 
+def say_hello():
+    print("\nhello from say_hello\n")
+
+
 # --------- Self-tests (run: python notation.py) ---------
 if __name__ == "__main__":
     import unittest
-
 
     class TestNotationCanonical(unittest.TestCase):
         def test_rounds(self):
@@ -914,6 +914,11 @@ if __name__ == "__main__":
 
             self.assertEqual(['1234567890ETABCD'],
                 all_possible_mirror_notation(stage=16, places=16))
+
+
+    say_hello()
+    # print("HELLO from main")
+
 
 
     # unittest.main(verbosity=2)
