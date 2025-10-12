@@ -1,6 +1,6 @@
 from typing import List, Iterable
 from .defs import *
-
+from itertools import combinations
 
 def is_odd(number: int) -> bool:
     return (number % 2) == 1
@@ -41,3 +41,12 @@ def is_double_notate(token: str, stage: int) -> bool:
     print(f"\nMirror, str = {mirror} {token}")
     return token == mirror
 
+
+def n_choose_r(n: int, r: int) -> List[List[int]]:
+    """
+    Generate all r-element combinations of range(n), 
+    returned as a list of index lists.
+    
+    Example: n_choose_r(3,2) -> [[0,1],[0,2],[1,2]]
+    """
+    return [list(c) for c in combinations(range(n), r)]
