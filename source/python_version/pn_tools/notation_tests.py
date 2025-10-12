@@ -193,32 +193,6 @@ def apply_token_to_row(row, token, stage):
     return "".join(out)
 
 
-# ---------------- Generate rows by repeating the lead token list ----------------
-def generate_list(pn_string, stage, max_leads=12):
-    s = clamp_stage(stage)
-    rounds = rounds_for_stage(s)
-
-    # expand_place_notation needs stage (for the ';' mapping)
-    lead_tokens = expand_place_notation(pn_string, s)
-    if not lead_tokens:
-        return [rounds]
-
-    print("Expanded PN tokens:", collapse_place_notation(lead_tokens))
-
-    rows = [rounds]
-    current = rounds
-    leads = 0
-
-    while leads < max_leads:
-        for t in lead_tokens:
-            current = apply_token_to_row(current, t, s)
-            rows.append(current)
-        leads += 1
-        if current == rounds:
-            break  # back to rounds
-    return rows
-
-
 def collapse_place_notation(tokens):
     """
     Collapse an expanded token list back into a compact PN string.

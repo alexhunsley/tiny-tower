@@ -46,7 +46,7 @@ def apply_token_to_row(row: str, token: str, stage: int) -> str:
 
 
 # --------- Generation ---------
-def generate_list(pn_string: str, stage: int, max_leads: int = 12) -> List[str]:
+def generate_rows(pn_string: str, stage: int, max_leads: int = 12) -> List[str]:
     """
     Generate rows by repeating the expanded lead token list until we return
     to rounds or hit max_leads. Always starts with rounds.
