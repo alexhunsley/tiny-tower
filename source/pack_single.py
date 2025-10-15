@@ -7,7 +7,7 @@ INDEX = ROOT / "index.html"
 CSS   = ROOT / "styles.css"
 MAIN  = ROOT / "main.js"
 DEFS  = ROOT / "defaults.js"
-OUT   = ROOT / "single.html"
+OUT   = ROOT / "tower.html"
 BUND  = ROOT / "bundle.inline.js"
 
 def run(cmd):

@@ -42,13 +42,9 @@ function applyDefaultsToControls() {
   if (!el("placeNotation").value) el("placeNotation").value = DEFAULTS.placeNotation;
   if (!el("stage").value)         el("stage").value         = DEFAULTS.stage;
   if (!el("bpm").value)           el("bpm").value           = DEFAULTS.bpm;
-  if (!el("len").value)           el("len").value           = DEFAULTS.strike;
-  if (!el("vol").value)           el("vol").value           = DEFAULTS.volume;
 }
 
 function getLiveBpm()    { return Math.max(30, Math.min(300, Number(el("bpm").value) || DEFAULTS.bpm)); }
-function getLiveStrike() { return Math.max(0.05, Math.min(3, Number(el("len").value) || DEFAULTS.strike)); }
-function getLiveVol()    { return Math.max(0, Math.min(1, Number(el("vol").value) || DEFAULTS.volume)); }
 
 // simple debounce to avoid spamming history
 function debounce(fn, ms = 250) {
@@ -56,8 +52,6 @@ function debounce(fn, ms = 250) {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 const writeURLParamsDebounced = debounce(writeURLParams, 250);
-
-function updateStatus(text) { el("status").textContent = text; }
 
 // Helpers
 function clearRowHighlight() {
@@ -77,64 +71,6 @@ function highlightRow(i) {
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
-/* -------------------- Manual player (sequence box) -------------------- */
-let manualPlaying = false;
-let manualTimer = null;
-
-function setManualControls({ playing }) {
-  el("play").disabled = !!playing;
-}
-function wirePlayer() {
-  el("play").addEventListener("click", async () => {
-    if (manualPlaying) return; // prevent double start
-
-    const digits = parseDigits(el("seq").value);
-    if (digits === null) { updateStatus("invalid (use digits 1–8)"); return; }
-    if (!digits.length) { updateStatus("nothing to play"); return; }
-
-    const bpm    = Math.max(30, Math.min(300, Number(el("bpm").value) || 224));
-    const strike = Math.max(0.05, Math.min(3,   Number(el("len").value) || 0.6));
-    const volume = Math.max(0,    Math.min(1,   Number(el("vol").value) || 0.9));
-
-    manualPlaying = true;
-    setManualControls({ playing: true });
-
-    await playSequence(digits, { bpm, strike, volume });
-    updateStatus(`playing (${digits.length} notes @ ${bpm} BPM)`);
-
-    // Estimate end to re-enable Play
-    const beat = 60 / bpm;
-    const estMs = (digits.length * beat + 0.2) * 1000;
-    clearTimeout(manualTimer);
-    manualTimer = setTimeout(() => {
-      manualPlaying = false;
-      setManualControls({ playing: false });
-      updateStatus("idle");
-    }, estMs);
-  });
-
-  el("stop").addEventListener("click", () => {
-    stopAll();
-    manualPlaying = false;
-    clearTimeout(manualTimer);
-    setManualControls({ playing: false });
-    updateStatus("stopped");
-  });
-
-  el("beep").addEventListener("click", async () => {
-    await testBeep();
-    updateStatus("beep");
-  });
-
-  el("vol").addEventListener("input", (e) => {
-    const v = Math.max(0, Math.min(1, Number(e.target.value) || 0.9));
-    setVolume(v);
-  });
-
-  el("seq").value = "12345678";
-  setManualControls({ playing: false });
-}
-
 /* -------------------- Notation + generated rows playback -------------------- */
 let generatedRows = [];
 const playState = { playing: false, paused: false, abort: false };
@@ -147,6 +83,7 @@ function setRowControls({ playing, paused }) {
 
 // Renderer
 function renderGeneratedList(list) {
+  console.debug("renderGeneratedList");
   const out = el("notationOutput");
   if (!list || !list.length) {
     out.innerHTML = '<em class="muted">— nothing generated —</em>';
@@ -233,7 +170,6 @@ function wireNotation() {
     setRowControls({ playing: false, paused: false });
     stopAll();
     clearRowHighlight();
-    updateStatus("stopped");
   });
 
   setRowControls({ playing: false, paused: false });
@@ -291,7 +227,6 @@ async function waitBeatsDynamic(beatsTarget, checkPausedAbort) {
 
 async function playAllRows() {
   const stage  = clampStage(el("stage").value);
-  const volume = Math.max(0, Math.min(1, Number(el("vol").value) || 0.9));
 
   const checkPausedAbort = (mode) => {
     if (mode === "abort") return playState.abort;
@@ -324,8 +259,7 @@ async function playAllRows() {
       }
       if (playState.abort) break;
 
-      const strike = Math.max(0.05, Math.min(3, Number(el("len").value) || 0.6));
-      await triggerPlace(places[k], { strike, volume });
+      await triggerPlace(places[k], {});
 
       // Wait exactly 1 beat between notes INSIDE the row,
       // but not after the final note — that’s what caused the gap regression.
@@ -333,8 +267,6 @@ async function playAllRows() {
         await waitBeatsDynamic(1, checkPausedAbort);
       }
     }
-
-    updateStatus(`row ${i + 1}/${generatedRows.length}`);
 
     // INTER-ROW GAPS (from last note START of row i to first note START of row i+1):
     // - short gap: 1 beat
@@ -349,7 +281,6 @@ async function playAllRows() {
   clearRowHighlight();
     
 
-  if (!playState.abort) updateStatus("done");
   playState.playing = false;
   playState.paused  = false;
   playState.abort   = false;
@@ -361,8 +292,7 @@ function init() {
   try {
     // Ensure required elements exist
     [
-      "seq","play","stop","beep","status","bpm","len","vol",
-      "placeNotation","stage","generate","notationOutput",
+      "bpm","placeNotation","stage","generate","notationOutput",
       "playRows","pauseRows","stopRows"
     ].forEach(id => el(id));
 
@@ -381,10 +311,8 @@ function init() {
     }
 
     // Wire up UI
-    wirePlayer();
     wireNotation();
 
-    updateStatus("idle");
   } catch (err) {
     console.error(err);
     alert(err.message + "\n\nTip: hard-reload (Ctrl+F5 / Cmd+Shift+R) to bust cache.");

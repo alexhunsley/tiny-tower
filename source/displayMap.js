@@ -12,7 +12,9 @@
  *   (monospace font recommended in your CSS).
  */
 export function formatRowForDisplay(row, stage) {
-  const target = "2";
-  const s = row.slice(0, stage);
-  return [...s].map(ch => (ch === target ? "*" : "&nbsp;&nbsp;")).join("");
+  return row
+  // const target = "2";
+  // const s = row.slice(0, stage);
+  // return [...s].map(ch => (ch === target ? "*" : "&nbsp;&nbsp;")).join("");
+  // // return [...s].map(ch => (ch === target ? "*" : ch)).join("");
 }

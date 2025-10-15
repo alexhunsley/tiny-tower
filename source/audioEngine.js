@@ -5,7 +5,7 @@
 let AC = null;
 let master = null;
 
-// Diatonic scale with bell 12 as the root (C major by default).
+// Diatonic scale wi#th bell 12 as the root (C major by default).
 // Index: 1 = highest ... 12 = lowest (tonic)
 export const BELL_FREQS = [
   392.00, // 1 -> G4
@@ -23,7 +23,7 @@ export const BELL_FREQS = [
 ];
 
 // Add this near the other exports
-export async function triggerPlace(place, { strike = 0.6, volume = 0.9 } = {}) {
+export async function triggerPlace(place, { strike = 1.0, volume = 0.9 } = {}) {
   if (place < 1 || place > BELL_FREQS.length) return;
   await ensureAudio(volume);
   setVolume(volume);
@@ -109,7 +109,7 @@ function scheduleSineWithEnvelope(freq, when, dur) {
   osc.stop(tDecayEnd + releasePad);
 }
 
-export async function playSequence(indices, { bpm = 224, strike = 0.6, volume = 0.9 } = {}) {
+export async function playSequence(indices, { bpm = 224, strike = 1.0, volume = 0.9 } = {}) {
   if (!Array.isArray(indices) || !indices.length) return;
   await ensureAudio(volume);
   setVolume(volume);
