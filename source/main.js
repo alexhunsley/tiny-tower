@@ -19,6 +19,14 @@ function el(id) {
   return n;
 }
 
+// Parse, but allow empty/partial during typing
+function parseStageLoose(v) {
+  const s = String(v ?? "").trim();
+  if (s === "") return null;               // allow empty while typing
+  const n = Number.parseInt(s, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 // --- URL <-> controls sync ---
 function readURLParams() {
   const q = new URLSearchParams(location.search);
@@ -100,32 +108,51 @@ function renderGeneratedList(list) {
 }
 
 function wireNotation() {
-  // keep URL updated as user types/changes
+  let composingPN = false;
+
+  // Track IME composition so we don't interfere mid-composition (Android keyboards)
+  el("placeNotation").addEventListener("compositionstart", () => composingPN = true);
+  el("placeNotation").addEventListener("compositionend",   () => composingPN = false);
+
+  // PN: update URL (debounced) only when not composing
   el("placeNotation").addEventListener("input", () => {
-    writeURLParamsDebounced({
-      pn: el("placeNotation").value,
-      stage: el("stage").value
-    });
-  });
-  el("stage").addEventListener("input", () => {
-    // clamp and reflect back in the box so URL stays clean
-    const s = clampStage(el("stage").value);
-    el("stage").value = s;
-    writeURLParamsDebounced({
-      pn: el("placeNotation").value,
-      stage: s
-    });
+    if (composingPN) return;
+    const pn = el("placeNotation").value;
+    if (pn.trim()) {
+      writeURLParamsDebounced({ pn, stage: parseStageLoose(el("stage").value) ?? undefined });
+    }
   });
 
+  // Stage: don't clamp on input; allow empty/partial edits
+  el("stage").addEventListener("input", () => {
+    const raw = el("stage").value;
+    const n = parseStageLoose(raw);
+    if (n !== null && n >= 1 && n <= 99) {
+      // only write URL if plausibly numeric; do NOT clamp here
+      writeURLParamsDebounced({ pn: el("placeNotation").value, stage: n });
+    }
+  });
+
+  // Stage: on blur, normalize to clamped value (so UI is tidy after edit)
+  el("stage").addEventListener("blur", () => {
+    const n = parseStageLoose(el("stage").value);
+    if (n === null) return; // leave empty if user cleared it
+    const s = clampStage(n);
+    if (String(el("stage").value) !== String(s)) el("stage").value = s;
+    writeURLParams({ pn: el("placeNotation").value, stage: s });
+  });
+
+  // Generate: validate/clamp once and proceed
   el("generate").addEventListener("click", () => {
     const pnString = (el("placeNotation").value || "").trim();
-    const stage = clampStage(el("stage").value);
-    el("stage").value = stage;
+    const n = parseStageLoose(el("stage").value);
+    const stage = clampStage(n == null ? 6 : n);
+    el("stage").value = stage; // now it’s safe to normalize
+
     generatedRows = generateList({ pnString, stage });
     renderGeneratedList(generatedRows);
     clearRowHighlight();
 
-    // also push the current state into the URL immediately
     writeURLParams({ pn: pnString, stage });
   });
 

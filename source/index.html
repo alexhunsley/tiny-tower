@@ -17,7 +17,7 @@
     <!-- Sticky toolbar at the very top -->
     <header class="toolbar">
       <div class="bar">
-        <h1>🔔 Tiny Tower v0.9</h1>
+        <h1>🔔 Tiny Tower v0.91</h1>
 
         <div class="row">
           <label>Tempo (BPM) <input id="bpm" type="number" min="30" max="300" value=""></label>
@@ -27,12 +27,15 @@
 
         <!-- PLACE NOTATION + STAGE -->
         <div class="row">
+
           <input id="placeNotation" type="text"
+                 autocomplete="off" autocapitalize="off" spellcheck="false"
                  value=""
                  placeholder="Place Notation (e.g. x12.16.34x)"
                  style="flex:1 1 320px">
+
           <label>Stage
-            <input id="stage" type="number" min="4" max="12" step="1" value="" />
+            <input id="stage" type="text" inputmode="numeric" pattern="[0-9]*" min="4" max="12" autocomplete="off" enterkeyhint="done">
           </label>
           <button id="generate" class="primary">Generate</button>
 
