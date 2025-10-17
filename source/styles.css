@@ -26,6 +26,8 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   display: flex;
   justify-content: center;
   padding: 12px 0 16px;
+  /* Let the workspace itself be shrinkable within the viewport */
+  min-height: 0;                 /* <-- add */
 }
 .panel {
   width:min(1000px, 96vw);
@@ -33,15 +35,46 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   border-radius:12px; padding:12px;
   display:flex; flex-direction:column;
   min-height: 0; /* allow child to control overflow */
+  flex: 1 1 auto;
 }
 
-/* Generated rows list fills panel and scrolls */
-#notationOutput {
+/* ===== Split area: rows (greedy, scrollable) + report (auto-height) ===== */
+#mainArea {
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;               /* critical for nested scrolls */
+}
+
+/* Upper: container for the scroller */
+#rowsPanel {
+  flex: 1 1 auto;
+  min-height: 0;               /* allow child to scroll */
+  overflow: hidden;            /* contain only the child scroller */
+}
+
+/* The actual scroller with generated rows */
+#notationOutput {
+  height: 100%;
   overflow: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.95rem; line-height: 1.4;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  white-space: pre;            /* keep spacing when mapping */
+  padding: .5rem .25rem;
 }
+
+/* Lower: report (facts + warnings) — auto height, no scroll */
+#reportPanel {
+  flex: 0 0 auto;
+  padding: .5rem .25rem;
+  border-top: 1px solid #273244;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+#reportPanel .warn { color: #f59e0b; }   /* amber-ish that pops on dark */
+#reportPanel .ok   { color: #34d399; }   /* teal/green */
+#reportPanel .muted{ color: var(--muted); }
 
 /* Common UI bits */
 .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:.5rem 0; }
@@ -63,6 +96,10 @@ label { font-size:.9rem; color:#a8b0bf; }
 input[type="range"] { width:160px; }
 .rule { border:none; border-top:1px solid #273244; margin:10px 0; }
 
-/* highlight (also defined inline in index.html for cache-proofing) */
-#notationOutput .row-item { padding: 2px 6px; border-radius: 6px; }
+/* highlight */
 #notationOutput .row-item.playing { background: #1e293b; }
+
+
+/* debug */
+#rowsPanel   { outline: 1px solid #334155; }
+#reportPanel { outline: 1px solid #60a5fa; }

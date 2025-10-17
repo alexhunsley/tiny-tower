@@ -10,6 +10,12 @@ export function roundsForStage(stage) {
   return STAGE_SYMBOLS.substring(0, s);
 }
 
+const X_CHARS = new Set(["x", "X", "-"]);
+
+export function isXChange(ch) {
+  return X_CHARS.has(ch);
+}
+
 /* ---------------- Base tokenizer for a single segment (no commas) ---------------- */
 // Splits on '.' and treats 'x'/'X' as its own token AND delimiter. Keeps 'x' tokens.
 export function tokenizeSegment(pnSegment) {
@@ -25,7 +31,7 @@ export function tokenizeSegment(pnSegment) {
     const ch = src[i];
 
     if (ch === ".") { flush(); continue; }
-    if (ch === "x" || ch === "X") { flush(); tokens.push("x"); continue; }
+    if (isXChange(ch)) { flush(); tokens.push(ch); continue; }
     if (/\s/.test(ch)) continue;
 
     if (allowed.has(ch)) {
@@ -58,7 +64,7 @@ function mirroredNotate(notate, stage) {
 
 /* ----------- NEW: map token's places via i -> (stage + 1 - i), keep 'x' ----------- */
 function mirrorPlacesWithinToken(token, stage) {
-  if (token === "x") return "x";
+  if (isXChange(token)) return token;
   const places = [];
   for (const ch of token) {
     const i = symbolToIndex(ch);
@@ -133,7 +139,7 @@ function applyTokenToRow(row, token, stage) {
   const src = row.split("");
   const out = src.slice();
 
-  if (token === "x") {
+  if (isXChange(token)) {
     for (let i = 0; i + 1 < n; i += 2) {
       out[i] = src[i + 1];
       out[i + 1] = src[i];
@@ -200,7 +206,7 @@ export function collapsePlaceNotation(tokens) {
     const prev = i > 0 ? tokens[i - 1] : null;
 
     // If both prev and current are numbers/places, insert a dot
-    const isNum = t => t !== "x";
+    const isNum = t => !isXChange(t);
     if (prev && isNum(prev) && isNum(tok)) {
       out += ".";
     }

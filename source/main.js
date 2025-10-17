@@ -11,7 +11,7 @@ import {
   triggerPlace,   // used by live, note-by-note scheduler
 } from "./audioEngine.js";
 import { parseDigits } from "./utils.js";
-import { generateList, clampStage, symbolToIndex } from "./notation.js";
+import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation } from "./notation.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -154,6 +154,22 @@ function wireNotation() {
     clearRowHighlight();
 
     writeURLParams({ pn: pnString, stage });
+    // report
+
+    // const pnString = (document.getElementById("placeNotation").value || "").trim();
+    // const s = clampStage(document.getElementById("stage").value);
+
+    const maxLeads = 12; // or your existing safety value
+    generatedRows = generateList({ pnString, stage: stage, maxLeads });
+    renderGeneratedList(generatedRows);
+
+    const lines = buildGenerationReport({
+      pnString,
+      stage: stage,
+      rows: generatedRows,
+      maxLeads
+    });
+    renderReport(lines);
   });
 
   el("playRows").addEventListener("click", async () => {
@@ -350,4 +366,57 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init, { once: true });
 } else {
   init();
+}
+
+// report
+
+function renderReport(lines) {
+  const box = document.getElementById("reportPanel");
+  if (!lines || !lines.length) {
+    box.innerHTML = '<span class="muted">No report.</span>';
+    return;
+  }
+  box.innerHTML = lines.map(s => {
+    // allow lightweight color tags via prefixes
+    if (s.startsWith("[WARN]")) return `<div class="warn">${s.slice(6)}</div>`;
+    if (s.startsWith("[OK]"))   return `<div class="ok">${s.slice(4)}</div>`;
+    return `<div>${s}</div>`;
+  }).join("");
+}
+
+function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
+  const lines = [];
+  const s = clampStage(stage);
+  const rounds = roundsForStage(s);
+  const tokens = expandPlaceNotation(pnString, stage);
+  const steps = Math.max(0, rows.length - 1);
+  const leadLen = Math.max(1, tokens.length);
+  const fullLeads = Math.floor(steps / leadLen);
+  const remainder = steps % leadLen;
+  const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
+
+  // Facts
+  // lines.push(`Stage: ${s}`);
+  // lines.push(`Place notation: ${pnString || "(empty)"}`);
+  // lines.push(`Expanded tokens per lead: ${leadLen}`);
+  lines.push(`Length: ${rows.length-1}`);
+  lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
+
+  // Warnings / OK
+  if (!returned) {
+    // lines.push("[OK] Returned to rounds.");
+    lines.push("[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.");
+  }
+
+  // Heuristics: commas / semicolon usage
+  if (pnString && pnString.includes(";")) {
+    lines.push("[OK] Semicolon mode detected (special mirroring).");
+  }
+  if (pnString && pnString.includes(",")) {
+    lines.push("[OK] Comma-separated segments with palindromic mirroring.");
+  }
+
+  console.debug(lines);
+
+  return lines;
 }
