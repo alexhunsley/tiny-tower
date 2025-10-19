@@ -114,6 +114,8 @@ function renderGeneratedList(list) {
   renderBlueLineOverlay({
       scroller: blueLineContainer,
       rows: list,
+      // targetChar: "1",                 // e.g. bell 2; later can be a user choice
+      // options: { color: "red", width: 2 }
       targetChar: "2",                 // e.g. bell 2; later can be a user choice
       options: { color: "deepskyblue", width: 2 }
     });
@@ -391,6 +393,7 @@ function renderReport(lines) {
     box.innerHTML = '<span class="muted">No report.</span>';
     return;
   }
+  console.log(">>>>>>>>> Lines: ", s);
   box.innerHTML = lines.map(s => {
     // allow lightweight color tags via prefixes
     if (s.startsWith("[WARN]")) return `<div class="warn">${s.slice(6)}</div>`;
@@ -463,5 +466,8 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
     lines.push("[OK] Comma-separated segments with palindromic mirroring.");
   }
 
+  console.log("Tokens: ", tokens);
+  lines.push("[OK] expanded PN: ", tokens);
+  
   return lines;
 }
