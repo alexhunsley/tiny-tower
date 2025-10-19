@@ -155,34 +155,15 @@ function wireNotation() {
     writeURLParams({ pn: el("placeNotation").value, stage: s });
   });
 
-  // Generate: validate/clamp once and proceed
+  // Generate: validate/clamp once and proceed (now uses centralized flow)
   el("generate").addEventListener("click", () => {
     const pnString = (el("placeNotation").value || "").trim();
     const n = parseStageLoose(el("stage").value);
     const stage = clampStage(n == null ? 6 : n);
-    el("stage").value = stage; // now it’s safe to normalize
+    el("stage").value = stage; // normalize
 
-    generatedRows = generateList({ pnString, stage });
-    renderGeneratedList(generatedRows);
-    clearRowHighlight();
-
+    generateAndRender({ pnString, stage });
     writeURLParams({ pn: pnString, stage });
-    // report
-
-    // const pnString = (document.getElementById("placeNotation").value || "").trim();
-    // const s = clampStage(document.getElementById("stage").value);
-
-    const maxLeads = 12; // or your existing safety value
-    generatedRows = generateList({ pnString, stage: stage, maxLeads });
-    renderGeneratedList(generatedRows);
-
-    const lines = buildGenerationReport({
-      pnString,
-      stage: stage,
-      rows: generatedRows,
-      maxLeads
-    });
-    renderReport(lines);
   });
 
   el("playRows").addEventListener("click", async () => {
@@ -190,10 +171,10 @@ function wireNotation() {
 
     if (!generatedRows.length) {
       const stage = clampStage(el("stage").value);
-      generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage });
-      renderGeneratedList(generatedRows);
-      clearRowHighlight();
-      writeURLParams({ pn: el("placeNotation").value, stage });
+      const pnString = (el("placeNotation").value || "").trim();
+      // Use the same centralized flow so report/overlay are consistent
+      generateAndRender({ pnString, stage });
+      writeURLParams({ pn: pnString, stage });
     }
     if (!generatedRows.length) return;
 
@@ -343,13 +324,33 @@ async function playAllRows() {
   setRowControls({ playing: false, paused: false });
 }
 
+/* -------------------- Centralized generate + render (rows, overlay, report) -------------------- */
+function generateAndRender({ pnString, stage, maxLeads = 12 }) {
+  console.log(">> Entered generateAndRender()");
+  const s = clampStage(stage);
+  generatedRows = generateList({ pnString, stage: s, maxLeads });
+
+  renderGeneratedList(generatedRows);
+  clearRowHighlight();
+
+  const lines = buildGenerationReport({
+    pnString,
+    stage: s,
+    rows: generatedRows,
+    maxLeads
+  });
+  renderReport(lines);
+
+  return generatedRows;
+}
+
 /* -------------------- init -------------------- */
 function init() {
   try {
     // Ensure required elements exist
     [
       "bpm","placeNotation","stage","generate","notationOutput",
-      "playRows","pauseRows","stopRows"
+      "playRows","pauseRows","stopRows","reportPanel"
     ].forEach(id => el(id));
 
     // Prefill from URL, then fill any blanks from DEFAULTS
@@ -358,12 +359,13 @@ function init() {
     if (stage != null) el("stage").value = clampStage(stage);
     applyDefaultsToControls(); // uses DEFAULTS.* for any empty fields
 
+    console.log(">>>> init: pn, stage, autoGenerateOnLoad = ", pn, stage, DEFAULTS.autoGenerateOnLoad);
+
     // Auto-generate rows if URL provided pn/stage; otherwise respect DEFAULTS flag
     if (pn || stage != null || DEFAULTS.autoGenerateOnLoad) {
       const s = clampStage(el("stage").value);
-      generatedRows = generateList({ pnString: (el("placeNotation").value || "").trim(), stage: s });
-      renderGeneratedList(generatedRows);
-      clearRowHighlight();
+      const pnString = (el("placeNotation").value || "").trim();
+      generateAndRender({ pnString, stage: s });   // <-- now also builds report & overlay
     }
 
     // Wire up UI
@@ -435,14 +437,6 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
       }
     }
 
-    // if (earlyRoundsAt !== null) {
-    //   const leadIdx = Math.floor(earlyRoundsAt / leadLen);
-    //   const stepInLead = earlyRoundsAt % leadLen;
-    //   lines.push(
-    //     `[WARN] Rounds occurred early at step ${earlyRoundsAt} (lead ${leadIdx}, step ${stepInLead}).`
-    //   );
-    // }
-
     // Emit one warning per repeated row text
     for (const [text, idxs] of occurrences) {
       if (idxs.length >= 2) {
@@ -471,5 +465,3 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
 
   return lines;
 }
-
-

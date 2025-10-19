@@ -8,6 +8,6 @@ export const DEFAULTS = {
   bpm: 224,          // beats per minute
 
   // UI/behavior (you can tweak these too if you like)
-  autoGenerateOnLoad: false,   // set true to auto-generate when URL has no params
+  autoGenerateOnLoad: true,   // set true to auto-generate when URL has no params
   startHighlightAtRow0: true,
 };
