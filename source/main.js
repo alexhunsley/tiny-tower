@@ -388,7 +388,7 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const lines = [];
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
-  const tokens = expandPlaceNotation(pnString, stage);
+  const tokens = expandPlaceNotation(pnString, s);
   const steps = Math.max(0, rows.length - 1);
   const leadLen = Math.max(1, tokens.length);
   const fullLeads = Math.floor(steps / leadLen);
@@ -396,16 +396,56 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
 
   // Facts
-  // lines.push(`Stage: ${s}`);
-  // lines.push(`Place notation: ${pnString || "(empty)"}`);
-  // lines.push(`Expanded tokens per lead: ${leadLen}`);
-  lines.push(`Length: ${rows.length-1}`);
+  lines.push(`Length: ${rows.length - 1}`);
   lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
+
+  // --- Duplicate row detection (includes early rounds) ---
+  if (Array.isArray(rows) && rows.length > 1) {
+    const firstIndex = new Map();   // row -> first index seen
+    let earlyRoundsAt = null;       // index where rounds reappears (not last)
+    let repeatCount = 0;
+    const samples = [];             // capture a few examples to show
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (firstIndex.has(r)) {
+        repeatCount++;
+        const j = firstIndex.get(r);
+        if (samples.length < 3) samples.push({ row: r, first: j, again: i });
+
+        if (r === rounds && i !== rows.length - 1 && earlyRoundsAt === null) {
+          earlyRoundsAt = i;
+        }
+      } else {
+        firstIndex.set(r, i);
+      }
+    }
+
+    if (earlyRoundsAt !== null) {
+      const leadIdx = Math.floor(earlyRoundsAt / leadLen);       // 0-based lead index
+      const stepInLead = earlyRoundsAt % leadLen;                // step within lead
+      lines.push(
+        `[WARN] Rounds occurred early at step ${earlyRoundsAt} (lead ${leadIdx}, step ${stepInLead}).`
+      );
+    }
+
+    if (repeatCount > 0) {
+      lines.push(
+        `[WARN] Detected repeated rows (${repeatCount} repeats). This can indicate falseness or cycling before cutoff.`
+      );
+      samples.forEach(({ row, first, again }) => {
+        const leadA = Math.floor(first / leadLen), stepA = first % leadLen;
+        const leadB = Math.floor(again / leadLen), stepB = again % leadLen;
+        lines.push(
+          `  · "${row}" repeated: first at step ${first} (lead ${leadA}, step ${stepA}), again at step ${again} (lead ${leadB}, step ${stepB})`
+        );
+      });
+    }
+  }
 
   // Warnings / OK
   if (!returned) {
-    // lines.push("[OK] Returned to rounds.");
-    lines.push("[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.");
+    lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.`);
   }
 
   // Heuristics: commas / semicolon usage
@@ -415,8 +455,6 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   if (pnString && pnString.includes(",")) {
     lines.push("[OK] Comma-separated segments with palindromic mirroring.");
   }
-
-  console.debug(lines);
 
   return lines;
 }
