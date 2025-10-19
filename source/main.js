@@ -12,6 +12,7 @@ import {
 } from "./audioEngine.js";
 import { parseDigits } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation } from "./notation.js";
+import { renderBlueLineOverlay } from "./blueLine.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -70,7 +71,7 @@ function highlightRow(i) {
   const selector = `#notationOutput .row-item[data-row="${i}"]`;
   const el = document.querySelector(selector);
   if (!el) {
-    console.debug("highlightRow: element not found for index", i, "selector:", selector);
+    console.log("highlightRow: element not found for index", i, "selector:", selector);
     return;
   }
   clearRowHighlight();
@@ -91,7 +92,7 @@ function setRowControls({ playing, paused }) {
 
 // Renderer
 function renderGeneratedList(list) {
-  console.debug("renderGeneratedList");
+  console.log("renderGeneratedList: list len = ", list.length);
   const out = el("notationOutput");
   if (!list || !list.length) {
     out.innerHTML = '<em class="muted">— nothing generated —</em>';
@@ -105,6 +106,18 @@ function renderGeneratedList(list) {
       return `<div class="row-item" data-row="${i}"><code>${display}</code></div>`;
     })
     .join("");
+
+  const blueLineContainer = document.getElementById("notationOutput");
+  if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
+
+  console.log("renderGeneratedList: list len 2 = ", list.length);
+  renderBlueLineOverlay({
+      scroller: blueLineContainer,
+      rows: list,
+      targetChar: "2",                 // e.g. bell 2; later can be a user choice
+      options: { color: "deepskyblue", width: 2 }
+    });
+
 }
 
 function wireNotation() {
