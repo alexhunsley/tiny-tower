@@ -43,7 +43,7 @@ function measurePointsFromDOM(scroller, rows, targetChar) {
     // Position relative to the scroller content origin
     const y = scroller.scrollTop + (codeRect.top - scrollerRect.top) + codeRect.height / 2;
     const x = scroller.scrollLeft + (codeRect.left - scrollerRect.left) + (idx + 0.5) * charWidth;
-    console.log("point: ", x, y);
+    // console.log("point: ", x, y);
     points.push([x, y]);
   }
   return points;

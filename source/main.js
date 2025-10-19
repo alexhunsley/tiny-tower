@@ -419,7 +419,7 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
     let repeatCount = 0;
     const samples = [];             // capture a few examples to show
 
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 0; i < rows.length-1; i++) {
       const r = rows[i];
       if (firstIndex.has(r)) {
         repeatCount++;
