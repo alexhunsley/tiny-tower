@@ -409,59 +409,59 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
 
   // Facts
-  lines.push(`Length: ${rows.length - 1}`);
   lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
+  lines.push(`Lead length: ${leadLen}`);
+  lines.push(`Length: ${rows.length - 1}`);
 
-  // --- Duplicate row detection (includes early rounds) ---
+  // --- Duplicate/early-rounds detection (exclude the final row) ---
   if (Array.isArray(rows) && rows.length > 1) {
-    const firstIndex = new Map();   // row -> first index seen
-    let earlyRoundsAt = null;       // index where rounds reappears (not last)
-    let repeatCount = 0;
-    const samples = [];             // capture a few examples to show
+    const lastIdx = rows.length - 1;
 
-    for (let i = 0; i < rows.length-1; i++) {
+    // Collect all occurrence indices (0..lastIdx-1) per row text
+    const occurrences = new Map(); // rowText -> number[] (indices)
+    let earlyRoundsAt = null;
+
+    for (let i = 0; i < lastIdx; i++) {
       const r = rows[i];
-      if (firstIndex.has(r)) {
-        repeatCount++;
-        const j = firstIndex.get(r);
-        if (samples.length < 3) samples.push({ row: r, first: j, again: i });
+      let arr = occurrences.get(r);
+      if (!arr) {
+        arr = [];
+        occurrences.set(r, arr);
+      }
+      arr.push(i);
 
-        if (r === rounds && i !== rows.length - 1 && earlyRoundsAt === null) {
-          earlyRoundsAt = i;
-        }
-      } else {
-        firstIndex.set(r, i);
+      if (r === rounds && i !== 0 && earlyRoundsAt === null) {
+        earlyRoundsAt = i; // rounds appeared early (not the initial 0)
       }
     }
 
-    if (earlyRoundsAt !== null) {
-      const leadIdx = Math.floor(earlyRoundsAt / leadLen);       // 0-based lead index
-      const stepInLead = earlyRoundsAt % leadLen;                // step within lead
-      lines.push(
-        `[WARN] Rounds occurred early at step ${earlyRoundsAt} (lead ${leadIdx}, step ${stepInLead}).`
-      );
-    }
+    // if (earlyRoundsAt !== null) {
+    //   const leadIdx = Math.floor(earlyRoundsAt / leadLen);
+    //   const stepInLead = earlyRoundsAt % leadLen;
+    //   lines.push(
+    //     `[WARN] Rounds occurred early at step ${earlyRoundsAt} (lead ${leadIdx}, step ${stepInLead}).`
+    //   );
+    // }
 
-    if (repeatCount > 0) {
-      lines.push(
-        `[WARN] Detected repeated rows (${repeatCount} repeats). This can indicate falseness or cycling before cutoff.`
-      );
-      samples.forEach(({ row, first, again }) => {
-        const leadA = Math.floor(first / leadLen), stepA = first % leadLen;
-        const leadB = Math.floor(again / leadLen), stepB = again % leadLen;
-        lines.push(
-          `  · "${row}" repeated: first at step ${first} (lead ${leadA}, step ${stepA}), again at step ${again} (lead ${leadB}, step ${stepB})`
-        );
-      });
+    // Emit one warning per repeated row text
+    for (const [text, idxs] of occurrences) {
+      if (idxs.length >= 2) {
+        const repeatCount = idxs.length - 1; // repeats beyond the first
+        // Positions for repeat occurrences only (skip the first at idxs[0])
+        const where = idxs.slice(1).map(i => {
+          const L = Math.floor(i / leadLen);
+          const R = i % leadLen;
+          return `(L:${L+1}, R:${R+1})`;
+        }).join(", ");
+        lines.push(`[WARN] Duplicate rows: ${repeatCount} x "${text}" at ${where}`);
+      }
     }
   }
 
-  // Warnings / OK
   if (!returned) {
     lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.`);
   }
 
-  // Heuristics: commas / semicolon usage
   if (pnString && pnString.includes(";")) {
     lines.push("[OK] Semicolon mode detected (special mirroring).");
   }
@@ -471,3 +471,5 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
 
   return lines;
 }
+
+
