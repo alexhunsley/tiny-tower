@@ -11,7 +11,7 @@ import {
   triggerPlace,   // used by live, note-by-note scheduler
 } from "./audioEngine.js";
 import { parseDigits } from "./utils.js";
-import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation } from "./notation.js";
+import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
 
 function el(id) {
@@ -393,7 +393,7 @@ function renderReport(lines) {
     box.innerHTML = '<span class="muted">No report.</span>';
     return;
   }
-  console.log(">>>>>>>>> Lines: ", s);
+  console.log(">>>>>>>>> Lines: ", lines);
   box.innerHTML = lines.map(s => {
     // allow lightweight color tags via prefixes
     if (s.startsWith("[WARN]")) return `<div class="warn">${s.slice(6)}</div>`;
@@ -407,6 +407,7 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
   const tokens = expandPlaceNotation(pnString, s);
+  const fullPN = collapsePlaceNotation(tokens);
   const steps = Math.max(0, rows.length - 1);
   const leadLen = Math.max(1, tokens.length);
   const fullLeads = Math.floor(steps / leadLen);
@@ -465,9 +466,10 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   if (pnString && pnString.includes(",")) {
     lines.push("[OK] Comma-separated segments with palindromic mirroring.");
   }
-
-  console.log("Tokens: ", tokens);
-  lines.push("[OK] expanded PN: ", tokens);
+  
+  // herus
+  console.log("Tokens: ", pnString);
+  lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
   
   return lines;
 }
