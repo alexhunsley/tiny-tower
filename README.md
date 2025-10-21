@@ -16,8 +16,10 @@ Hardly any of them let you *listen* to a method.
 
 Here's some other things I've found a bit lacking:
 
-* selectable/copyable text for the row(s) of a method to clipboard
-* false methods detection
-* music scoring
 * lightness -- almost all existing sites are monolithic, requiring multiple loads from the server
+* selectable/copyable text for the row(s) of a method to clipboard
+* quality tools: false method detection, music scoring/marking, anti-music detection (e.g. 87s at back, split tenors)
 
+## Implementation
+
+Tiny Tower is currently written in bare javascript. I may use a lightweight SPA lib at some point (something like Mithril), and possibly Skeleton UI or similar.
