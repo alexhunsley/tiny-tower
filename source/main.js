@@ -446,12 +446,12 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
       if (idxs.length >= 2) {
         const repeatCount = idxs.length - 1; // repeats beyond the first
         // Positions for repeat occurrences only (skip the first at idxs[0])
-        const where = idxs.slice(1).map(i => {
+        const where = idxs.map(i => {
           const L = Math.floor(i / leadLen);
           const R = i % leadLen;
           return `(L:${L+1}, R:${R+1})`;
         }).join(", ");
-        lines.push(`[WARN] Duplicate rows: ${repeatCount} x "${text}" at ${where}`);
+        lines.push(`[WARN] Duplicate rows: ${repeatCount+1} x "${text}": ${where}`);
       }
     }
   }
