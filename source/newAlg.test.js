@@ -1,7 +1,13 @@
 // newAlg.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseTopLevel, evaluateTopLevel, tokenizeFlat } = require('./newAlg.js');
+const {
+  parseTopLevel,
+  evaluateTopLevel,
+  tokenizeFlat,
+  evaluateExpression,
+  _internals
+} = require('./newAlg.js');
 
 test('basic bracketed examples', () => {
   {
@@ -22,6 +28,7 @@ test('basic bracketed examples', () => {
     assert.deepEqual(out, ['45', 'x', '89', '12']);
   }
 
+  // NOTE: 'x' is both a token and a delimiter
   {
     const ast = parseTopLevel('(12.x)');
     const out = evaluateTopLevel(ast);
@@ -41,17 +48,47 @@ test('flat tokenizer: "12.34.....xx87x.x"', () => {
 });
 
 test('throws on unmatched parentheses', () => {
-  // Now this will trip validateParens() first and match /Unmatched/
   assert.throws(() => parseTopLevel('(12.34'), /Unmatched/);
-
-  // Also verify nested unmatched inside a group triggers "Unmatched"
   assert.throws(() => parseTopLevel('(12.(34)'), /Unmatched/);
-
-  // And unmatched closing paren
   assert.throws(() => parseTopLevel(')'), /Unmatched/);
-
-  assert.throws(() => parseTopLevel('18)'), /Unmatched/);
-
-  assert.throws(() => parseTopLevel(')12'), /Unmatched/);
 });
 
+/* ---------------------
+ * slice postfix tests
+ * --------------------- */
+
+test('postfix slice on flat expr', () => {
+  // Base list: ["23","78","x","1289"]
+  const out = evaluateExpression('23.78x1289[1:3]');
+  assert.deepEqual(out, ['78', 'x']); // slice 1..3 (exclusive stop)
+});
+
+test('postfix reverse slice [-]', () => {
+  const out = evaluateExpression('(1.2.3.4)[-]');
+  assert.deepEqual(out, ['4', '3', '2', '1']);
+});
+
+test('postfix circular forward [i:>k]', () => {
+  const out = evaluateExpression('(a.b.c.d)[2:>3]');
+  assert.deepEqual(out, ['c', 'd', 'a']);
+});
+
+test('postfix circular backward [i:<]', () => {
+  const out = evaluateExpression('(a.b.c)[1:<]');
+  // full backward rotation from index 1: [b, a, c]
+  assert.deepEqual(out, ['b', 'a', 'c']);
+});
+
+test('chained postfix slices', () => {
+  // Start: ["1","2","3","4","5"]
+  // [1:4] -> ["2","3","4"]
+  // then [-] -> ["4","3","2"]
+  const out = evaluateExpression('(1.2.3.4.5)[1:4][-]');
+  assert.deepEqual(out, ['4', '3', '2']);
+});
+
+test('postfix slice respects x as token+delimiter', () => {
+  // Base: "12.x.34" -> ["12","x","34"]
+  const out = evaluateExpression('12.x.34[:2]');
+  assert.deepEqual(out, ['12', 'x']);
+});

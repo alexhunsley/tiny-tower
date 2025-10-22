@@ -1,10 +1,19 @@
 // newAlg.js
 /**
- * Parsing to AST + Evaluation to flat string[]
+ * Parsing to AST + Evaluation to flat string[] + postfix slice operator(s).
  *
  * AST:
  *   Group = { type: 'Group', items: Element[] }
  *   Element = string | Group
+ *
+ * Postfix slices:
+ *   BaseExpr [slice] [slice] ...
+ *   where slice is your custom spec: [start:stop], [start:], [:stop], [:], [i:>k], [i:<k], [-]
+ *
+ * Rules:
+ *   - If the input contains '(' or ')', we parse bracketed groups (top-level segments split by '.' outside parens).
+ *   - Otherwise we treat it as a flat segment and use the inner tokenizer.
+ *   - Any trailing [ ... ] blocks are parsed as postfix slice ops and applied in order (left-to-right).
  */
 
 function parseTopLevel(input) {
@@ -172,17 +181,242 @@ function tokenizeFlat(s) {
   return items.flatMap(flatten);
 }
 
+/* -------------------------------------------------------
+ * Postfix slice parsing and application
+ * ----------------------------------------------------- */
+
+/**
+ * Extract trailing chained slice specs from an input.
+ * Returns { base, slices[] } where slices are in left-to-right order.
+ *
+ * Example:
+ *   "23.78x1289[2:5][-]" -> { base: "23.78x1289", slices: ["[2:5]", "[-]"] }
+ */
+function splitTrailingSlices(input) {
+  const slices = [];
+  let i = input.length - 1;
+  while (i >= 0) {
+    if (input[i] !== ']') break;
+    // find matching '[' for this ']'
+    let depth = 0;
+    let j = i;
+    while (j >= 0) {
+      const ch = input[j];
+      if (ch === ']') depth++;
+      else if (ch === '[') {
+        depth--;
+        if (depth === 0) break;
+      }
+      j--;
+    }
+    if (j < 0 || input[j] !== '[') {
+      // malformed trailing bracket region; stop and let main parser complain later if needed
+      break;
+    }
+    // capture this slice
+    const sliceSpec = input.slice(j, i + 1);
+    slices.unshift(sliceSpec); // collect in order
+    // move left past this slice
+    i = j - 1;
+    // continue while more trailing slices
+    while (i >= 0 && /\s/.test(input[i])) i--;
+  }
+  const base = input.slice(0, i + 1).trim();
+  return { base, slices };
+}
+
+/**
+ * Evaluate a full expression with optional postfix slices.
+ * - If base contains '(' or ')', use the bracketed-group parser/evaluator.
+ * - Otherwise, treat base as a flat tokenizable segment.
+ * - Then apply slices in order.
+ */
+function evaluateExpression(input) {
+  const { base, slices } = splitTrailingSlices(input.trim());
+
+  let list;
+  if (base.includes('(') || base.includes(')')) {
+    // bracketed groups at top level
+    const ast = parseTopLevel(base);
+    list = evaluateTopLevel(ast);
+  } else if (base.length === 0 && slices.length > 0) {
+    // e.g., "[:]": base empty is okay IF we treat empty as empty list
+    list = [];
+  } else {
+    // flat segment like "23.78x1289"
+    list = tokenizeFlat(base);
+  }
+
+  for (const spec of slices) {
+    list = slice_custom(list, spec);
+  }
+  return list;
+}
+
+/* -------------------------------------------------------
+ * Your slice_custom (ported to JS)
+ * ----------------------------------------------------- */
+
+/**
+ * slice_custom(myList, sliceSpec)
+ * Supports:
+ *   Standard (no wrap):
+ *     [start:stop], [start:], [:stop], [:]
+ *       - Negative indices allowed; normalize BEFORE deciding direction
+ *       - Forward: inclusive start, exclusive stop (like JS/Python)
+ *       - Backward (when startNorm > stopNorm): inclusive BOTH ends
+ *
+ *   Circular / wrap:
+ *     [i:>], [i:<]          // full rotation (n items)
+ *     [i:>k], [i:<k]        // k items forward/backward with wrap
+ *
+ *   Reverse shorthand:
+ *     [-]                   // reverse whole list
+ *
+ * Notes:
+ *   - No step parameter.
+ *   - Whitespace is ignored around tokens.
+ *   - Empty list: standard slices return [], circular forms throw.
+ */
+function slice_custom(myList, sliceSpec) {
+  const n = myList.length;
+
+  const err = (msg) => { throw new Error(`slice_custom: ${msg}`); };
+
+  const normalize = (i, len) => {
+    if (len === 0) return 0;
+    const m = i % len;
+    return m < 0 ? m + len : m;
+  };
+
+  const isInt = (s) => /^[-+]?\d+$/.test(s);
+
+  const s = sliceSpec.trim();
+  if (!s.startsWith('[') || !s.endsWith(']')) {
+    err(`spec must be like "[...]", got "${sliceSpec}"`);
+  }
+  const inner = s.slice(1, -1).trim();
+
+  // Reverse shorthand: [-]
+  if (inner === '-') {
+    const out = myList.slice();
+    out.reverse();
+    return out;
+  }
+
+  const colonIdx = inner.indexOf(':');
+  if (colonIdx === -1) {
+    err(`missing ":" in spec "${sliceSpec}"`);
+  }
+  const leftRaw = inner.slice(0, colonIdx).trim();
+  const rightRaw = inner.slice(colonIdx + 1).trim();
+
+  // Detect circular forms: right side starts with '>' or '<'
+  const isCircular = rightRaw.startsWith('>') || rightRaw.startsWith('<');
+
+  // ---------- Circular mode ----------
+  if (isCircular) {
+    if (n === 0) err('cannot perform circular slice on empty list');
+
+    const dir = rightRaw[0]; // '>' or '<'
+    const countStr = rightRaw.slice(1).trim(); // may be '' or digits
+
+    if (!isInt(leftRaw)) err(`circular start must be an integer, got "${leftRaw}"`);
+    const startRaw = parseInt(leftRaw, 10);
+    const start = normalize(startRaw, n);
+
+    let count;
+    if (countStr === '') {
+      count = n; // full rotation
+    } else {
+      if (!/^\d+$/.test(countStr)) err(`count must be a non-negative integer, got "${countStr}"`);
+      count = parseInt(countStr, 10);
+    }
+
+    if (count === 0) return [];
+
+    const out = [];
+    if (dir === '>') {
+      let idx = start;
+      for (let t = 0; t < count; t++) {
+        out.push(myList[idx]);
+        idx = (idx + 1) % n;
+      }
+    } else { // dir === '<'
+      let idx = start;
+      for (let t = 0; t < count; t++) {
+        out.push(myList[idx]);
+        idx = (idx - 1 + n) % n;
+      }
+    }
+    return out;
+  }
+
+  // ---------- Standard (no wrap) ----------
+  if (n === 0) {
+    return [];
+  }
+
+  const leftIsEmpty = leftRaw === '';
+  const rightIsEmpty = rightRaw === '';
+
+  let startNorm = null;
+  let stopNorm = null;
+
+  if (!leftIsEmpty) {
+    if (!isInt(leftRaw)) err(`invalid start index "${leftRaw}"`);
+    startNorm = normalize(parseInt(leftRaw, 10), n);
+  }
+  if (!rightIsEmpty) {
+    if (!isInt(rightRaw)) err(`invalid stop index "${rightRaw}"`);
+    stopNorm = normalize(parseInt(rightRaw, 10), n);
+  }
+
+  const bothPresent = startNorm !== null && stopNorm !== null;
+
+  if (!bothPresent) {
+    // Forward, no wrap
+    const start = startNorm ?? 0;
+    const stop = stopNorm ?? n;
+    if (start >= stop) return [];
+    return myList.slice(start, stop);
+  } else {
+    const start = startNorm;
+    const stop = stopNorm;
+    if (start === stop) {
+      return [];
+    }
+    if (start < stop) {
+      return myList.slice(start, stop);
+    } else {
+      // Backward, inclusive both ends
+      const out = [];
+      for (let i = start; i >= stop; i--) out.push(myList[i]);
+      return out;
+    }
+  }
+}
+
+/* -------------------------------------------------------
+ * Exports
+ * ----------------------------------------------------- */
+
 module.exports = {
+  // original exports
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
-  // internals (handy for deeper tests if needed)
+  // new convenience: full expression evaluator with postfix slice(s)
+  evaluateExpression,
+  // internals (handy for tests)
   _internals: {
     parseGroupInner,
     evalGroup,
     evalElement,
     splitTopLevelByDot,
     validateParens,
-    findMatchingParen
+    findMatchingParen,
+    splitTrailingSlices,
+    slice_custom
   }
 };
