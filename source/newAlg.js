@@ -218,30 +218,86 @@ function isSingleOuterParens(s) {
   }
 }
 
+// Character set for stage-based inversion (prefix subset by stage)
+const ALPHABET = "1234567890ETABCD";
+
+// Invert every char using the first `stage` chars of ALPHABET,
+// then reverse the whole string to preserve inherent order.
+// If stage is not set and this is used (for ';'), we throw.
+function invertTokenWithStage(str) {
+  const stage = getStage?.() ?? null;
+  if (!stage || stage < 1) {
+    throw new Error("';' operator requires a valid stage (use '<n>|' prefix).");
+  }
+  const subset = ALPHABET.slice(0, Math.min(stage, ALPHABET.length));
+  const last = subset.length - 1;
+
+  const mapped = Array.from(str, ch => {
+    const idx = subset.indexOf(ch);
+    if (idx === -1) return ch;                 // leave unknown chars unchanged
+    return subset[last - idx];                 // mirror across subset
+  }).join("");
+
+  // reverse the mapped string
+  return mapped.split("").reverse().join("");
+}
+
+// Like doubleUp, but invert each item of the appended reversed tail.
+function doubleUpWithInvert(list) {
+  if (list.length <= 1) return list.slice();
+  const tail = list.slice(0, -1).reverse().map(invertTokenWithStage);
+  return list.concat(tail);
+}
+
 /* -------------------------------------------------------
  * Low-precedence comma support
  * ----------------------------------------------------- */
 
 // Split by top-level commas, respecting (...) and [...] (slices)
-function splitTopLevelByComma(s) {
+// function splitTopLevelByComma(s) {
+//   const parts = [];
+//   let depthPar = 0;
+//   let depthSq = 0;
+//   let start = 0;
+//   for (let i = 0; i < s.length; i++) {
+//     const ch = s[i];
+//     if (ch === '(') depthPar++;
+//     else if (ch === ')') depthPar--;
+//     else if (ch === '[') depthSq++;
+//     else if (ch === ']') depthSq--;
+//     else if (ch === ',' && depthPar === 0 && depthSq === 0) {
+//       parts.push(s.slice(start, i));
+//       start = i + 1;
+//     }
+//   }
+//   if (start <= s.length) parts.push(s.slice(start));
+//   // keep empties (empty side is allowed -> [])
+//   return parts.map(p => p.trim());
+// }
+
+// Split by top-level low-precedence ops (',' and ';'), respecting (...) and [...]
+function splitTopLevelByLowOps(s) {
   const parts = [];
-  let depthPar = 0;
-  let depthSq = 0;
+  const ops = [];
+  let depthPar = 0, depthSq = 0;
   let start = 0;
+
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (ch === '(') depthPar++;
     else if (ch === ')') depthPar--;
     else if (ch === '[') depthSq++;
     else if (ch === ']') depthSq--;
-    else if (ch === ',' && depthPar === 0 && depthSq === 0) {
+    else if ((ch === ',' || ch === ';') && depthPar === 0 && depthSq === 0) {
       parts.push(s.slice(start, i));
+      ops.push(ch);
       start = i + 1;
     }
   }
+
   if (start <= s.length) parts.push(s.slice(start));
-  // keep empties (empty side is allowed -> [])
-  return parts.map(p => p.trim());
+  // Keep empties (empty side allowed)
+  return { parts: parts.map(p => p.trim()), ops };
 }
 
 /** Mirror/double-up: if len <= 1 -> no-op; else L ++ reverse(L).drop(1). */
@@ -280,7 +336,7 @@ function evaluateSegmentsNoComma(input) {
     if (isSingleOuterParens(base)) {
       // NEW: evaluate inside the single paren pair with full rules (commas, dots, slices)
       const inner = base.slice(1, -1).trim();
-      list = evaluateExpression(inner);
+      list = evaluateExpressionInternal(inner);
     } else if (base.includes('(') || base.includes(')')) {
       // Fallback: nested/complex parentheses handled by AST path
       const ast = parseTopLevel(base);
@@ -301,29 +357,47 @@ function evaluateSegmentsNoComma(input) {
   return results;
 }
 
+// Internal evaluator that NEVER parses n| and NEVER resets stage.
+// Used by recursive calls (e.g., when evaluating inside single outer parens).
+function evaluateExpressionInternal(src) {
+  const { parts, ops } = splitTopLevelByLowOps(src.trim());
+
+  if (ops.length === 0) {
+    return evaluateSegmentsNoComma(parts[0]);
+  }
+
+  // Left-associative fold over , and ;
+  let acc = evaluateSegmentsNoComma(parts[0]);
+  for (let i = 0; i < ops.length; i++) {
+    const right = evaluateSegmentsNoComma(parts[i + 1]);
+    const op = ops[i];
+    if (op === ',') {
+      acc = doubleUp(acc).concat(doubleUp(right));
+    } else if (op === ';') {
+      acc = doubleUpWithInvert(acc).concat(doubleUpWithInvert(right));
+    } else {
+      throw new Error(`Unknown operator: ${op}`);
+    }
+  }
+  return acc;
+}
+
 function evaluateExpression(input) {
   let src = input.trim();
 
-  // Detect leading "<int>|" prefix, e.g. "8|..." -> stage = 8
+  // Reset stage for this top-level expression,
+  // and set it ONLY if we see the "<int>|" prefix.
   const m = /^(\d+)\|/.exec(src);
   if (m) {
-    ParserContext.stage = parseInt(m[1], 10);
-    src = src.slice(m[0].length); // remove "8|" part
+    ParserContext.stage = null;                  // reset because we are consuming a new prefix
+    ParserContext.stage = parseInt(m[1], 10);    // set stage from prefix
+    src = src.slice(m[0].length);                // strip "n|"
+  } else {
+    ParserContext.stage = null;                  // no prefix at top-level => no stage for this expression
   }
 
-  const commaParts = splitTopLevelByComma(src.trim());
-  if (commaParts.length === 1) {
-    return evaluateSegmentsNoComma(commaParts[0]);
-  }
-
-  let acc = evaluateSegmentsNoComma(commaParts[0]);
-  for (let i = 1; i < commaParts.length; i++) {
-    const right = evaluateSegmentsNoComma(commaParts[i]);
-    const leftDoubled = doubleUp(acc);
-    const rightDoubled = doubleUp(right);
-    acc = leftDoubled.concat(rightDoubled);
-  }
-  return acc;
+  // From here on, do NOT parse n| again.
+  return evaluateExpressionInternal(src);
 }
 
 /* -------------------------------------------------------
@@ -472,7 +546,6 @@ module.exports = {
     validateParens,
     findMatchingParen,
     splitTrailingSlices,
-    splitTopLevelByComma,
     doubleUp,
     slice_custom,
     evaluateSegmentsNoComma
