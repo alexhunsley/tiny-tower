@@ -95,7 +95,7 @@ export function expandCommaPlaceNotation(pnString, stage) {
   }
 }
 
-// ok, defo need to handle half lead being different from lead.
+// xx ok, defo need to handle half lead being different from lead.
 // to keep consistent order with ',',
 // we will list half lead, lead end after the ';' when there are two
 // (otherwise derived first from second).
@@ -110,7 +110,7 @@ export function expandCommaPlaceNotation(pnString, stage) {
 //   - with commas: per-segment palindromes (tokens + reverse(tokensWithoutLast))
 //   - without commas: just tokenize (no mirroring)
 export function expandPlaceNotation(pnString, stage) {
-  let raw = String(pnString || "").trim();
+  let raw = String(pnString || "").trim().toUpperCase();
   if (!raw) return [];
 
   // Handle special ';' case
@@ -125,8 +125,14 @@ export function expandPlaceNotation(pnString, stage) {
 
     console.log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
 
-    const leftTail = leftTokens.slice(0, -1-stage%2).reverse()
+    // this -1-stage%2 is needed for now for e.g. plain hunt on 7,
+    // but I'm barking up the wrong tree; see (A,b),c idea etc.
+    const leftTail = leftTokens.slice(0, -1-stage%2)
+    // const leftTail = leftTokens.slice(0, -1)
+      .reverse()
       .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
+
+    console.log("  left tail: ", leftTail);
 
     const part1_part2 = [...leftTokens, ...leftTail];
 
