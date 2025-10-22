@@ -253,8 +253,8 @@ test('semicolon with slices per side', () => {
   // => left result ["34","56","34"]
   // right: (78)[-] -> ["78"] (single item; no tail)
   // final = left ++ right
-  const out = evaluateExpression('6|(12.34.56)[1:3];(78)[-]');
-  assert.deepEqual(out, ['34', '56', '34', '78']);
+  const out = evaluateExpression('6|(12.14.36)[1:3];(56)[-]');
+  assert.deepEqual(out, ['14', '36', '36', '56']);
 });
 
 test('semicolon mixed with comma (low precedence, left associative)', () => {
@@ -265,8 +265,8 @@ test('semicolon mixed with comma (low precedence, left associative)', () => {
   //   leftD = ["12","34","56","34","12"]
   //   rightD = ["29"]
   // result = ["12","34","56","34","12","29"]
-  const out = evaluateExpression('6|12.34; , 29');
-  assert.deepEqual(out, ['12', '34', '56', '34', '12', '29']);
+  const out = evaluateExpression('8|12.34; , 5678');
+  assert.deepEqual(out, ['12', '34', '78', '34', '12', '5678']);
 });
 
 test('semicolon inside parentheses with outer semicolon empty right', () => {
