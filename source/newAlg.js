@@ -1,32 +1,27 @@
 // newAlg.js
 /**
- * Parsing to AST + Evaluation to flat string[] + postfix slice operator(s).
+ * Parsing to AST + Evaluation to flat string[] + postfix slice operator(s) + low-precedence comma.
  *
  * AST:
  *   Group = { type: 'Group', items: Element[] }
  *   Element = string | Group
  *
- * Postfix slices:
- *   BaseExpr [slice] [slice] ...
- *   where slice is your custom spec: [start:stop], [start:], [:stop], [:], [i:>k], [i:<k], [-]
- *
- * Rules:
- *   - If the input contains '(' or ')', we parse bracketed groups (top-level segments split by '.' outside parens).
- *   - Otherwise we treat it as a flat segment and use the inner tokenizer.
- *   - Any trailing [ ... ] blocks are parsed as postfix slice ops and applied in order (left-to-right).
+ * Operators:
+ *   - Dot segmentation (.) at top level (outside parens) groups segments.
+ *   - Postfix slices: Segment [slice] [slice] ...
+ *       slice ∈ [start:stop], [start:], [:stop], [:], [i:>k], [i:<k], [-]
+ *   - Low-precedence infix comma: left , right
+ *       Evaluate left and right to lists, "double up" each side, then concatenate.
+ *       Doubling rule: if len <= 1, no-op; else L ++ reverse(L).drop(1)
+ *       Either side may be empty -> that side yields [].
  */
 
 function parseTopLevel(input) {
   const src = input.trim();
-
-  // 1) Validate parentheses up front so unmatched '(' throws clearly
   validateParens(src);
-
-  // 2) Split top-level by '.' (dots outside parentheses)
   const parts = splitTopLevelByDot(src);
   return parts.map(part => {
     const trimmed = part.trim();
-    // For this grammar we expect each top-level segment to be a bracketed group
     if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
       throw new Error(`Expected a bracketed group at top level, got: ${trimmed}`);
     }
@@ -36,13 +31,13 @@ function parseTopLevel(input) {
 
 function splitTopLevelByDot(s) {
   const parts = [];
-  let depth = 0;
+  let depthPar = 0;
   let start = 0;
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
-    if (ch === '(') depth++;
-    else if (ch === ')') depth--;
-    else if (ch === '.' && depth === 0) {
+    if (ch === '(') depthPar++;
+    else if (ch === ')') depthPar--;
+    else if (ch === '.' && depthPar === 0) {
       parts.push(s.slice(start, i));
       start = i + 1;
     }
@@ -85,7 +80,6 @@ function parseGroupInner(s) {
     }
 
     if (ch === ')') {
-      // Should never occur here in a well-formed substring
       throw new Error("Unexpected ')' inside group");
     }
 
@@ -110,19 +104,14 @@ function parseGroupInner(s) {
   return items.filter(tok => !(typeof tok === 'string' && tok.length === 0));
 }
 
-/**
- * Throws if any '(' is unmatched or a ')' appears without a matching '('.
- * Gives a consistent "Unmatched" error message for tests.
- */
+/** Validate parentheses globally; throw clear "Unmatched" errors. */
 function validateParens(s) {
   const stack = [];
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (ch === '(') stack.push(i);
     else if (ch === ')') {
-      if (stack.length === 0) {
-        throw new Error(`Unmatched ")" at index ${i}`);
-      }
+      if (stack.length === 0) throw new Error(`Unmatched ")" at index ${i}`);
       stack.pop();
     }
   }
@@ -141,7 +130,6 @@ function findMatchingParen(s, openIdx) {
       if (depth === 0) return i;
     }
   }
-  // If we get here, no closing ')' was found for this '('
   throw new Error(`Unmatched "(" at index ${openIdx}`);
 }
 
@@ -171,10 +159,7 @@ function evaluateTopLevel(groups) {
   return out;
 }
 
-/**
- * Utility for testing flat tokenization of a *non-parenthesized* string.
- * Mirrors the inner tokenizer semantics ('.' is delimiter, 'x' is token+delimiter).
- */
+/** Tokenize a flat (non-parenthesized) segment using inner rules. */
 function tokenizeFlat(s) {
   const items = parseGroupInner(s);
   const flatten = el => (typeof el === 'string' ? [el] : evalGroup(el));
@@ -185,19 +170,12 @@ function tokenizeFlat(s) {
  * Postfix slice parsing and application
  * ----------------------------------------------------- */
 
-/**
- * Extract trailing chained slice specs from an input.
- * Returns { base, slices[] } where slices are in left-to-right order.
- *
- * Example:
- *   "23.78x1289[2:5][-]" -> { base: "23.78x1289", slices: ["[2:5]", "[-]"] }
- */
+/** Pull off any trailing chained [..] slices from a segment. */
 function splitTrailingSlices(input) {
   const slices = [];
   let i = input.length - 1;
   while (i >= 0) {
     if (input[i] !== ']') break;
-    // find matching '[' for this ']'
     let depth = 0;
     let j = i;
     while (j >= 0) {
@@ -209,84 +187,147 @@ function splitTrailingSlices(input) {
       }
       j--;
     }
-    if (j < 0 || input[j] !== '[') {
-      // malformed trailing bracket region; stop and let main parser complain later if needed
-      break;
-    }
-    // capture this slice
+    if (j < 0 || input[j] !== '[') break;
     const sliceSpec = input.slice(j, i + 1);
-    slices.unshift(sliceSpec); // collect in order
-    // move left past this slice
+    slices.unshift(sliceSpec);
     i = j - 1;
-    // continue while more trailing slices
     while (i >= 0 && /\s/.test(input[i])) i--;
   }
   const base = input.slice(0, i + 1).trim();
   return { base, slices };
 }
 
+/* -------------------------------------------------------
+ * Low-precedence comma support
+ * ----------------------------------------------------- */
+
+// Split by top-level commas, respecting (...) and [...] (slices)
+function splitTopLevelByComma(s) {
+  const parts = [];
+  let depthPar = 0;
+  let depthSq = 0;
+  let start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '(') depthPar++;
+    else if (ch === ')') depthPar--;
+    else if (ch === '[') depthSq++;
+    else if (ch === ']') depthSq--;
+    else if (ch === ',' && depthPar === 0 && depthSq === 0) {
+      parts.push(s.slice(start, i));
+      start = i + 1;
+    }
+  }
+  if (start <= s.length) parts.push(s.slice(start));
+  // keep empties (empty side is allowed -> [])
+  return parts.map(p => p.trim());
+}
+
+/** Mirror/double-up: if len <= 1 -> no-op; else L ++ reverse(L).drop(1). */
+function doubleUp(list) {
+  if (list.length <= 1) return list.slice();
+  const tailRev = list.slice(0, -1).reverse();
+  return list.concat(tailRev);
+}
+
+// Evaluate an expression that has NO commas.
+// Supports:
+//  • If the input includes any parentheses: treat '.' as segment separators,
+//    allow per-segment trailing slice chains (as before).
+//  • If the input has NO parentheses: treat the whole thing as one flat base,
+//    so trailing slices apply to the entire flat list (e.g. "12.x.34[:2]").
+function evaluateSegmentsNoComma(input) {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return []; // empty side of comma => []
+
+  const hasParens = trimmed.includes('(') || trimmed.includes(')');
+
+  // Case A: no parentheses -> whole flat base + trailing slices for the WHOLE expr
+  if (!hasParens) {
+    const { base, slices } = splitTrailingSlices(trimmed);
+
+    // Tokenize the entire flat base ('.' delimiter; 'x' token+delimiter)
+    let list = base.length === 0 ? [] : tokenizeFlat(base);
+
+    // Apply trailing slice chain to the whole list
+    for (const spec of slices) {
+      list = slice_custom(list, spec);
+    }
+    return list;
+  }
+
+  // Case B: parentheses present -> split by top-level '.' into segments,
+  // and let each segment have its own trailing slices (existing behavior).
+  const parts = splitTopLevelByDot(trimmed);
+  const results = [];
+
+  for (const part of parts) {
+    const { base, slices } = splitTrailingSlices(part.trim());
+
+    let list;
+    if (base.includes('(') || base.includes(')')) {
+      const ast = parseTopLevel(base);
+      list = evaluateTopLevel(ast);
+    } else if (base.length === 0 && slices.length > 0) {
+      list = [];
+    } else {
+      list = tokenizeFlat(base);
+    }
+
+    for (const spec of slices) {
+      list = slice_custom(list, spec);
+    }
+
+    results.push(...list);
+  }
+
+  return results;
+}
+
 /**
- * Evaluate a full expression with optional postfix slices.
- * - If base contains '(' or ')', use the bracketed-group parser/evaluator.
- * - Otherwise, treat base as a flat tokenizable segment.
- * - Then apply slices in order.
+ * Full expression evaluator:
+ *   - First split by top-level commas (lowest precedence).
+ *   - Evaluate each side (dot segments + slices).
+ *   - For each comma operation (left fold), double-up each operand and concatenate.
  */
 function evaluateExpression(input) {
-  const { base, slices } = splitTrailingSlices(input.trim());
+  const commaParts = splitTopLevelByComma(input.trim());
 
-  let list;
-  if (base.includes('(') || base.includes(')')) {
-    // bracketed groups at top level
-    const ast = parseTopLevel(base);
-    list = evaluateTopLevel(ast);
-  } else if (base.length === 0 && slices.length > 0) {
-    // e.g., "[:]": base empty is okay IF we treat empty as empty list
-    list = [];
-  } else {
-    // flat segment like "23.78x1289"
-    list = tokenizeFlat(base);
+  // If no comma present, just evaluate segments
+  if (commaParts.length === 1) {
+    return evaluateSegmentsNoComma(commaParts[0]);
   }
 
-  for (const spec of slices) {
-    list = slice_custom(list, spec);
+  // Left-fold over commas
+  let acc = evaluateSegmentsNoComma(commaParts[0]);
+  for (let i = 1; i < commaParts.length; i++) {
+    const right = evaluateSegmentsNoComma(commaParts[i]);
+    const leftDoubled = doubleUp(acc);
+    const rightDoubled = doubleUp(right);
+    acc = leftDoubled.concat(rightDoubled);
   }
-  return list;
+  return acc;
 }
 
 /* -------------------------------------------------------
- * Your slice_custom (ported to JS)
+ * slice_custom (ported to JS)
  * ----------------------------------------------------- */
 
-/**
- * slice_custom(myList, sliceSpec)
- * Supports:
- *   Standard (no wrap):
- *     [start:stop], [start:], [:stop], [:]
- *       - Negative indices allowed; normalize BEFORE deciding direction
- *       - Forward: inclusive start, exclusive stop (like JS/Python)
- *       - Backward (when startNorm > stopNorm): inclusive BOTH ends
- *
- *   Circular / wrap:
- *     [i:>], [i:<]          // full rotation (n items)
- *     [i:>k], [i:<k]        // k items forward/backward with wrap
- *
- *   Reverse shorthand:
- *     [-]                   // reverse whole list
- *
- * Notes:
- *   - No step parameter.
- *   - Whitespace is ignored around tokens.
- *   - Empty list: standard slices return [], circular forms throw.
- */
 function slice_custom(myList, sliceSpec) {
   const n = myList.length;
 
   const err = (msg) => { throw new Error(`slice_custom: ${msg}`); };
 
-  const normalize = (i, len) => {
+  // normalize for standard (non-circular) slices:
+  //  - negatives wrap from end
+  //  - positives clamp to [0..n] (DO NOT modulo-wrap stop==n to 0)
+  const normStd = (i, len) => {
     if (len === 0) return 0;
-    const m = i % len;
-    return m < 0 ? m + len : m;
+    if (i < 0) {
+      const m = i % len;              // negative or 0
+      return m < 0 ? m + len : m;     // wrap from end
+    }
+    return i > len ? len : i;         // clamp (i==len stays len)
   };
 
   const isInt = (s) => /^[-+]?\d+$/.test(s);
@@ -305,30 +346,32 @@ function slice_custom(myList, sliceSpec) {
   }
 
   const colonIdx = inner.indexOf(':');
-  if (colonIdx === -1) {
-    err(`missing ":" in spec "${sliceSpec}"`);
-  }
+  if (colonIdx === -1) err(`missing ":" in spec "${sliceSpec}"`);
   const leftRaw = inner.slice(0, colonIdx).trim();
   const rightRaw = inner.slice(colonIdx + 1).trim();
 
-  // Detect circular forms: right side starts with '>' or '<'
+  // Circular mode?
   const isCircular = rightRaw.startsWith('>') || rightRaw.startsWith('<');
-
-  // ---------- Circular mode ----------
   if (isCircular) {
     if (n === 0) err('cannot perform circular slice on empty list');
 
     const dir = rightRaw[0]; // '>' or '<'
-    const countStr = rightRaw.slice(1).trim(); // may be '' or digits
+    const countStr = rightRaw.slice(1).trim();
 
     if (!isInt(leftRaw)) err(`circular start must be an integer, got "${leftRaw}"`);
     const startRaw = parseInt(leftRaw, 10);
-    const start = normalize(startRaw, n);
+
+    // For circular we DO want modulo wrapping for the starting index.
+    const normalizeCircular = (i, len) => {
+      if (len === 0) return 0;
+      const m = i % len;
+      return m < 0 ? m + len : m;
+    };
+    const start = normalizeCircular(startRaw, n);
 
     let count;
-    if (countStr === '') {
-      count = n; // full rotation
-    } else {
+    if (countStr === '') count = n;
+    else {
       if (!/^\d+$/.test(countStr)) err(`count must be a non-negative integer, got "${countStr}"`);
       count = parseInt(countStr, 10);
     }
@@ -342,7 +385,7 @@ function slice_custom(myList, sliceSpec) {
         out.push(myList[idx]);
         idx = (idx + 1) % n;
       }
-    } else { // dir === '<'
+    } else {
       let idx = start;
       for (let t = 0; t < count; t++) {
         out.push(myList[idx]);
@@ -353,9 +396,7 @@ function slice_custom(myList, sliceSpec) {
   }
 
   // ---------- Standard (no wrap) ----------
-  if (n === 0) {
-    return [];
-  }
+  if (n === 0) return [];
 
   const leftIsEmpty = leftRaw === '';
   const rightIsEmpty = rightRaw === '';
@@ -365,17 +406,17 @@ function slice_custom(myList, sliceSpec) {
 
   if (!leftIsEmpty) {
     if (!isInt(leftRaw)) err(`invalid start index "${leftRaw}"`);
-    startNorm = normalize(parseInt(leftRaw, 10), n);
+    startNorm = normStd(parseInt(leftRaw, 10), n);
   }
   if (!rightIsEmpty) {
     if (!isInt(rightRaw)) err(`invalid stop index "${rightRaw}"`);
-    stopNorm = normalize(parseInt(rightRaw, 10), n);
+    stopNorm = normStd(parseInt(rightRaw, 10), n);
   }
 
   const bothPresent = startNorm !== null && stopNorm !== null;
 
   if (!bothPresent) {
-    // Forward, no wrap
+    // Forward, no wrap: inclusive start, exclusive stop
     const start = startNorm ?? 0;
     const stop = stopNorm ?? n;
     if (start >= stop) return [];
@@ -383,10 +424,9 @@ function slice_custom(myList, sliceSpec) {
   } else {
     const start = startNorm;
     const stop = stopNorm;
-    if (start === stop) {
-      return [];
-    }
+    if (start === stop) return [];
     if (start < stop) {
+      // Forward, exclusive stop
       return myList.slice(start, stop);
     } else {
       // Backward, inclusive both ends
@@ -402,13 +442,10 @@ function slice_custom(myList, sliceSpec) {
  * ----------------------------------------------------- */
 
 module.exports = {
-  // original exports
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
-  // new convenience: full expression evaluator with postfix slice(s)
   evaluateExpression,
-  // internals (handy for tests)
   _internals: {
     parseGroupInner,
     evalGroup,
@@ -417,6 +454,9 @@ module.exports = {
     validateParens,
     findMatchingParen,
     splitTrailingSlices,
-    slice_custom
+    splitTopLevelByComma,
+    doubleUp,
+    slice_custom,
+    evaluateSegmentsNoComma
   }
 };

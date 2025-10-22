@@ -58,31 +58,26 @@ test('throws on unmatched parentheses', () => {
  * --------------------- */
 
 test('postfix slice on flat expr', () => {
-  // Base list: ["23","78","x","1289"]
   const out = evaluateExpression('23.78x1289[1:3]');
-  assert.deepEqual(out, ['78', 'x']); // slice 1..3 (exclusive stop)
+  assert.deepEqual(out, ['78', 'x']);
 });
 
 test('postfix slice with negative end index -1', () => {
-  // Base list: ["23","78","x","1289"]
   const out = evaluateExpression('23.78x1289[:-1]');
   assert.deepEqual(out, ['23', '78', 'x']);
 });
 
 test('postfix slice with negative end index -2', () => {
-  // Base list: ["23","78","x","1289"]
   const out = evaluateExpression('23.78x1289[:-2]');
   assert.deepEqual(out, ['23', '78']);
 });
 
 test('postfix slice with end < start', () => {
-  // Base list: ["23","78","x","1289"]
   const out = evaluateExpression('23.78x1289[2:1]');
   assert.deepEqual(out, ['x', '78']);
 });
 
 test('postfix slice with end < start 2', () => {
-  // Base list: ["23","78","x","1289"]
   const out = evaluateExpression('23.78x1289[2:0]');
   assert.deepEqual(out, ['x', '78', '23']);
 });
@@ -99,14 +94,10 @@ test('postfix circular forward [i:>k]', () => {
 
 test('postfix circular backward [i:<]', () => {
   const out = evaluateExpression('(a.b.c)[1:<]');
-  // full backward rotation from index 1: [b, a, c]
   assert.deepEqual(out, ['b', 'a', 'c']);
 });
 
 test('chained postfix slices', () => {
-  // Start: ["1","2","3","4","5"]
-  // [1:4] -> ["2","3","4"]
-  // then [-] -> ["4","3","2"]
   const out = evaluateExpression('(1.2.3.4.5)[1:4][-]');
   assert.deepEqual(out, ['4', '3', '2']);
 });
@@ -122,7 +113,51 @@ test('chained postfix slices double negative with slice in between', () => {
 });
 
 test('postfix slice respects x as token+delimiter', () => {
-  // Base: "12.x.34" -> ["12","x","34"]
   const out = evaluateExpression('12.x.34[:2]');
   assert.deepEqual(out, ['12', 'x']);
+});
+
+/* ---------------------
+ * comma operator tests
+ * --------------------- */
+
+test('comma operator: example from spec', () => {
+  const out = evaluateExpression('1x45.89,29');
+  // left: ["1","x","45","89"] -> doubled: ["1","x","45","89","45","x","1"]
+  // right: ["29"] -> len<=1 -> no-op
+  assert.deepEqual(out, ['1','x','45','89','45','x','1','29']);
+});
+
+test('comma operator with empty left', () => {
+  const out = evaluateExpression(',29');
+  assert.deepEqual(out, ['29']);
+});
+
+test('comma operator with empty right', () => {
+  const out = evaluateExpression('12.34,');
+  // left doubled: ["12","34","12"]
+  assert.deepEqual(out, ['12','34','12']);
+});
+
+test('comma operator both sides multi + slices per side', () => {
+  const out = evaluateExpression('(a.b.c)[1:3],(x.y)[-]');
+  // left base -> ["b","c"] -> doubled -> ["b","c","b"]
+  // right base -> ["y","x"] (reverse) -> len>1 -> ["y","x","y"]
+  assert.deepEqual(out, ['b','c','b','y','x','y']);
+});
+
+test('comma chaining is left-associative', () => {
+  // ((a , b) , c)
+  const out = evaluateExpression('a,b,c');
+  // a -> ["a"] (no-op), b -> ["b"] (no-op) => ["a","b"]
+  // then with c -> left ["a","b"] doubled -> ["a","b","a"]
+  // right ["c"] -> ["c"]
+  assert.deepEqual(out, ['a','b','a','c']);
+});
+
+test('comma respects low precedence vs dots and slices', () => {
+  const out = evaluateExpression('(1.2)[-].3 , 4.5[1:2]');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
 });
