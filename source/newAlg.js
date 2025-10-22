@@ -16,6 +16,13 @@
  *       Either side may be empty -> that side yields [].
  */
 
+// Global parser context
+const ParserContext = {
+  stage: null
+};
+
+function getStage() { return ParserContext.stage; }
+
 function parseTopLevel(input) {
   const src = input.trim();
   validateParens(src);
@@ -294,21 +301,21 @@ function evaluateSegmentsNoComma(input) {
   return results;
 }
 
-/**
- * Full expression evaluator:
- *   - First split by top-level commas (lowest precedence).
- *   - Evaluate each side (dot segments + slices).
- *   - For each comma operation (left fold), double-up each operand and concatenate.
- */
 function evaluateExpression(input) {
-  const commaParts = splitTopLevelByComma(input.trim());
+  let src = input.trim();
 
-  // If no comma present, just evaluate segments
+  // Detect leading "<int>|" prefix, e.g. "8|..." -> stage = 8
+  const m = /^(\d+)\|/.exec(src);
+  if (m) {
+    ParserContext.stage = parseInt(m[1], 10);
+    src = src.slice(m[0].length); // remove "8|" part
+  }
+
+  const commaParts = splitTopLevelByComma(src.trim());
   if (commaParts.length === 1) {
     return evaluateSegmentsNoComma(commaParts[0]);
   }
 
-  // Left-fold over commas
   let acc = evaluateSegmentsNoComma(commaParts[0]);
   for (let i = 1; i < commaParts.length; i++) {
     const right = evaluateSegmentsNoComma(commaParts[i]);
@@ -456,6 +463,7 @@ module.exports = {
   evaluateTopLevel,
   tokenizeFlat,
   evaluateExpression,
+  getStage,
   _internals: {
     parseGroupInner,
     evalGroup,

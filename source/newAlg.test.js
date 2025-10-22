@@ -6,6 +6,7 @@ const {
   evaluateTopLevel,
   tokenizeFlat,
   evaluateExpression,
+  getStage,
   _internals
 } = require('./newAlg.js');
 
@@ -160,6 +161,22 @@ test('comma respects low precedence vs dots and slices', () => {
   // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
   // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
   assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
+});
+
+test('pipe to set stage does not break processing', () => {
+  const out = evaluateExpression('6|(1.2)[-].3 , 4.5[1:2]');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
+  assert.equal(getStage(), 6);
+});
+
+test('pipe to set stage does not break processing 2', () => {
+  const out = evaluateExpression('5|(1.2)[-].3 , 4.5[1:2]');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
+  assert.equal(getStage(), 5);
 });
 
 test('double comma', () => {
