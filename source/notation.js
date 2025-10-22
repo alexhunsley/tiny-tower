@@ -125,17 +125,13 @@ export function expandPlaceNotation(pnString, stage) {
 
     console.log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
 
-    // Build S1: leftTokens + reverse(leftTokensWithoutLast) with per-token place reversal
-
     const leftTail = leftTokens.slice(0, -1-stage%2).reverse()
       .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
 
-    const S1 = [...leftTokens, ...leftTail];
-    const S1rev = S1.slice().reverse();
+    const part1_part2 = [...leftTokens, ...leftTail];
 
-    // convert to comma notation
-    const comma_notation_result_left = [...S1, rightMirroredTokens];
-    raw = collapsePlaceNotation(comma_notation_result_left) + "," + rightRaw;
+    const comma_notation_left = [...part1_part2, rightMirroredTokens];
+    raw = collapsePlaceNotation(comma_notation_left) + "," + rightRaw;
     console.log(" ; HANDLING: made comma version of ", raw);
   }
 
