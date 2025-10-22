@@ -77,6 +77,24 @@ function mirrorPlacesWithinToken(token, stage) {
   return places.map(indexToSymbol).join("");
 }
 
+// standard ',' format for palindromic PN
+export function expandCommaPlaceNotation(pnString, stage) {
+    const raw = String(pnString || "").trim();
+  if (!raw) return [];
+
+  if (raw.includes(",")) {
+    const segments = raw.split(",").map(s => s.trim()).filter(Boolean);
+    const out = [];
+    for (const seg of segments) {
+      const toks = tokenizeSegment(seg);
+      if (!toks.length) continue;
+      const mirror = toks.slice(0, -1).reverse(); // plain mirror (no place reversal)
+      out.push(...toks, ...mirror);
+    }
+    return out;
+  }
+}
+
 // ok, defo need to handle half lead being different from lead.
 // to keep consistent order with ',',
 // we will list half lead, lead end after the ';' when there are two
@@ -92,7 +110,7 @@ function mirrorPlacesWithinToken(token, stage) {
 //   - with commas: per-segment palindromes (tokens + reverse(tokensWithoutLast))
 //   - without commas: just tokenize (no mirroring)
 export function expandPlaceNotation(pnString, stage) {
-  const raw = String(pnString || "").trim();
+  let raw = String(pnString || "").trim();
   if (!raw) return [];
 
   // Handle special ';' case
@@ -115,30 +133,16 @@ export function expandPlaceNotation(pnString, stage) {
     const S1 = [...leftTokens, ...leftTail];
     const S1rev = S1.slice().reverse();
 
-    const comma_notation_result = [...S1, rightMirroredTokens, ...S1rev, rightRaw];
-    //                             ^ l+rev(left)
-    //                                    ^ half lead
-    //                                                        ^ palindrome (full expansion)
-    //                                                                   ^ lead end
-
-    console.log(";   made result from: ", S1, " ", rightMirroredTokens, " ", S1rev, " ", rightRaw);
-    console.log("; final notation: from ", raw, " to ", comma_notation_result);
-
-    // NB this is doing the full expansion. Could fall back on comma handling, below.
-    return comma_notation_result;
+    // convert to comma notation
+    const comma_notation_result_left = [...S1, rightMirroredTokens];
+    raw = collapsePlaceNotation(comma_notation_result_left) + "," + rightRaw;
+    console.log(" ; HANDLING: made comma version of ", raw);
   }
 
   // Legacy comma behavior (unchanged)
   if (raw.includes(",")) {
-    const segments = raw.split(",").map(s => s.trim()).filter(Boolean);
-    const out = [];
-    for (const seg of segments) {
-      const toks = tokenizeSegment(seg);
-      if (!toks.length) continue;
-      const mirror = toks.slice(0, -1).reverse(); // plain mirror (no place reversal)
-      out.push(...toks, ...mirror);
-    }
-    return out;
+    const expandedCommaNotationTokens = expandCommaPlaceNotation(raw, stage);
+    return expandedCommaNotationTokens;
   }
 
   // No commas: simple tokenize, no mirroring
