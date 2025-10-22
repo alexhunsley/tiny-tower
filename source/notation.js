@@ -77,6 +77,15 @@ function mirrorPlacesWithinToken(token, stage) {
   return places.map(indexToSymbol).join("");
 }
 
+// ok, defo need to handle half lead being different from lead.
+// to keep consistent order with ',',
+// we will list half lead, lead end after the ';' when there are two
+// (otherwise derived first from second).
+//
+// So double oxford is this:
+//    x14x36x;78;12
+//
+// 
 /* ---------------- Expand with commas and the special ';' semantics ---------------- */
 // If there's exactly one ';', apply the special rule described.
 // Otherwise, old behavior:
@@ -94,26 +103,29 @@ export function expandPlaceNotation(pnString, stage) {
     const rightRaw = raw.slice(semiIdx + 1).trim();
 
     const leftTokens = tokenizeSegment(leftRaw);
-    const rightTokens = mirroredNotate(rightRaw, clampStage(stage));
+    const rightMirroredTokens = mirroredNotate(rightRaw, clampStage(stage));
 
-    console.log("right raw, right tokens = ", rightRaw, ",", rightTokens);
+    console.log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
 
     // Build S1: leftTokens + reverse(leftTokensWithoutLast) with per-token place reversal
 
     const leftTail = leftTokens.slice(0, -1-stage%2).reverse()
-    // odd stages
-    // const leftTail = leftTokens.slice(0, -2).reverse()
-    // even stages
-    // const leftTail = leftTokens.slice(0, -1).reverse()
-
-    // const leftTail = leftTokens.reverse()
       .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
-    const S1 = [...leftTokens, ...leftTail];
 
-    // Final lead token list per your spec:
-    // S1 + RIGHT + reverse(S1) + RIGHT
+    const S1 = [...leftTokens, ...leftTail];
     const S1rev = S1.slice().reverse();
-    return [...S1, rightTokens, ...S1rev, rightRaw];
+
+    const comma_notation_result = [...S1, rightMirroredTokens, ...S1rev, rightRaw];
+    //                             ^ l+rev(left)
+    //                                    ^ half lead
+    //                                                        ^ palindrome (full expansion)
+    //                                                                   ^ lead end
+
+    console.log(";   made result from: ", S1, " ", rightMirroredTokens, " ", S1rev, " ", rightRaw);
+    console.log("; final notation: from ", raw, " to ", comma_notation_result);
+
+    // NB this is doing the full expansion. Could fall back on comma handling, below.
+    return comma_notation_result;
   }
 
   // Legacy comma behavior (unchanged)
