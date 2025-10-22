@@ -1,8 +1,8 @@
 # Tiny Tower
 
-A web app for seeing, listening to, and researching change ringing methods.
+A [web app](https://hunsley.io/tower) for seeing, listening to, and researching change ringing methods.
 
-The live app is at https://hunsley.io/tower.
+Ideally it will be useful when playing with new method ideas.
 
 Tiny Tower is BYOPN (Bring Your Own Place Notation) -- it's not a tool for looking up methods. (That said, loading some very common methods will probably be added to the interface in the future.)
 
