@@ -1,5 +1,6 @@
+// newAlg.js
 /**
- * Parsing to AST (same as before) + Evaluation to flat string[]
+ * Parsing to AST + Evaluation to flat string[]
  *
  * AST:
  *   Group = { type: 'Group', items: Element[] }
@@ -7,9 +8,16 @@
  */
 
 function parseTopLevel(input) {
-  const parts = splitTopLevelByDot(input.trim());
+  const src = input.trim();
+
+  // 1) Validate parentheses up front so unmatched '(' throws clearly
+  validateParens(src);
+
+  // 2) Split top-level by '.' (dots outside parentheses)
+  const parts = splitTopLevelByDot(src);
   return parts.map(part => {
     const trimmed = part.trim();
+    // For this grammar we expect each top-level segment to be a bracketed group
     if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
       throw new Error(`Expected a bracketed group at top level, got: ${trimmed}`);
     }
@@ -59,8 +67,7 @@ function parseGroupInner(s) {
     const ch = s[i];
 
     if (ch === '(') {
-      const end = findMatchingParen(s, i);
-      if (end < 0) throw new Error("Unmatched '(' in group");
+      const end = findMatchingParen(s, i); // throws if unmatched
       flushBuf();
       const nestedText = s.slice(i, end + 1);
       items.push(parseGroup(nestedText));
@@ -68,7 +75,10 @@ function parseGroupInner(s) {
       continue;
     }
 
-    if (ch === ')') throw new Error("Unexpected ')' inside group");
+    if (ch === ')') {
+      // Should never occur here in a well-formed substring
+      throw new Error("Unexpected ')' inside group");
+    }
 
     if (ch === '.') {
       flushBuf();  // delimiter only
@@ -77,7 +87,7 @@ function parseGroupInner(s) {
     }
 
     if (ch === 'x' || ch === 'X') {
-      flushBuf();      // split boundary before x
+      flushBuf();      // split before x
       items.push('x'); // literal token
       i++;
       continue;
@@ -91,6 +101,28 @@ function parseGroupInner(s) {
   return items.filter(tok => !(typeof tok === 'string' && tok.length === 0));
 }
 
+/**
+ * Throws if any '(' is unmatched or a ')' appears without a matching '('.
+ * Gives a consistent "Unmatched" error message for tests.
+ */
+function validateParens(s) {
+  const stack = [];
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '(') stack.push(i);
+    else if (ch === ')') {
+      if (stack.length === 0) {
+        throw new Error(`Unmatched ")" at index ${i}`);
+      }
+      stack.pop();
+    }
+  }
+  if (stack.length) {
+    const openIdx = stack[stack.length - 1];
+    throw new Error(`Unmatched "(" at index ${openIdx}`);
+  }
+}
+
 function findMatchingParen(s, openIdx) {
   let depth = 0;
   for (let i = openIdx; i < s.length; i++) {
@@ -100,24 +132,21 @@ function findMatchingParen(s, openIdx) {
       if (depth === 0) return i;
     }
   }
-  return -1;
+  // If we get here, no closing ')' was found for this '('
+  throw new Error(`Unmatched "(" at index ${openIdx}`);
 }
 
 /* ---------------------
  * Evaluation (flatten)
  * --------------------- */
 
-// Evaluate a single Element -> string[]
 function evalElement(el) {
   if (typeof el === 'string') {
-    // tokens (including "x") become singleton lists
     return el.length ? [el] : [];
   }
-  // el is a Group
   return evalGroup(el);
 }
 
-// Evaluate a Group (concatenate evaluated items in order)
 function evalGroup(group) {
   const out = [];
   for (const item of group.items) {
@@ -127,32 +156,33 @@ function evalGroup(group) {
   return out;
 }
 
-// Evaluate the whole parsed top-level -> string[]
 function evaluateTopLevel(groups) {
   const out = [];
   for (const g of groups) out.push(...evalGroup(g));
   return out;
 }
 
-/* ---------------------
- * Demos
- * --------------------- */
-
-function demoEval(input) {
-  const ast = parseTopLevel(input);
-  const flat = evaluateTopLevel(ast);
-  console.log(`Input: ${input}`);
-  console.log(`Flat:  ${JSON.stringify(flat)}`);
+/**
+ * Utility for testing flat tokenization of a *non-parenthesized* string.
+ * Mirrors the inner tokenizer semantics ('.' is delimiter, 'x' is token+delimiter).
+ */
+function tokenizeFlat(s) {
+  const items = parseGroupInner(s);
+  const flatten = el => (typeof el === 'string' ? [el] : evalGroup(el));
+  return items.flatMap(flatten);
 }
 
-// Your examples:
-demoEval("(23.45).(67x)");     // -> ["23","45","67","x"]
-demoEval("(45.12)");           // -> ["45","12"]
-demoEval("(45x89.12)");        // -> ["45","x","89","12"]
-demoEval("(12.x)");            // -> ["12"]
-
-demoEval("(12...xx)");            // -> ["12xx"]
-
-
-// Nested:
-demoEval("((34.16).(7x)).(9)"); // -> ["34","16","7","x","9"]
+module.exports = {
+  parseTopLevel,
+  evaluateTopLevel,
+  tokenizeFlat,
+  // internals (handy for deeper tests if needed)
+  _internals: {
+    parseGroupInner,
+    evalGroup,
+    evalElement,
+    splitTopLevelByDot,
+    validateParens,
+    findMatchingParen
+  }
+};
