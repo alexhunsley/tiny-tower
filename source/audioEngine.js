@@ -4,6 +4,7 @@
 
 let AC = null;
 let master = null;
+let _audioUnlocked = false;
 
 // Diatonic scale wi#th bell 12 as the root (C major by default).
 // Index: 1 = highest ... 12 = lowest (tonic)
@@ -54,16 +55,57 @@ export async function triggerPlace(place, { strike = 1.0, volume = 0.9 } = {}) {
   osc.stop(tDecayEnd + 0.01);
 }
 
-export async function ensureAudio(volume = 0.9) {
+export function ensureAudio(volume = 0.9) {
   if (!AC || AC.state === "closed") {
     AC = new (window.AudioContext || window.webkitAudioContext)();
     master = AC.createGain();
     master.gain.value = Number.isFinite(volume) ? volume : 0.9;
     master.connect(AC.destination);
   }
-  try { await AC.resume(); } catch {}
+  // Kick resume but DON'T await (avoids hang on autoplay without gesture)
+  try { AC.resume && AC.resume().catch(() => {}); } catch {}
   return AC;
 }
+
+export function initAudioUnlock() {
+  if (_audioUnlocked) return;
+
+  const unlock = () => {
+    try {
+      ensureAudio(0.9);
+
+      // Start an immediate, near-silent tick in the same gesture stack
+      const o = AC.createOscillator();
+      const g = AC.createGain();
+      o.type = "sine";
+      o.frequency.value = 440;
+      g.gain.value = 0.0005;
+      o.connect(g).connect(master);
+      o.start();                          // immediate (no await/timers)
+      o.stop(AC.currentTime + 0.02);
+
+      AC.resume?.();
+
+      _audioUnlocked = true;
+      remove();
+      // let the app know
+      window.dispatchEvent(new Event("audio-unlocked"));
+    } catch {}
+  };
+
+  const remove = () => {
+    window.removeEventListener("pointerdown", unlock, true);
+    window.removeEventListener("touchend",   unlock, true);
+    window.removeEventListener("keydown",    unlock, true);
+  };
+
+  // Attach multiple gesture types; fire once
+  window.addEventListener("pointerdown", unlock, true);
+  window.addEventListener("touchend",   unlock, true);
+  window.addEventListener("keydown",    unlock, true);
+}
+
+export function isAudioUnlocked() { return _audioUnlocked; }
 
 export function setVolume(v) {
   if (!AC || !master) return;
@@ -111,7 +153,7 @@ function scheduleSineWithEnvelope(freq, when, dur) {
 
 export async function playSequence(indices, { bpm = 224, strike = 1.0, volume = 0.9 } = {}) {
   if (!Array.isArray(indices) || !indices.length) return;
-  await ensureAudio(volume);
+  ensureAudio(volume);
   setVolume(volume);
 
   const beat = 60 / Math.max(30, Math.min(300, bpm));
@@ -127,9 +169,3 @@ export async function playSequence(indices, { bpm = 224, strike = 1.0, volume = 
   });
 }
 
-// Convenience beep
-export async function testBeep() {
-  await ensureAudio();
-  const now = AC.currentTime + 0.02;
-  scheduleSineWithEnvelope(880, now, 0.25);
-}

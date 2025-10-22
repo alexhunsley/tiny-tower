@@ -17,8 +17,37 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   box-shadow: 0 2px 12px rgba(0,0,0,.25);
 }
 .toolbar .bar { width:min(1000px, 96vw); margin:0 auto; padding:16px 0; }
-.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }
+/*.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }*/
 .toolbar p { margin:0 0 12px; color:var(--muted); }
+
+
+.toolbar h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.toolbar .version {
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.toolbar .byline {
+  margin-left: auto;         /* pushes the byline to the right */
+  font-size: 1.0rem;
+  color: var(--muted);       /* faint grey text for "by" */
+}
+
+.toolbar .byline a {
+  color: var(--muted);       /* faint grey link */
+  text-decoration: underline;
+}
+.toolbar .byline a:hover {
+  color: var(--accent);      /* your accent blue on hover */
+  text-decoration: underline;
+}
+
 
 /* Workspace uses all remaining vertical space */
 .workspace {

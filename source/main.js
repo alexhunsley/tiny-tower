@@ -4,15 +4,16 @@ import { formatRowForDisplay } from "./displayMap.js";
 import {
   playSequence,   // still used by manual player
   stopAll,
-  testBeep,
   setVolume,
   pause as pauseAudio,
   resume as resumeAudio,
   triggerPlace,   // used by live, note-by-note scheduler
+  initAudioUnlock
 } from "./audioEngine.js";
-import { parseDigits } from "./utils.js";
+import { parseDigits, isSafariFamily } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
+
 
 function el(id) {
   const n = document.getElementById(id);
@@ -346,33 +347,44 @@ function generateAndRender({ pnString, stage, maxLeads = 12 }) {
   return generatedRows;
 }
 
-/* -------------------- init -------------------- */
 function init() {
   try {
-    // Ensure required elements exist
     [
       "bpm","placeNotation","stage","generate","notationOutput",
       "playRows","pauseRows","stopRows","reportPanel"
     ].forEach(id => el(id));
 
-    // Prefill from URL, then fill any blanks from DEFAULTS
     const { pn, stage } = readURLParams();
     if (pn) el("placeNotation").value = pn;
     if (stage != null) el("stage").value = clampStage(stage);
-    applyDefaultsToControls(); // uses DEFAULTS.* for any empty fields
+    applyDefaultsToControls();
 
-    console.log(">>>> init: pn, stage, autoGenerateOnLoad = ", pn, stage, DEFAULTS.autoGenerateOnLoad);
+    initAudioUnlock();
 
-    // Auto-generate rows if URL provided pn/stage; otherwise respect DEFAULTS flag
-    if (pn || stage != null || DEFAULTS.autoGenerateOnLoad) {
+    if (pn && stage != null && DEFAULTS.autoGenerateOnLoad) {
       const s = clampStage(el("stage").value);
       const pnString = (el("placeNotation").value || "").trim();
-      generateAndRender({ pnString, stage: s });   // <-- now also builds report & overlay
+      generateAndRender({ pnString, stage: s });
+
+      /* --- autoplay */
+
+      const q = new URLSearchParams(location.search);
+      const autoPlay = q.get("autoPlay");
+      console.log(">>>> init: pn, stage, autoGenerateOnLoad = ", pn, stage, DEFAULTS.autoGenerateOnLoad, " autoPlay = ", autoPlay);
+
+      if (autoPlay === "1") {
+        if (isSafariFamily()) {
+          console.log("Safari detected — skipping autoplay (gesture block)");
+          // Optional: show a small banner/button prompting the user to press Play
+          // el("playHint").classList.remove("hidden");
+        } else {
+          console.log("Non-safari detected, autoplaying");
+          // kick playback after render (desktop Chromium/Firefox, iOS Chrome still requires gesture)
+          setTimeout(() => el("playRows").click(), 300);
+        }
+      }
     }
-
-    // Wire up UI
     wireNotation();
-
   } catch (err) {
     console.error(err);
     alert(err.message + "\n\nTip: hard-reload (Ctrl+F5 / Cmd+Shift+R) to bust cache.");
@@ -460,14 +472,6 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
     lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.`);
   }
 
-  if (pnString && pnString.includes(";")) {
-    lines.push("[OK] Semicolon mode detected (special mirroring).");
-  }
-  if (pnString && pnString.includes(",")) {
-    lines.push("[OK] Comma-separated segments with palindromic mirroring.");
-  }
-  
-  // herus
   console.log("Tokens: ", pnString);
   lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
   
