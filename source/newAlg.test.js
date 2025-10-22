@@ -63,6 +63,30 @@ test('postfix slice on flat expr', () => {
   assert.deepEqual(out, ['78', 'x']); // slice 1..3 (exclusive stop)
 });
 
+test('postfix slice with negative end index -1', () => {
+  // Base list: ["23","78","x","1289"]
+  const out = evaluateExpression('23.78x1289[:-1]');
+  assert.deepEqual(out, ['23', '78', 'x']);
+});
+
+test('postfix slice with negative end index -2', () => {
+  // Base list: ["23","78","x","1289"]
+  const out = evaluateExpression('23.78x1289[:-2]');
+  assert.deepEqual(out, ['23', '78']);
+});
+
+test('postfix slice with end < start', () => {
+  // Base list: ["23","78","x","1289"]
+  const out = evaluateExpression('23.78x1289[2:1]');
+  assert.deepEqual(out, ['x', '78']);
+});
+
+test('postfix slice with end < start 2', () => {
+  // Base list: ["23","78","x","1289"]
+  const out = evaluateExpression('23.78x1289[2:0]');
+  assert.deepEqual(out, ['x', '78', '23']);
+});
+
 test('postfix reverse slice [-]', () => {
   const out = evaluateExpression('(1.2.3.4)[-]');
   assert.deepEqual(out, ['4', '3', '2', '1']);
@@ -85,6 +109,16 @@ test('chained postfix slices', () => {
   // then [-] -> ["4","3","2"]
   const out = evaluateExpression('(1.2.3.4.5)[1:4][-]');
   assert.deepEqual(out, ['4', '3', '2']);
+});
+
+test('chained postfix slices double negative', () => {
+  const out = evaluateExpression('(1.2.3.4.5)[1:4][-][-]');
+  assert.deepEqual(out, ['2', '3', '4']);
+});
+
+test('chained postfix slices double negative with slice in between', () => {
+  const out = evaluateExpression('(1.2.3.4.5)[-][1:3][-]');
+  assert.deepEqual(out, ['3', '4']);
 });
 
 test('postfix slice respects x as token+delimiter', () => {
