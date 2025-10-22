@@ -197,6 +197,20 @@ function splitTrailingSlices(input) {
   return { base, slices };
 }
 
+
+// helper
+
+// Returns true iff s is exactly one balanced (...) pair (no extra chars outside)
+function isSingleOuterParens(s) {
+  if (!s || s[0] !== '(' || s[s.length - 1] !== ')') return false;
+  try {
+    const end = findMatchingParen(s, 0);
+    return end === s.length - 1;
+  } catch {
+    return false;
+  }
+}
+
 /* -------------------------------------------------------
  * Low-precedence comma support
  * ----------------------------------------------------- */
@@ -231,11 +245,6 @@ function doubleUp(list) {
 }
 
 // Evaluate an expression that has NO commas.
-// Supports:
-//  • If the input includes any parentheses: treat '.' as segment separators,
-//    allow per-segment trailing slice chains (as before).
-//  • If the input has NO parentheses: treat the whole thing as one flat base,
-//    so trailing slices apply to the entire flat list (e.g. "12.x.34[:2]").
 function evaluateSegmentsNoComma(input) {
   const trimmed = input.trim();
   if (trimmed.length === 0) return []; // empty side of comma => []
@@ -245,11 +254,7 @@ function evaluateSegmentsNoComma(input) {
   // Case A: no parentheses -> whole flat base + trailing slices for the WHOLE expr
   if (!hasParens) {
     const { base, slices } = splitTrailingSlices(trimmed);
-
-    // Tokenize the entire flat base ('.' delimiter; 'x' token+delimiter)
     let list = base.length === 0 ? [] : tokenizeFlat(base);
-
-    // Apply trailing slice chain to the whole list
     for (const spec of slices) {
       list = slice_custom(list, spec);
     }
@@ -257,7 +262,7 @@ function evaluateSegmentsNoComma(input) {
   }
 
   // Case B: parentheses present -> split by top-level '.' into segments,
-  // and let each segment have its own trailing slices (existing behavior).
+  // and let each segment have its own trailing slices.
   const parts = splitTopLevelByDot(trimmed);
   const results = [];
 
@@ -265,7 +270,12 @@ function evaluateSegmentsNoComma(input) {
     const { base, slices } = splitTrailingSlices(part.trim());
 
     let list;
-    if (base.includes('(') || base.includes(')')) {
+    if (isSingleOuterParens(base)) {
+      // NEW: evaluate inside the single paren pair with full rules (commas, dots, slices)
+      const inner = base.slice(1, -1).trim();
+      list = evaluateExpression(inner);
+    } else if (base.includes('(') || base.includes(')')) {
+      // Fallback: nested/complex parentheses handled by AST path
       const ast = parseTopLevel(base);
       list = evaluateTopLevel(ast);
     } else if (base.length === 0 && slices.length > 0) {

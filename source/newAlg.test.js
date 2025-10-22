@@ -161,3 +161,31 @@ test('comma respects low precedence vs dots and slices', () => {
   // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
   assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
 });
+
+test('double comma', () => {
+  const out = evaluateExpression('1.2.45,,');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['1', '2', '45', '2', '1',   '2', '45', '2', '1' ]);
+});
+
+test('double comma with brackets', () => {
+  const out = evaluateExpression('(1.2.45,),');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['1', '2', '45', '2', '1',  '2', '45', '2', '1' ]);
+});
+
+test('double comma with brackets either side', () => {
+  const out = evaluateExpression('(1.2.45,),(6.8.34)');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['1', '2', '45', '2', '1', '2', '45', '2', '1',    '6', '8', '34', '8', '6' ]);
+});
+
+test('double comma with brackets either side', () => {
+  const out = evaluateExpression('(1.2.45,),(6.8.34,)');
+  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
+  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
+  assert.deepEqual(out, ['1', '2', '45', '2', '1', '2', '45', '2', '1',    '6', '8', '34', '8', '6', '8', '34', '8', '6' ]);
+});
