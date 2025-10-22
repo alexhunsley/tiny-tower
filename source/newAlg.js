@@ -207,6 +207,25 @@ function splitTrailingSlices(input) {
 
 // helper
 
+// Detects N(<...>) where '(' at that position closes at the very end
+function matchRepeatOuter(base) {
+  const s = base.trim();
+  const open = s.indexOf('(');
+  if (open <= 0) return null;                 // must have digits before '('
+  const prefix = s.slice(0, open).trim();
+  if (!/^\d+$/.test(prefix)) return null;     // prefix must be an integer
+  const end = findMatchingParen(s, open);     // throws if unmatched
+  if (end !== s.length - 1) return null;      // '(' must match the last ')'
+  return { count: parseInt(prefix, 10), inner: s.slice(open + 1, end).trim() };
+}
+
+function repeatList(list, n) {
+  if (n <= 0 || list.length === 0) return [];
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(...list);
+  return out;
+}
+
 // Returns true iff s is exactly one balanced (...) pair (no extra chars outside)
 function isSingleOuterParens(s) {
   if (!s || s[0] !== '(' || s[s.length - 1] !== ')') return false;
@@ -307,14 +326,14 @@ function doubleUp(list) {
   return list.concat(tailRev);
 }
 
-// Evaluate an expression that has NO commas.
 function evaluateSegmentsNoComma(input) {
   const trimmed = input.trim();
-  if (trimmed.length === 0) return []; // empty side of comma => []
+  if (trimmed.length === 0) return []; // empty side of a low-precedence op => []
 
   const hasParens = trimmed.includes('(') || trimmed.includes(')');
 
-  // Case A: no parentheses -> whole flat base + trailing slices for the WHOLE expr
+  // Case A: no parentheses -> treat the whole thing as one flat base,
+  // and apply any trailing slice chain to the WHOLE list.
   if (!hasParens) {
     const { base, slices } = splitTrailingSlices(trimmed);
     let list = base.length === 0 ? [] : tokenizeFlat(base);
@@ -325,7 +344,7 @@ function evaluateSegmentsNoComma(input) {
   }
 
   // Case B: parentheses present -> split by top-level '.' into segments,
-  // and let each segment have its own trailing slices.
+  // and let each segment have its own trailing slice chain.
   const parts = splitTopLevelByDot(trimmed);
   const results = [];
 
@@ -333,20 +352,28 @@ function evaluateSegmentsNoComma(input) {
     const { base, slices } = splitTrailingSlices(part.trim());
 
     let list;
-    if (isSingleOuterParens(base)) {
-      // NEW: evaluate inside the single paren pair with full rules (commas, dots, slices)
+
+    // Multiplier N(<...>) has high precedence within a segment
+    const rep = matchRepeatOuter(base);
+    if (rep) {
+      const innerList = evaluateExpressionInternal(rep.inner); // no stage parsing here
+      list = repeatList(innerList, rep.count);
+    } else if (isSingleOuterParens(base)) {
+      // Evaluate inside a single outer paren pair (no stage parsing here)
       const inner = base.slice(1, -1).trim();
       list = evaluateExpressionInternal(inner);
     } else if (base.includes('(') || base.includes(')')) {
-      // Fallback: nested/complex parentheses handled by AST path
+      // Fallback path for complex/nested cases via AST
       const ast = parseTopLevel(base);
       list = evaluateTopLevel(ast);
     } else if (base.length === 0 && slices.length > 0) {
       list = [];
     } else {
+      // Plain flat tokens ('.' delimiter; 'x' token+delimiter)
       list = tokenizeFlat(base);
     }
 
+    // Apply this segment’s trailing slice chain AFTER multiplier/parens
     for (const spec of slices) {
       list = slice_custom(list, spec);
     }
@@ -538,6 +565,8 @@ module.exports = {
   tokenizeFlat,
   evaluateExpression,
   getStage,
+  // matchRepeatOuter,
+  // repeatList,
   _internals: {
     parseGroupInner,
     evalGroup,
