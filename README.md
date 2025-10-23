@@ -32,3 +32,7 @@ Tiny Tower is currently written in bare javascript. I may use a lightweight SPA 
 ## Bugs
 
 Can be filed under [issues](../../issues).
+
+## Where's the code?!
+
+I'm transferring from elsewhere shortly.
