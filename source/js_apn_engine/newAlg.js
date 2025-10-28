@@ -693,6 +693,26 @@ function derivePermCycles(oneLine, alphabetIn) {
   return { cycles, period };
 }
 
+//   later!
+// const MethodType = Object.freeze({
+//   HUNTER:        0,
+//   DIFFERENTIAL:  1 << 0,
+//   PRINCIPAL:     1 << 1,
+// });
+
+// takes a list of strings representing perm cycles,
+// e.g. PB4 has cycles ["1", "423"]
+function arePermCyclesConsideredDifferential(permCycles) {
+  // Edge case: technically a perm cycle list of one single char string isn't
+  // a differential (e.g permCycle = ["1"]).
+  // This check could be omitted if you never expect this to come up.
+  if (permCycles.length == 0 || permCycles.length == 1 && permCycles[0].length == 1) {
+    return false;
+  }
+  
+  return permCycles.filter(cycle => cycle.length > 1).length != 1;
+}
+
 // test data: "5|45.1" has 5 backwards tenors at backstroke,
 //            "7|67.1" has 3.
 //
@@ -721,6 +741,7 @@ export {
   evaluateExpression,
   getStage,
   derivePermCycles,
+  arePermCyclesConsideredDifferential,
   count87s
 };
 

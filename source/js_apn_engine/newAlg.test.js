@@ -12,6 +12,7 @@ const {
   evaluateExpression,
   getStage,
   derivePermCycles,
+  arePermCyclesConsideredDifferential,
   count87s,
   _internals
 } = require('./newAlg.js');
@@ -655,6 +656,31 @@ test('uses global ROUNDS_CHARS when second arg omitted (if defined)', () => {
   assert.equal(period, 5);
   delete global.ROUNDS_CHARS;
 });
+
+// Optional: ensure extended rounds alphabet is respected when globally defined
+test('criteria for differential detection behave as expected', () => {
+  // no cycles is considered no-differential
+  assert.equal(arePermCyclesConsideredDifferential([]), false);
+
+  assert.equal(arePermCyclesConsideredDifferential(["12345"]), false);
+  assert.equal(arePermCyclesConsideredDifferential(["2345", "1"]), false);
+
+  assert.equal(arePermCyclesConsideredDifferential(["534", "1", "2"]), false);
+  assert.equal(arePermCyclesConsideredDifferential(["54", "1", "2", "3"]), false);
+
+  assert.equal(arePermCyclesConsideredDifferential(["123", "45"]), true);
+  assert.equal(arePermCyclesConsideredDifferential(["123", "45", "6", "7", "8"]), true);
+
+  // cycles all being 1 is considered a differential
+  assert.equal(arePermCyclesConsideredDifferential(["6", "7", "8"]), true);
+
+  // single cycle of length 1 is NOT considered a differential
+  assert.equal(arePermCyclesConsideredDifferential(["1"]), false);
+
+  // two cycles of length 1 are considered a differential
+  assert.equal(arePermCyclesConsideredDifferential(["1", "2"]), true);
+});
+
 
 test('count87s identifies bum music at backstroke', () => {
   assert.equal(count87s(["12345678", "12345687", "12345687", "12345678", "12345687", "12345678"], 8), 2);
