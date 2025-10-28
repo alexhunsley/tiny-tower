@@ -16,6 +16,9 @@
  *       Either side may be empty -> that side yields [].
  */
 
+// Character set for stage-based inversion (prefix subset by stage)
+const ROUNDS_CHARS = "1234567890ETABCD";
+
 // Global parser context
 const ParserContext = {
   stage: null
@@ -216,7 +219,7 @@ function mirrorExpandToken(str) {
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
   }
-  const subset = ALPHABET.slice(0, Math.min(stage, ALPHABET.length));
+  const subset = ROUNDS_CHARS.slice(0, Math.min(stage, ROUNDS_CHARS.length));
   const last = subset.length - 1;
 
   const present = new Set();
@@ -266,10 +269,7 @@ function isSingleOuterParens(s) {
   }
 }
 
-// Character set for stage-based inversion (prefix subset by stage)
-const ALPHABET = "1234567890ETABCD";
-
-// Invert every char using the first `stage` chars of ALPHABET,
+// Invert every char using the first `stage` chars of ROUNDS_CHARS,
 // then reverse the whole string to preserve inherent order.
 // If stage is not set and this is used (for ';'), we throw.
 function invertTokenWithStage(str) {
@@ -277,7 +277,7 @@ function invertTokenWithStage(str) {
   if (!stage || stage < 1) {
     throw new Error("';' operator requires a valid stage (use '<n>|' prefix).");
   }
-  const subset = ALPHABET.slice(0, Math.min(stage, ALPHABET.length));
+  const subset = ROUNDS_CHARS.slice(0, Math.min(stage, ROUNDS_CHARS.length));
   const last = subset.length - 1;
 
   const mapped = Array.from(str, ch => {
@@ -451,7 +451,7 @@ function evaluateExpression(input) {
   const m = /^([1234567890ETABCDetabcd]+)\|/.exec(src);
   if (m) {
     ParserContext.stage = null;                  // reset because we are consuming a new prefix
-    ParserContext.stage = ALPHABET.indexOf(m[1]) + 1 // parseInt(m[1], 10);    // set stage from prefix
+    ParserContext.stage = ROUNDS_CHARS.indexOf(m[1]) + 1 // parseInt(m[1], 10);    // set stage from prefix
     src = src.slice(m[0].length);                // strip "n|"
   } else {
     ParserContext.stage = null;                  // no prefix at top-level => no stage for this expression
