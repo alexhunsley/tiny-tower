@@ -602,6 +602,94 @@ function slice_custom(myList, sliceSpec) {
   }
 }
 
+//////////////////////////////////
+// perm cycles (differential detection, etc.)
+
+// Example (default): const ROUNDS_CHARS = "1234567890ETABCD";
+
+/**
+ * derivePermCycles("21453") -> { cycles: ["12", "345"], period: 6 }
+ * The permutation string is a one-line image of the first n symbols of `alphabet`.
+ * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
+ */
+function derivePermCycles(oneLine, alphabetIn) {
+  const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
+
+  console.log("alphabet: ", alphabet);
+  if (typeof oneLine !== "string" || oneLine.length === 0) {
+    throw new Error("oneLine must be a non-empty string");
+  }
+
+  const n = oneLine.length;
+  if (n > alphabet.length) {
+    throw new Error(`Permutation length ${n} exceeds alphabet length ${alphabet.length}`);
+  }
+
+  // Use only the first n symbols of the alphabet
+  const subset = alphabet.slice(0, n);
+
+  console.log("subset: ", subset);
+
+  // Map symbol -> 1-based index within subset
+  const idxOf = new Map();
+  for (let i = 0; i < n; i++) idxOf.set(subset[i], i + 1);
+
+  // Build mapping p: i -> p(i), with i in 1..n
+  const p = new Array(n + 1);
+  for (let i = 1; i <= n; i++) {
+    const ch = oneLine[i - 1];
+    const v = idxOf.get(ch);
+    if (v == null) {
+      throw new Error(`Invalid symbol '${ch}' at position ${i}; expected one of "${subset}"`);
+    }
+    p[i] = v;
+  }
+
+  // Validate it's a permutation (all images unique)
+  const seenVals = new Set();
+  for (let i = 1; i <= n; i++) {
+    if (p[i] < 1 || p[i] > n) {
+      throw new Error(`Image out of range at ${i}: ${p[i]}`);
+    }
+    seenVals.add(p[i]);
+  }
+  if (seenVals.size !== n) {
+    throw new Error(`Input is not a permutation of the first ${n} symbols of the alphabet`);
+  }
+
+  // Extract cycles
+  const visited = new Array(n + 1).fill(false);
+  const cycles = [];
+  const lengths = [];
+
+  for (let start = 1; start <= n; start++) {
+    if (visited[start]) continue;
+
+    let cur = start;
+    const cycleIdx = [];
+    while (!visited[cur]) {
+      visited[cur] = true;
+      cycleIdx.push(cur);
+      cur = p[cur];
+    }
+
+    // Convert indices to alphabet symbols for the cycle string
+    const cycleStr = cycleIdx.map(i => subset[i - 1]).join("");
+    cycles.push(cycleStr);
+    lengths.push(cycleIdx.length);
+  }
+
+  // Period = LCM of cycle lengths
+  const gcd = (a, b) => {
+    while (b) [a, b] = [b, a % b];
+    return a;
+  };
+  const lcm = (a, b) => (a === 0 || b === 0) ? 0 : (a / gcd(a, b)) * b;
+  const period = lengths.reduce((acc, k) => lcm(acc, k), 1);
+
+  return { cycles, period };
+}
+
 /* -------------------------------------------------------
  * Exports
  * ----------------------------------------------------- */
@@ -614,6 +702,7 @@ module.exports = {
   getStage,
   // matchRepeatOuter,
   // repeatList,
+  derivePermCycles,
   _internals: {
     parseGroupInner,
     evalGroup,
