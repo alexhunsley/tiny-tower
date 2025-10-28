@@ -179,8 +179,20 @@ test('pipe to set stage does not break processing 2', () => {
   const out = evaluateExpression('5|(1.2)[-].3 , 4.5[1:2]');
   // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
   // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
-  assert.deepEqual(out, ['2','1','3', '1', '2',    '5']);
+  assert.deepEqual(out, ['2','1','3', '1', '2', '5']);
   assert.equal(getStage(), 5);
+});
+
+test('pipe to set stage: >1 char throws error', () => {
+  assert.throws(() => evaluateExpression('1E|'), /Couldn't parse stage/i);
+  assert.throws(() => evaluateExpression('51|x='), /Couldn't parse stage/i);
+  assert.throws(() => evaluateExpression('51E|x='), /Couldn't parse stage/i);
+  assert.throws(() => evaluateExpression('51Efdjrghdfs|x='), /Couldn't parse stage/i);
+});
+
+test('pipe to set stage: unrecognized place char throws error', () => {
+  assert.throws(() => evaluateExpression('x|'), /Couldn't parse stage/i);
+  assert.throws(() => evaluateExpression('z|'), /Couldn't parse stage/i);
 });
 
 test('double comma', () => {
@@ -487,22 +499,26 @@ test('double darrowby expansion full', () => {
 });
 
 ////////////////////////////////////////////////
-// mirror tests
+// mirror tests ('=' operator)
 
-// test('equals operator: parsing non-digit stage chars', () => {
-//   assert.deepEqual(evaluateExpression('8|7='), ['27']);
-//   assert.deepEqual(evaluateExpression('0|1='), ['10']);
-//   assert.deepEqual(evaluateExpression('D|ET='), ['56ET']);
-// });
+test('equals operator: parsing digit and non-digit stage chars', () => {
+  assert.deepEqual(evaluateExpression('8|7='), ['27']);
+  assert.deepEqual(evaluateExpression('0|1='), ['10']);
+  assert.deepEqual(evaluateExpression('D|ET='), ['56ET']);
+});
 
-// test('equals operator: x mirrors to x on any stage', () => {
-//   assert.deepEqual(evaluateExpression('4|x='), ['x']);
-//   assert.deepEqual(evaluateExpression('6|x='), ['x']);
-//   assert.deepEqual(evaluateExpression('8|x='), ['x']);
-//   assert.deepEqual(evaluateExpression('0|x='), ['x']);
-//   assert.deepEqual(evaluateExpression('T|x='), ['x']);
-//   assert.deepEqual(evaluateExpression('D|x='), ['x']);
-// });
+test('equals operator: x mirrors to x on any stage', () => {
+  assert.deepEqual(evaluateExpression('4|x='), ['x']);
+  assert.deepEqual(evaluateExpression('6|x='), ['x']);
+  assert.deepEqual(evaluateExpression('8|x='), ['x']);
+  assert.deepEqual(evaluateExpression('0|x='), ['x']);
+  assert.deepEqual(evaluateExpression('T|x='), ['x']);
+  assert.deepEqual(evaluateExpression('D|x='), ['x']);
+
+  // shouldn't be using x on odd stages, but check it goes to 'x' anyway
+  assert.deepEqual(evaluateExpression('5|x='), ['x']);
+  assert.deepEqual(evaluateExpression('C|x='), ['x']);
+});
 
 test('equals operator: stage 12, single token 120 -> 1230ET', () => {
   const out = evaluateExpression('T|120=');
@@ -536,8 +552,16 @@ test('equals operator: mirror can go right to left', () => {
   assert.deepEqual(out, ['1230ET']);
 });
 
-test('equals operator: requires stage', () => {
-  assert.throws(() => evaluateExpression('120='), /requires a valid stage/i);
+test('equals operator: requires that stage is set', () => {
+  // ';' or '=' without stage is fine if there's nothing being mirrored (e.g. ";", "=")
+  assert.deepEqual(evaluateExpression(';'), []);
+  assert.deepEqual(evaluateExpression('='), []);
+
+  assert.throws(() => evaluateExpression('1='), /operator requires a valid stage/i);
+  assert.throws(() => evaluateExpression('9.8;'), /operator requires a valid stag/i);
+  
+  assert.throws(() => evaluateExpression('120='), /operator requires a valid stage/i);
+  assert.throws(() => evaluateExpression('x.120=,'), /operator requires a valid stage/i);
 });
 
 test('equals operator: multiple tokens on left (applies per-token)', () => {

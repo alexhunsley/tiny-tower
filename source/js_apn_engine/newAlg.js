@@ -216,6 +216,8 @@ function splitTrailingSlices(input) {
 function mirrorExpandToken(str) {
   if (str.toUpperCase() == "X") { return "x" }
   const stage = getStage?.() ?? null;
+  console.log("In mirror for =, found stage = ", stage);
+
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
   }
@@ -445,19 +447,30 @@ function evaluateExpressionInternal(src) {
 function evaluateExpression(input) {
   let src = input.trim();
 
-  // Reset stage for this top-level expression,
-  // and set it ONLY if we see the "<int>|" prefix.
-  // const m = /^(\d+)\|/.exec(src);
-  const m = /^([1234567890ETABCDetabcd]+)\|/.exec(src);
-  if (m) {
-    ParserContext.stage = null;                  // reset because we are consuming a new prefix
-    ParserContext.stage = ROUNDS_CHARS.indexOf(m[1]) + 1 // parseInt(m[1], 10);    // set stage from prefix
-    src = src.slice(m[0].length);                // strip "n|"
-  } else {
-    ParserContext.stage = null;                  // no prefix at top-level => no stage for this expression
+  // Always reset stage for each top-level expression.
+  ParserContext.stage = null;
+
+  // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
+  // The *only* valid form is exactly one char before the first pipe: "<char>|".
+  const pipeIndex = src.indexOf('|');
+  if (pipeIndex !== -1) {
+    // Must be exactly one character before the pipe.
+    if (pipeIndex !== 1) {
+      throw new Error("Couldn't parse stage");
+    }
+
+    const ch = src[0];
+    const stageIndex = ROUNDS_CHARS.indexOf(ch);
+    if (stageIndex === -1) {
+      throw new Error("Couldn't parse stage");
+    }
+
+    // Set stage from the single char and strip "<char>|"
+    ParserContext.stage = stageIndex + 1;
+    src = src.slice(2);
   }
 
-  // From here on, do NOT parse n| again.
+  // From here on, do NOT parse "<char>|" again.
   return evaluateExpressionInternal(src);
 }
 
