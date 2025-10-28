@@ -216,7 +216,7 @@ function splitTrailingSlices(input) {
 function mirrorExpandToken(str) {
   if (str.toUpperCase() == "X") { return "x" }
   const stage = getStage?.() ?? null;
-  console.log("In mirror for =, found stage = ", stage);
+  // console.log("In mirror for =, found stage = ", stage);
 
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
@@ -613,12 +613,12 @@ function slice_custom(myList, sliceSpec) {
  * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
  */
 function derivePermCycles(oneLine, alphabetIn) {
-  console.log("alphabetIn = ", alphabetIn);
-  console.log("oneLine = ", oneLine);
+  // console.log("alphabetIn = ", alphabetIn);
+  // console.log("oneLine = ", oneLine);
 
   const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
 
-  console.log("alphabet: ", alphabet);
+  // console.log("alphabet: ", alphabet);
   if (typeof oneLine !== "string" || oneLine.length === 0) {
     throw new Error("oneLine must be a non-empty string");
   }
@@ -631,7 +631,7 @@ function derivePermCycles(oneLine, alphabetIn) {
   // Use only the first n symbols of the alphabet
   const subset = alphabet.slice(0, n);
 
-  console.log("subset: ", subset);
+  // console.log("subset: ", subset);
 
   // Map symbol -> 1-based index within subset
   const idxOf = new Map();
@@ -693,6 +693,23 @@ function derivePermCycles(oneLine, alphabetIn) {
   return { cycles, period };
 }
 
+// test data: "5|45.1" has 5 backwards tenors at backstroke,
+//            "7|67.1" has 3.
+//
+// No back tenors:
+//            "4|x14x14,12" (PB4)
+//            "4|12x14x14x14x" (PB4 rotated by 1)
+//
+function count87s(rows, stage) {
+  if (stage % 2 === 1) { return 0; }
+
+  const backwardTenors = ROUNDS_CHARS.slice(stage-2, stage).split('').reverse().join('');
+  const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
+  // console.log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
+  // console.log(`backwards tenors lists: ${res}`);
+  return res.length;
+}
+
 /* -------------------------------------------------------
  * Exports
  * ----------------------------------------------------- */
@@ -704,6 +721,7 @@ export {
   evaluateExpression,
   getStage,
   derivePermCycles,
+  count87s
 };
 
 export const _internals = {

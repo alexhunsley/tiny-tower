@@ -12,6 +12,7 @@ const {
   evaluateExpression,
   getStage,
   derivePermCycles,
+  count87s,
   _internals
 } = require('./newAlg.js');
 
@@ -654,6 +655,27 @@ test('uses global ROUNDS_CHARS when second arg omitted (if defined)', () => {
   assert.equal(period, 5);
   delete global.ROUNDS_CHARS;
 });
+
+test('count87s identifies bum music at backstroke', () => {
+  assert.equal(count87s(["12345678", "12345687", "12345687", "12345678", "12345687", "12345678"], 8), 2);
+});
+
+test('count87s ignores bum music at handstroke', () => {
+  assert.equal(count87s(["12345678", "21435687", "12345678", "21435678", "12345678"], 8), 0);
+});
+
+test("count87s doesn't flag innocent rows", () => {
+  assert.equal(count87s(["12345678", "21345678", "21436578", "12346578"], 8), 0);
+});
+
+test("count87s doesn't flag backward tenors at backstroke on odd stages", () => {
+  assert.equal(count87s(["1234567", "2134567", "2143576", "1234657"], 7), 0);
+});
+
+// test('count87s identifies bum music', () => {
+//   assert.equal(count87s(["1234567", "1234576", "1234576", "1234567"], 7), 1);
+// });
+
 
 ////////////////////////////////////////////////
 

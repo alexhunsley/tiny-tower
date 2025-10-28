@@ -13,7 +13,7 @@ import {
 import { parseDigits, isSafariFamily } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation, STAGE_SYMBOLS } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
-import { derivePermCycles } from "./newAlg.js";
+import { derivePermCycles, count87s } from "./newAlg.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -413,16 +413,6 @@ function renderReport(lines) {
     if (s.startsWith("[OK]"))   return `<div class="ok">${s.slice(4)}</div>`;
     return `<div>${s}</div>`;
   }).join("");
-}
-
-// test data: "5|45.1" has 5 backwards tenors at backstroke,
-//            "7|67.1" has 3
-function count87s(rows, stage) {
-  const backwardTenors = STAGE_SYMBOLS.slice(stage-2, stage).split('').reverse().join('');
-  console.log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
-  const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
-  console.log(`backwards tenors lists: ${res}`);
-  return res.length;
 }
 
 function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
