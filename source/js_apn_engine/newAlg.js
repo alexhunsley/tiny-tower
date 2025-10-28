@@ -207,6 +207,35 @@ function splitTrailingSlices(input) {
 
 // helper
 
+// Expand a token by adding the stage-mirror of each digit it contains,
+// then return a single string with unique chars sorted by the stage subset order.
+// Non-subset characters are ignored for '=' expansion.
+function mirrorExpandToken(str) {
+  if (str.toUpperCase() == "X") { return "x" }
+  const stage = getStage?.() ?? null;
+  if (!stage || stage < 1) {
+    throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
+  }
+  const subset = ALPHABET.slice(0, Math.min(stage, ALPHABET.length));
+  const last = subset.length - 1;
+
+  const present = new Set();
+  for (const ch of str) {
+    const idx = subset.indexOf(ch);
+    if (idx !== -1) {
+      present.add(ch);
+      present.add(subset[last - idx]); // add mirror char
+    }
+  }
+
+  // Emit in canonical subset order
+  let out = '';
+  for (const ch of subset) {
+    if (present.has(ch)) out += ch;
+  }
+  return out;
+}
+
 // Detects N(<...>) where '(' at that position closes at the very end
 function matchRepeatOuter(base) {
   const s = base.trim();
@@ -307,7 +336,7 @@ function splitTopLevelByLowOps(s) {
     else if (ch === ')') depthPar--;
     else if (ch === '[') depthSq++;
     else if (ch === ']') depthSq--;
-    else if ((ch === ',' || ch === ';') && depthPar === 0 && depthSq === 0) {
+    else if ((ch === ',' || ch === ';' || ch === '=') && depthPar === 0 && depthSq === 0) {
       parts.push(s.slice(start, i));
       ops.push(ch);
       start = i + 1;
@@ -402,6 +431,10 @@ function evaluateExpressionInternal(src) {
       acc = doubleUp(acc).concat(doubleUp(right));
     } else if (op === ';') {
       acc = doubleUpWithInvert(acc).concat(doubleUpWithInvert(right));
+    } else if (op === '=') {
+      // '=' only affects the left: mirror-expand each left token; right passes through unchanged
+      const leftMirrored = acc.map(mirrorExpandToken);
+      acc = leftMirrored.concat(right);
     } else {
       throw new Error(`Unknown operator: ${op}`);
     }
@@ -414,10 +447,11 @@ function evaluateExpression(input) {
 
   // Reset stage for this top-level expression,
   // and set it ONLY if we see the "<int>|" prefix.
-  const m = /^(\d+)\|/.exec(src);
+  // const m = /^(\d+)\|/.exec(src);
+  const m = /^([1234567890ETABCDetabcd]+)\|/.exec(src);
   if (m) {
     ParserContext.stage = null;                  // reset because we are consuming a new prefix
-    ParserContext.stage = parseInt(m[1], 10);    // set stage from prefix
+    ParserContext.stage = ALPHABET.indexOf(m[1]) + 1 // parseInt(m[1], 10);    // set stage from prefix
     src = src.slice(m[0].length);                // strip "n|"
   } else {
     ParserContext.stage = null;                  // no prefix at top-level => no stage for this expression

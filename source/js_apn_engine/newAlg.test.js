@@ -248,7 +248,7 @@ test('semicolon: higher stage (10) inverts within "1234567890"', () => {
   // stage=10 subset = "1234567890"
   // left = ["12","90"] -> tail ["12"] -> invert -> "90"
   // result = ["12","90","90"]
-  const out = evaluateExpression('10|12.90;');
+  const out = evaluateExpression('0|12.90;');
   assert.deepEqual(out, ['12', '90', '90']);
 });
 
@@ -453,11 +453,123 @@ test('double darrowby expansion 1/2', () => {
 
 test('double darrowby expansion full', () => {
   // full lead:
-  const out = evaluateExpression('8|((3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78),12');
+  // const out = evaluateExpression('8|((3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78),12');
+  // bristol-alike:
+  // based on minimus of x14xx14x14x i.e. 
+  //   this has 864 etc coursing, make less false with places on front:
+  // const out = evaluateExpression('8|((4(x36xx36x36x))[:-1].14.(4(x58xx58x58x))[:-1].36;78),12');
 
-  // this works on blueline site!
+  // const out = evaluateExpression('8|((2(x36x12.36.12.36.12))[2:<][:-1].14.(2(x58x12.58.12.58.12))[2:>][:-1].36;78),12');
+
+ 
+  // I can't believe it's not DD alliance royal:
+  //  ((5(x38x38x78,34))[:-1].14.(5(x50x50x90,56))[:-1].38x;90),12
+
+  // alliance royal: length 70 plain bob-alike to get peal length: 5076 changes (564 per lead)
+
+  // reg version pb variant:  x16x16x16x16x16x1256x56  -> in 5-10 place: x50x50x50x50x50x5690x90
+  // dble version pb variant: x16x16x56x16x16x1256x56  -> in 3-8 place:  x38x38x78x38x38x3478x78
+
+  // rotating first bit (double one) 2 places left, we get good CO: 1352749608 (Code: a) (246 etc.) NOTE DD is group f, the opposite.
+  // 5076 changes, so a peal. It's true. 35 pull dodges I think.
+  const out = evaluateExpression('0|((5(x38x38x78x38x38x3478x78))[2:<][:-1].14.(5(x50x50x50x50x50x5690x90))[:-1].38x;90),12');
+  // https://rsw.me.uk/blueline/methods/view?stage=10&notation=x.38.x.78.x.3478.x.38.x.38.x.78.x.38.x.38.x.78.x.3478.x.38.x.38.x.78.x.38.x.38.x.78.x.3478.x.38.x.38.x.78.x.38.x.38.x.78.x.3478.x.38.x.38.x.78.x.38.x.38.x.78.x.3478.x.38.x.38.x.78.x.14.x.50.x.50.x.50.x.50.x.50.x.5690.x.90.x.50.x.50.x.50.x.50.x.50.x.5690.x.90.x.50.x.50.x.50.x.50.x.50.x.5690.x.90.x.50.x.50.x.50.x.50.x.50.x.5690.x.90.x.50.x.50.x.50.x.50.x.50.x.5690.x.38.x.38.x.1256.x.16.x.16.x.16.x.16.x.16.x.12.x.1256.x.16.x.16.x.16.x.16.x.16.x.12.x.1256.x.16.x.16.x.16.x.16.x.16.x.12.x.1256.x.16.x.16.x.16.x.16.x.16.x.12.x.1256.x.16.x.16.x.16.x.16.x.16.x.70.x.34.x.38.x.38.x.3478.x.34.x.38.x.38.x.34.x.38.x.38.x.3478.x.34.x.38.x.38.x.34.x.38.x.38.x.3478.x.34.x.38.x.38.x.34.x.38.x.38.x.3478.x.34.x.38.x.38.x.34.x.38.x.38.x.3478.x.34.x.38.x.90.x.38.x.34.x.3478.x.38.x.38.x.34.x.38.x.38.x.34.x.3478.x.38.x.38.x.34.x.38.x.38.x.34.x.3478.x.38.x.38.x.34.x.38.x.38.x.34.x.3478.x.38.x.38.x.34.x.38.x.38.x.34.x.3478.x.38.x.38.x.34.x.70.x.16.x.16.x.16.x.16.x.16.x.1256.x.12.x.16.x.16.x.16.x.16.x.16.x.1256.x.12.x.16.x.16.x.16.x.16.x.16.x.1256.x.12.x.16.x.16.x.16.x.16.x.16.x.1256.x.12.x.16.x.16.x.16.x.16.x.16.x.1256.x.38.x.38.x.5690.x.50.x.50.x.50.x.50.x.50.x.90.x.5690.x.50.x.50.x.50.x.50.x.50.x.90.x.5690.x.50.x.50.x.50.x.50.x.50.x.90.x.5690.x.50.x.50.x.50.x.50.x.50.x.90.x.5690.x.50.x.50.x.50.x.50.x.50.x.14.x.78.x.38.x.38.x.3478.x.78.x.38.x.38.x.78.x.38.x.38.x.3478.x.78.x.38.x.38.x.78.x.38.x.38.x.3478.x.78.x.38.x.38.x.78.x.38.x.38.x.3478.x.78.x.38.x.38.x.78.x.38.x.38.x.3478.x.78.x.38.x.12&title=Double%20I%20can%27t%20believe%20it%27s%20not%20Darrowby%20Alliance%20Royal%20v2%20(peal%20method)
+  // https://is.gd/Ttv9SB
+
+  // hmm, peal plain course has 78 09s at back -- ah, due to the dodges in my PB alike method at back. Can fix that.
+
+  // https://complib.org/composition/148579
+
+  // to ring 3948, call three bobbed leads (bobs: 14 as usual)  (true)
+
+
   console.log("Full lead: ", out.join("."));
 });
+
+////////////////////////////////////////////////
+// mirror tests
+
+// test('equals operator: parsing non-digit stage chars', () => {
+//   assert.deepEqual(evaluateExpression('8|7='), ['27']);
+//   assert.deepEqual(evaluateExpression('0|1='), ['10']);
+//   assert.deepEqual(evaluateExpression('D|ET='), ['56ET']);
+// });
+
+// test('equals operator: x mirrors to x on any stage', () => {
+//   assert.deepEqual(evaluateExpression('4|x='), ['x']);
+//   assert.deepEqual(evaluateExpression('6|x='), ['x']);
+//   assert.deepEqual(evaluateExpression('8|x='), ['x']);
+//   assert.deepEqual(evaluateExpression('0|x='), ['x']);
+//   assert.deepEqual(evaluateExpression('T|x='), ['x']);
+//   assert.deepEqual(evaluateExpression('D|x='), ['x']);
+// });
+
+test('equals operator: stage 12, single token 120 -> 1230ET', () => {
+  const out = evaluateExpression('T|120=');
+  assert.deepEqual(out, ['1230ET']);
+});
+
+test('equals operator: stage 12, single token 36 -> 3670', () => {
+  const out = evaluateExpression('T|36=');
+  assert.deepEqual(out, ['3670']);
+});
+
+test('equals operator: leaves right side unchanged (passes through)', () => {
+  // Left: 36 -> 3670 (mirrored per stage 12); Right: "x" stays "x"
+  const out = evaluateExpression('T|36=,x');
+  // First '=' with empty right part due to ',', then ',' doubles acc and right.
+  // We only assert the immediate '=' behavior by isolating it:
+  const justEq = evaluateExpression('T|36=');
+  assert.deepEqual(justEq, ['3670']);
+  // And check that ',' still composes with an unmodified right:
+  const seq = evaluateExpression('T|36=.x'); // dot means simple concat of "x" segment after '=' result
+  assert.deepEqual(seq, ['3670', 'x']);
+});
+
+test('equals operator: empty right is allowed', () => {
+  const out = evaluateExpression('T|120=');
+  assert.deepEqual(out, ['1230ET']);
+});
+
+test('equals operator: mirror can go right to left', () => {
+  const out = evaluateExpression('T|0ET=');
+  assert.deepEqual(out, ['1230ET']);
+});
+
+test('equals operator: requires stage', () => {
+  assert.throws(() => evaluateExpression('120='), /requires a valid stage/i);
+});
+
+test('equals operator: multiple tokens on left (applies per-token)', () => {
+  // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
+  const out = evaluateExpression('T|(12.36)=');
+  assert.deepEqual(out, ['12ET', '3670']);
+});
+
+test('equals operator: works on 16', () => {
+  // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
+  const out = evaluateExpression('D|1236=');
+  assert.deepEqual(out, ['1236EBCD']);
+});
+
+// for methods with internal symmetry, ',' and ';' are equivalent
+test('equals operator: can make double eire minor using =;', () => {
+  // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
+  const out = evaluateExpression('6|3.1.3=;x');
+  //34.16.34,x => 34.16.34.16.34.x
+  assert.deepEqual(out, ['34', '16', '34', '16', '34', 'x']);
+});
+
+// for methods with internal symmetry, ',' and ';' are equivalent
+test('equals operator: can make double eire minor using =,', () => {
+  // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
+  const out = evaluateExpression('6|3.1.3=,x');
+  //34.16.34,x => 34.16.34.16.34.x
+  assert.deepEqual(out, ['34', '16', '34', '16', '34', 'x']);
+});
+
+
+////////////////////////////////////////////////
 
 // test('double darrowby messabout', () => {
 //   // full lead:
@@ -566,6 +678,20 @@ test('experiments only', () => {
   // 
 });
 
+test('double eire simple extensions', () => {
+//     // works, maybe weird CO
+//   // gives  56.10.56.10.56.x
+//   console.log("Bigger eire: ", evaluateExpression('0|5.1.5=;x').join("."));
+
+//   // much better, good CO:
+//   // gives 56.10.56.10.56.10.56.10.56.x
+//   console.log("Bigger eire: ", evaluateExpression('0|5.1.5.1.5=;x').join("."));
+
+//   // (gives https://ringing.org/method/?notation=78.1B.78.1B.78.1B.78.1B.78.1B.78.1B.78.x&stage=14)
+//   // gives 78.1B.78.1B.78.1B.78.1B.78.1B.78.1B.78.x
+//   console.log("Bigger eire: ", evaluateExpression('B|7.1.7.1.7.1.7=;x').join("."));
+// });
+
 // variants:
 //
 // 1:<  true
@@ -593,4 +719,6 @@ test('experiments only', () => {
 //       'x', '56', 'x', '36', 'x'
 //     ]);
 // });
+
+});
 
