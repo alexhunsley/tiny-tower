@@ -11,9 +11,9 @@ import {
   initAudioUnlock
 } from "./audioEngine.js";
 import { parseDigits, isSafariFamily } from "./utils.js";
-import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation } from "./notation.js";
+import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation, STAGE_SYMBOLS } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
-
+import { derivePermCycles } from "./newAlg.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -408,10 +408,21 @@ function renderReport(lines) {
   console.log(">>>>>>>>> Lines: ", lines);
   box.innerHTML = lines.map(s => {
     // allow lightweight color tags via prefixes
+    if (s.startsWith("[ALERT]")) return `<div class="alert">${s.slice(7)}</div>`;
     if (s.startsWith("[WARN]")) return `<div class="warn">${s.slice(6)}</div>`;
     if (s.startsWith("[OK]"))   return `<div class="ok">${s.slice(4)}</div>`;
     return `<div>${s}</div>`;
   }).join("");
+}
+
+// test data: "5|45.1" has 5 backwards tenors at backstroke,
+//            "7|67.1" has 3
+function count87s(rows, stage) {
+  const backwardTenors = STAGE_SYMBOLS.slice(stage-2, stage).split('').reverse().join('');
+  console.log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
+  const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
+  console.log(`backwards tenors lists: ${res}`);
+  return res.length;
 }
 
 function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
@@ -425,14 +436,28 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const fullLeads = Math.floor(steps / leadLen);
   const remainder = steps % leadLen;
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
+  const firstLeadEndRow = rows[leadLen];
 
   // Facts
   lines.push(`Length: ${rows.length - 1}`);
   lines.push(`Lead length: ${leadLen}`);
   lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
+  lines.push(`Lead end: ${firstLeadEndRow}`);
 
   lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
-  
+
+  const { cycles, period } = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
+  if (cycles.length != 1) {
+    lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);    
+  }
+
+  const backwardTenorsCount = count87s(rows, stage);
+  console.log(`Back tenor count: ${backwardTenorsCount}`);
+
+  if (backwardTenorsCount > 0) {
+    lines.push(`[ALERT] backwards tenors at backstroke (${backwardTenorsCount} rows)`);
+  }
+
   // --- Duplicate/early-rounds detection (exclude the final row) ---
   if (Array.isArray(rows) && rows.length > 1) {
     const lastIdx = rows.length - 1;

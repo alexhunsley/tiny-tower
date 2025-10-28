@@ -105,6 +105,7 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   overflow: auto;          /* scroll the report if it gets long */
   min-height: 0;
 }
+#reportPanel .alert { color: #f57744; }   /* amber-ish that pops on dark */
 #reportPanel .warn { color: #f59e0b; }   /* amber-ish that pops on dark */
 #reportPanel .ok   { color: #34d399; }   /* teal/green */
 #reportPanel .muted{ color: var(--muted); }

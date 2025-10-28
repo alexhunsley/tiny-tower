@@ -613,6 +613,9 @@ function slice_custom(myList, sliceSpec) {
  * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
  */
 function derivePermCycles(oneLine, alphabetIn) {
+  console.log("alphabetIn = ", alphabetIn);
+  console.log("oneLine = ", oneLine);
+
   const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
 
   console.log("alphabet: ", alphabet);
@@ -694,25 +697,25 @@ function derivePermCycles(oneLine, alphabetIn) {
  * Exports
  * ----------------------------------------------------- */
 
-module.exports = {
+export {
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
   evaluateExpression,
   getStage,
-  // matchRepeatOuter,
-  // repeatList,
   derivePermCycles,
-  _internals: {
-    parseGroupInner,
-    evalGroup,
-    evalElement,
-    splitTopLevelByDot,
-    validateParens,
-    findMatchingParen,
-    splitTrailingSlices,
-    doubleUp,
-    slice_custom,
-    evaluateSegmentsNoComma
-  }
 };
+
+export const _internals = {
+  parseGroupInner,
+  evalGroup,
+  evalElement,
+  splitTopLevelByDot,
+  validateParens,
+  findMatchingParen,
+  splitTrailingSlices,
+  doubleUp,
+  slice_custom,
+  evaluateSegmentsNoComma,
+};
+

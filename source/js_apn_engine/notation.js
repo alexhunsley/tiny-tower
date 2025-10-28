@@ -1,4 +1,4 @@
-const STAGE_SYMBOLS = "1234567890ET"; // positions: 1..12 (10=0, 11=E, 12=T)
+export const STAGE_SYMBOLS = "1234567890ET"; // positions: 1..12 (10=0, 11=E, 12=T)
 
 export function clampStage(n) {
   const v = Number(n);
