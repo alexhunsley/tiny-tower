@@ -427,10 +427,12 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
 
   // Facts
-  lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
-  lines.push(`Lead length: ${leadLen}`);
   lines.push(`Length: ${rows.length - 1}`);
+  lines.push(`Lead length: ${leadLen}`);
+  lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
 
+  lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
+  
   // --- Duplicate/early-rounds detection (exclude the final row) ---
   if (Array.isArray(rows) && rows.length > 1) {
     const lastIdx = rows.length - 1;
@@ -472,8 +474,5 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
     lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.`);
   }
 
-  console.log("Tokens: ", pnString);
-  lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
-  
   return lines;
 }

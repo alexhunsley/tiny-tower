@@ -20,7 +20,6 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
 /*.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }*/
 .toolbar p { margin:0 0 12px; color:var(--muted); }
 
-
 .toolbar h1 {
   display: flex;
   align-items: baseline;
@@ -67,19 +66,21 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   flex: 1 1 auto;
 }
 
-/* ===== Split area: rows (greedy, scrollable) + report (auto-height) ===== */
+/* ===== Split area: rows (greedy, scrollable) + report (right sidebar) ===== */
 #mainArea {
   flex: 1 1 auto;
   display: flex;
-  flex-direction: column;
-  min-height: 0;               /* critical for nested scrolls */
+  flex-direction: row;     /* was: column */
+  min-height: 0;           /* critical for nested scrolls */
 }
 
-/* Upper: container for the scroller */
+/* Left: container for the scroller */
 #rowsPanel {
   flex: 1 1 auto;
-  min-height: 0;               /* allow child to scroll */
-  overflow: hidden;            /* contain only the child scroller */
+  min-width: 0;            /* allow child to shrink */
+  min-height: 0;           /* allow child to scroll */
+  overflow: hidden;        /* contain only the child scroller */
+  border-right: 1px solid #273244;  /* separator between panels */
 }
 
 /* The actual scroller with generated rows */
@@ -93,13 +94,16 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   padding: .5rem .25rem;
 }
 
-/* Lower: report (facts + warnings) — auto height, no scroll */
+/* Right: report (facts + warnings) — sidebar */
 #reportPanel {
-  flex: 0 0 auto;
-  padding: .5rem .25rem;
-  border-top: 1px solid #273244;
+  flex: 0 0 400;         /* fixed sidebar width; tweak as desired */
+  max-width: 40vw;         /* prevent overly wide report on big screens */
+  padding: .5rem .75rem;
+  border-top: none;        /* remove old top border from vertical layout */
   color: var(--text);
   font-size: 0.95rem;
+  overflow: auto;          /* scroll the report if it gets long */
+  min-height: 0;
 }
 #reportPanel .warn { color: #f59e0b; }   /* amber-ish that pops on dark */
 #reportPanel .ok   { color: #34d399; }   /* teal/green */
@@ -128,7 +132,33 @@ input[type="range"] { width:160px; }
 /* highlight */
 #notationOutput .row-item.playing { background: #1e293b; }
 
-
 /* debug */
 #rowsPanel   { outline: 1px solid #334155; }
 #reportPanel { outline: 1px solid #60a5fa; }
+
+/* Responsive: stack vertically on narrow screens */
+@media (max-width: 800px) {
+  #mainArea { flex-direction: column; }
+  #rowsPanel { border-right: none; }
+  #reportPanel {
+    flex: 0 0 auto;
+    max-width: none;
+    border-top: 1px solid #273244;
+  }
+}
+
+/*body::before {
+  content: "✅ NEW CSS LOADED";
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  background: #60a5fa;
+  color: #0b1023;
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 9999;
+}
+
+*/
