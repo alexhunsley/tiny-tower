@@ -226,7 +226,7 @@ def generate_distance_heatmap_html(
         .caption {
           display: flex;
           align-items: center;
-          justify-content: space-between;  /* title left, subtitle right */
+          justify-content: flex-start;
           gap: 1rem;
           width: 100%;
           white-space: nowrap;             /* keep on one line */
@@ -243,12 +243,15 @@ def generate_distance_heatmap_html(
 
         .subtitle {
           color: #888;
+          background: #aa0;
           font-size: 14px;
           font-weight: normal;
-          flex: 0 0 auto;                  /* stick to right edge, no grow */
-          margin-left: 1.5rem;             /* visual gap from title */
-          text-align: right;
-        }
+          white-space: nowrap;
+          margin-left: 1.5rem;
+
+          margin-left: auto;   /* ✅ this pushes it to the right edge */
+          text-align: right;   /* ✅ right-justify the text inside */
+          }
       table { border-collapse: separate; border-spacing: 2px; }
       th, td {
         min-width: 44px; height: 36px; text-align: center;
