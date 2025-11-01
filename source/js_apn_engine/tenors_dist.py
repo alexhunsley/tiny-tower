@@ -291,7 +291,7 @@ def generate_distance_heatmap_html(
           display: flex;
           align-items: right;
           justify-content: flex-end;
-          gap: 10rem;
+          gap: 6.2rem;
           width: 100%;
           white-space: nowrap;             /* keep on one line */
         }
@@ -307,26 +307,25 @@ def generate_distance_heatmap_html(
 
         .subtitle {
           color: #555;
-          # background: #aa0;
           font-size: 14px;
           font-weight: normal;
           white-space: nowrap;
-          margin-left: 1.5rem;
-
-          margin-left: auto;   /* ✅ this pushes it to the right edge */
-          text-align: right;   /* ✅ right-justify the text inside */
+          margin-left: auto;
+          text-align: right;
           }
       table { border-collapse: separate; border-spacing: 2px; }
-      th, td {
+      td, th {
         min-width: 44px; height: 36px; text-align: center;
-        border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px;
         font-variant-numeric: tabular-nums;
       }
+      td {
+        border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px;
+      }      
       td.empty {
           border: none !important;
           background: none !important;
       }
-      th { background: #f6f7f9; }
+      # th { background: #f6f7f9; }
       .legend { margin-top: 12px; font-size: 12px; color: #555; }
       .chip { display:inline-block; width: 16px; height: 12px; border: 1px solid #ddd; vertical-align: middle; }
     </style>
@@ -348,19 +347,28 @@ def generate_distance_heatmap_html(
             </caption>
     """)
 
-    html.append("<table>")
-    html.append("<tr><th></th>" + "".join(f"<th>{b}</th>" for b in bells) + "</tr>")
+    x_axis_bells = bells[1:][::-1]
+    y_axis_bells = bells[:-1]
 
-    for i, a in enumerate(bells):
-        row_cells = [f"<th>{a}</th>"]
-        for j, b in enumerate(bells):
-            if j <= i:
-                # row_cells.append("<td class='blank'>–</td>" if j == i else "<td class='blank'></td>")
+    # print(f"AXES: X {x_axis_bells}")
+    # print(f"AXES: Y {y_axis_bells}")
+
+    html.append("<table>")
+    # html.append("<tr><th></th>" + "".join(f"<th>{b}</th>" for b in bells) + "</tr>")
+    html.append("<tr><th></th>" + "".join(f"<th>{b}</th>" for b in x_axis_bells) + "</tr>")
+
+    for i, a in enumerate(y_axis_bells):
+        row_cells = []
+        row_cells.append(f"<th>{a}</th>")
+        for j, b in enumerate(x_axis_bells):
+            if b <= a:
                 row_cells.append("<td class='empty'></td>")                
             else:
                 m = mean_dist[(a, b)]
                 color = to_rgb_hex(m)
                 val = f"{m:.2f}" if m == m else ""
+                # print(f"Doing {j, b} and {i, a}: dist = {m}")
+
                 row_cells.append(f"<td style='background:{color}' title='mean distance {a}–{b}: {val}'>{val}</td>")
         html.append("<tr>" + "".join(row_cells) + "</tr>")
     html.append("</table>")
