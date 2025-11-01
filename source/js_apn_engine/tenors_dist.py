@@ -373,16 +373,6 @@ def generate_distance_heatmap_html(
         html.append("<tr>" + "".join(row_cells) + "</tr>")
     html.append("</table>")
 
-    low = "#ffffff"
-    high = to_rgb_hex(dmax_possible)
-    html.append(f"""
-    <div class="legend">
-      <span class="chip" style="background:{low}"></span> low (1)
-      &nbsp;→&nbsp;
-      <span class="chip" style="background:{high}"></span> high ({dmax_possible})
-    </div>
-    """)
-
     out = "\n".join(html)
     with open(filename, "w", encoding="utf-8") as f:
         f.write(out)
