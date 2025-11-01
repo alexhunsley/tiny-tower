@@ -220,37 +220,35 @@ def generate_distance_heatmap_html(
         caption {
           caption-side: top;
           margin-bottom: 8px;
+          width: 100%;                 /* match table width */
         }
 
         .caption {
           display: flex;
           align-items: center;
-          justify-content: space-between; /* title left, subtitle right */
-          flex-wrap: nowrap;              /* keep on one line */
+          justify-content: space-between;  /* title left, subtitle right */
           gap: 1rem;
           width: 100%;
+          white-space: nowrap;             /* keep on one line */
         }
 
-        /* Critical: allow the title to shrink and ellipsize instead of wrapping */
-        .caption h1 {
-          flex: 1 1 auto;
-          min-width: 0;                   /* lets flexbox shrink below content width */
+        .cap-title {
           margin: 0;
           font-size: 18px;
-          white-space: nowrap;
+          flex: 1 1 auto;                  /* title takes remaining space */
+          min-width: 0;                    /* allow shrink for ellipsis */
           overflow: hidden;
-          text-overflow: ellipsis;        /* show … if the title is too long */
+          text-overflow: ellipsis;
         }
 
-        /* Keep subtitle on one line, right-aligned */
         .subtitle {
-          white-space: nowrap;
           color: #888;
           font-size: 14px;
           font-weight: normal;
-          margin-left: 1rem;
+          flex: 0 0 auto;                  /* stick to right edge, no grow */
+          margin-left: 1.5rem;             /* visual gap from title */
+          text-align: right;
         }
-
       table { border-collapse: separate; border-spacing: 2px; }
       th, td {
         min-width: 44px; height: 36px; text-align: center;
@@ -272,12 +270,13 @@ def generate_distance_heatmap_html(
     """]
     html.append("<table>")
     html.append(f"""
-      <caption>
-        <div class="caption">
-          <h1>{title}</h1>
-          <span class="subtitle">{subtitle}</span>
-        </div>
-      </caption>
+        <table>
+          <caption>
+            <div class="caption">
+              <h1 class="cap-title">{title}</h1>
+              <span class="subtitle">{subtitle}</span>
+            </div>
+          </caption>
     """)
 
     html.append("<table>")
