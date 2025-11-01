@@ -378,6 +378,109 @@ def generate_distance_heatmap_html(
         f.write(out)
     return filename
 
+
+from collections import Counter
+
+def count_patterns(rows, width=5, include_wraparounds=False):
+    """
+    Count fixed-width substrings across a list of strings.
+
+    When include_wraparounds is True:
+      - even rows (0,2,4,...) are scanned within-row as usual
+      - odd rows (1,3,5,...) are NOT scanned within-row; instead we scan
+        the entire concatenation rows[i] + rows[i+1] (if next row exists).
+        If there's no next row, the odd row contributes nothing.
+
+    Note: This may count substrings fully contained in rows[i+1] again when
+    the loop reaches that even row. That matches your clarification.
+    """
+    if width <= 0:
+        return []
+
+    counts = Counter()
+
+    for i, row in enumerate(rows):
+        n = len(row)
+        if not include_wraparounds:
+            # Normal: count all substrings within this row
+            if n >= width:
+                for s in range(n - width + 1):
+                    counts[row[s:s+width]] += 1
+            continue
+
+        # include_wraparounds = True
+        if i % 2 == 0:
+            # Even row: within-row scan
+            if n >= width:
+                for s in range(n - width + 1):
+                    counts[row[s:s+width]] += 1
+        else:
+            # Odd row: scan row+next_row only (no within-row for this row)
+            if i + 1 >= len(rows):
+                continue  # no next row -> skip
+            joined = row + rows[i + 1]
+            m = len(joined)
+            if m >= width:
+                for s in range(m - width + 1):
+                    counts[joined[s:s+width]] += 1
+
+    # Return sorted list of (count, pattern), highest count first then pattern
+    return sorted(((c, p) for p, c in counts.items()),
+                  key=lambda t: (-t[0], t[1]))
+
+
+def add_overlap_scores(pattern_counts):
+    """
+    Given a list of (count, pattern) tuples, return a list of
+    (count, pattern, overlap_score) where overlap_score is the sum over all
+    other patterns of the overlap length. Overlaps are counted on both edges:
+      - suffix(pattern) == prefix(other)
+      - prefix(pattern) == suffix(other)
+    Self-overlaps are not counted.
+
+    Sorted by:
+      1. count (descending)
+      2. overlap_score (descending)
+      3. pattern (ascending)
+    """
+    def _overlap_suffix_prefix(a, b):
+        max_k = min(len(a), len(b)) - 1
+        for k in range(max_k, 0, -1):
+            if a[-k:] == b[:k]:
+                return k
+        return 0
+
+    def _overlap_prefix_suffix(a, b):
+        max_k = min(len(a), len(b)) - 1
+        for k in range(max_k, 0, -1):
+            if a[:k] == b[-k:]:
+                return k
+        return 0
+
+    patterns = [p for _, p in pattern_counts]
+    n = len(patterns)
+    scores = [0] * n
+
+    for i in range(n):
+        a = patterns[i]
+        for j in range(n):
+            if i == j:
+                continue
+            b = patterns[j]
+
+            score_mult = 2
+
+            scores[i] += pow(_overlap_suffix_prefix(a, b), 2)
+            scores[i] += pow(_overlap_prefix_suffix(a, b), 2)
+
+    results = [(count, pattern, scores[idx]) for idx, (count, pattern) in enumerate(pattern_counts)]
+
+    # Sort: count ↓, overlap ↓, pattern ↑
+    results.sort(key=lambda x: (-x[0], x[2], x[1]))
+    return results
+
+
+
 # ---------------------------
 # Example usage:
 # rows = ["12345678", "21345678", "23145678", "23415678", "23451678", "23456178", "23456718", "23456781"]
@@ -411,12 +514,53 @@ title = "Bristol Surprise Major"
 generate_distance_heatmap_html(rows, title, include_wraparounds=True)
 generate_distance_heatmap_html(rows, title)
 
+# test_rows = [
+#     "12345678",
+#     "23456781",
+#     "34567812",
+# ]
+
+# bristol: no wrap patterns:   13 x len 4, 
+# bristol: with wrap patterns: 11 x len 6, 15x5, 18x4  
+patterns = count_patterns(rows, width=4, include_wraparounds=True)[::-1]
+
+pattern_with_overlap_score = add_overlap_scores(patterns)[::-1]
+
+for count, pattern, overlap_score in pattern_with_overlap_score:
+    print(f"{count}: '{pattern}' {overlap_score}")
+
+print(f"\nCount, pattern, overlap score\n")
+
+# print
+# for c, p in [r for r in patterns if r[1] == "1357"]:
+#     print(f"{p}: {c}")
+
+# print
+# for c, p in [r for r in patterns if r[1] == "2468"]:
+#     print(f"{p}: {c}")
+
+# print
+# for c, p in [r for r in patterns if r[1] == "1526"]:
+#     print(f"{p}: {c}")
+
+# for c, p in [r for r in patterns if r[1] == "4321"]:
+#     print(f"{p}: {c}")
+
+
+# opportunity cost?
+# i.e. if we target one pattern for music,
+#  it comes at cost of that pattern overlapping other patterns.
+# 
+# To minimise, find common patterns that have least disruptive effect
+# on other patterns. So, for patts of set length, we want to minimise overlap.
+
+
 # wrap-around looks ok:
 # print(pair_min_distance_two_rows(rows[1], rows[2], 7, 8))
 # print(pair_min_distance_two_rows(rows[1], rows[2], 8, 7))
 # print(pair_min_distance_two_rows(rows[1], rows[2], 1, 2))
 # print(pair_min_distance_two_rows(rows[1], rows[2], 2, 1))
-
+ 
 
 # rows = rows
 # print(tenor_metrics(rows, (7,8)))
