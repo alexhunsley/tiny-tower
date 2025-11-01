@@ -225,9 +225,9 @@ def generate_distance_heatmap_html(
 
         .caption {
           display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 1rem;
+          align-items: right;
+          justify-content: flex-end;
+          gap: 10rem;
           width: 100%;
           white-space: nowrap;             /* keep on one line */
         }
@@ -242,8 +242,8 @@ def generate_distance_heatmap_html(
         }
 
         .subtitle {
-          color: #888;
-          background: #aa0;
+          color: #555;
+          # background: #aa0;
           font-size: 14px;
           font-weight: normal;
           white-space: nowrap;
@@ -266,7 +266,7 @@ def generate_distance_heatmap_html(
 
       # td.blank { background: #fafafa; color: #bbb; }
 
-    subtitle = "Generated automatically"
+    subtitle = "bell pair distances"
     html = [f"""<!doctype html><meta charset='utf-8'>
     <title>{title}</title>
     {css}
@@ -274,12 +274,10 @@ def generate_distance_heatmap_html(
     html.append("<table>")
     html.append(f"""
         <table>
-          <caption>
-            <div class="caption">
+            <caption class="caption">
               <h1 class="cap-title">{title}</h1>
               <span class="subtitle">{subtitle}</span>
-            </div>
-          </caption>
+            </caption>
     """)
 
     html.append("<table>")
