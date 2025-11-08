@@ -1,8 +1,10 @@
-export const STAGE_SYMBOLS = "1234567890ET"; // positions: 1..12 (10=0, 11=E, 12=T)
+export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU"; // positions: 1..12 (10=0, 11=E, 12=T)
+// ^^ note the lack of I, O in above letters! that's PN standard.
 
+//                                     ^         ^         ^      ^37 
 export function clampStage(n) {
   const v = Number(n);
-  return Math.max(4, Math.min(12, Number.isFinite(v) ? v : 6));
+  return Math.max(4, Math.min(30, Number.isFinite(v) ? v : 6));
 }
 
 export function roundsForStage(stage) {
@@ -21,7 +23,7 @@ export function isXChange(ch) {
 export function tokenizeSegment(pnSegment) {
   const src = String(pnSegment || "").trim();
   if (!src) return [];
-  const allowed = new Set([...STAGE_SYMBOLS, "e", "t", "E", "T"]);
+  const allowed = new Set([...STAGE_SYMBOLS]);
   const tokens = [];
   let buf = "";
 
@@ -187,7 +189,7 @@ function applyTokenToRow(row, token, stage) {
 }
 
 /* ---------------- Generate rows by repeating the lead token list ---------------- */
-export function generateList({ pnString, stage, maxLeads = 12 }) {
+export function generateList({ pnString, stage, maxChanges = 6000 }) {
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
 
@@ -201,7 +203,7 @@ export function generateList({ pnString, stage, maxLeads = 12 }) {
   let current = rounds;
   let leads = 0;
 
-  while (leads < maxLeads) {
+  while (rows.length <= maxChanges) {
     for (const t of leadTokens) {
       current = applyTokenToRow(current, t, s);
       rows.push(current);

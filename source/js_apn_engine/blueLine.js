@@ -26,8 +26,6 @@ function measurePointsFromDOM(scroller, rows, targetChar) {
   const points = [];
   const scrollerRect = scroller.getBoundingClientRect();
 
-  console.log("Entered measurePointsFromDOM");
-
   // Estimate monospace char width once
   const charWidth = estimateCharWidth(scroller);
 
@@ -75,16 +73,18 @@ export function renderBlueLineOverlay({
   targetChar,
   options = {},
 }) {
-  console.log("Entered renderBlueLineOverlay, rows len = ", rows.length);
+  // console.log("Entered renderBlueLineOverlay, rows len = ", rows?.length ?? 0);
 
   const scroller = resolveScroller(scrollerRef);
-  if (!Array.isArray(rows) || !rows.length) {
-
-  	  	console.log("   renderBlueLineOverlay: exiting, no row data");
-		return;
-	}
-
-	console.log("   renderBlueLineOverlay: got row data");
+  if (!Array.isArray(rows) || rows.length === 0) {
+    console.log("   renderBlueLineOverlay: exiting, no row data");
+    return;
+  }
+  if (targetChar == null) {
+    console.log("   renderBlueLineOverlay: exiting, no targetChar");
+    return;
+  }
+  // console.log("   renderBlueLineOverlay: got row data");
 
   // Ensure scroller can host an absolute overlay
   const prevPos = getComputedStyle(scroller).position;
@@ -99,13 +99,12 @@ export function renderBlueLineOverlay({
       position: "absolute",
       left: "0",
       top: "0",
-      pointerEvents: "none",
-      // width/height set below in pixels to cover scroll area
+      pointerEvents: "none", // overlay shouldn't eat scroll/hover
     });
     scroller.appendChild(svg);
   }
 
-  // Size overlay to content
+  // Size overlay to content (covers full scroll area)
   const contentW = Math.max(scroller.scrollWidth, scroller.clientWidth);
   const contentH = Math.max(scroller.scrollHeight, scroller.clientHeight);
   svg.setAttribute("width", String(contentW));
@@ -114,23 +113,33 @@ export function renderBlueLineOverlay({
   svg.style.width = contentW + "px";
   svg.style.height = contentH + "px";
 
-  // Compute points
-  const pts = measurePointsFromDOM(scroller, rows, targetChar);
-  // Clear and draw
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  // --- multiple overlays support: one <g> layer per targetChar ---
+  const layerKey = String(targetChar);
+  const safeKey = CSS && CSS.escape ? CSS.escape(layerKey) : layerKey.replace(/"/g, '&quot;');
 
+  let layer = svg.querySelector(`g[data-key="${safeKey}"]`);
+  if (!layer) {
+    layer = document.createElementNS(SVG_NS, "g");
+    layer.setAttribute("data-key", layerKey);
+    svg.appendChild(layer);
+  } else {
+    // Clear only this target's layer (do NOT wipe entire svg)
+    while (layer.firstChild) layer.removeChild(layer.firstChild);
+  }
+
+  // Compute points for this target
+  const pts = measurePointsFromDOM(scroller, rows, targetChar);
+
+  // Draw this target's polyline into its own layer
   if (pts.length >= 2) {
     const poly = document.createElementNS(SVG_NS, "polyline");
-    poly.setAttribute(
-      "points",
-      pts.map(([x, y]) => `${x},${y}`).join(" ")
-    );
+    poly.setAttribute("points", pts.map(([x, y]) => `${x},${y}`).join(" "));
     poly.setAttribute("fill", "none");
     poly.setAttribute("stroke", options.color || "dodgerblue");
     poly.setAttribute("stroke-width", String(options.width ?? 2));
     poly.setAttribute("stroke-linejoin", "round");
     poly.setAttribute("stroke-linecap", "round");
-    svg.appendChild(poly);
+    layer.appendChild(poly);
   }
 }
 

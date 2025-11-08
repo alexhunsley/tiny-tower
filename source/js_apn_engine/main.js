@@ -13,7 +13,7 @@ import {
 import { parseDigits, isSafariFamily } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation, STAGE_SYMBOLS } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
-import { derivePermCycles, count87s } from "./newAlg.js";
+import { derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -92,8 +92,8 @@ function setRowControls({ playing, paused }) {
 }
 
 // Renderer
-function renderGeneratedList(list) {
-  console.log("renderGeneratedList: list len = ", list.length);
+function renderGeneratedList(list, blueLines = ["2"]) {
+  console.log("renderGeneratedList: list len = ", list.length, " blueLines = ", blueLines);
   const out = el("notationOutput");
   if (!list || !list.length) {
     out.innerHTML = '<em class="muted">— nothing generated —</em>';
@@ -112,15 +112,30 @@ function renderGeneratedList(list) {
   if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
 
   console.log("renderGeneratedList: list len 2 = ", list.length);
-  renderBlueLineOverlay({
-      scroller: blueLineContainer,
-      rows: list,
-      // targetChar: "1",                 // e.g. bell 2; later can be a user choice
-      // options: { color: "red", width: 2 }
-      targetChar: "2",                 // e.g. bell 2; later can be a user choice
-      options: { color: "deepskyblue", width: 2 }
-    });
 
+  // stage 9 to render 3 lines (differential):
+  //    7.14589
+  const lineColors = [
+    "deepskyblue",
+    "tomato",
+    "limegreen",
+    "gold",
+    "orchid",
+    "cyan",
+    "orange",
+  ];
+
+  blueLines.forEach((targetChar, i) => {
+    const color = lineColors[i % lineColors.length];
+    renderBlueLineOverlay({
+        scroller: blueLineContainer,
+        rows: list,
+        // targetChar: "1",                 // e.g. bell 2; later can be a user choice
+        // options: { color: "red", width: 2 }
+        targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
+        options: { color: color, width: 2 }
+      });
+  });
 }
 
 function wireNotation() {
@@ -220,8 +235,9 @@ function wireNotation() {
 // Mapping: effectiveStage M = evenized stage (stage or stage+1).
 // Local 1..M → global (12 - M) + local (deepest M).
 function rowToPlaces(row, stage) {
+  const maxPlace = 12;
   const effectiveStage = (stage % 2 === 0) ? stage : stage + 1;
-  const offset = 12 - effectiveStage;
+  const offset = maxPlace - effectiveStage;
   const out = [];
 
   for (const ch of row) {
@@ -229,12 +245,12 @@ function rowToPlaces(row, stage) {
     if (!local) continue;
     if (local < 1 || local > stage) continue; // ignore symbols outside stage (defensive)
     const global = offset + local;
-    if (global >= 1 && global <= 12) out.push(global);
+    if (global >= 1 && global <= maxPlace) out.push(global);
   }
 
   if (stage % 2 === 1) {
     const coverGlobal = offset + effectiveStage; // lowest of the mapped set
-    if (coverGlobal >= 1 && coverGlobal <= 12) out.push(coverGlobal);
+    if (coverGlobal >= 1 && coverGlobal <= maxPlace) out.push(coverGlobal);
   }
   return out;
 }
@@ -328,21 +344,23 @@ async function playAllRows() {
 }
 
 /* -------------------- Centralized generate + render (rows, overlay, report) -------------------- */
-function generateAndRender({ pnString, stage, maxLeads = 12 }) {
+function generateAndRender({ pnString, stage, maxChanges = 6000 }) {
   console.log(">> Entered generateAndRender()");
   const s = clampStage(stage);
-  generatedRows = generateList({ pnString, stage: s, maxLeads });
+  generatedRows = generateList({ pnString, stage: s, maxChanges });
 
-  renderGeneratedList(generatedRows);
-  clearRowHighlight();
-
-  const lines = buildGenerationReport({
+  const {reportLines, blueLineIndexes} = buildGenerationReport({
     pnString,
     stage: s,
     rows: generatedRows,
-    maxLeads
+    maxChanges
   });
-  renderReport(lines);
+  renderReport(reportLines);
+
+  // console.log("================ got blueLine indexes = ", blueLineIndexes, " report lines = ", reportLines);
+
+  renderGeneratedList(generatedRows, blueLineIndexes);
+  clearRowHighlight();
 
   return generatedRows;
 }
@@ -397,8 +415,6 @@ if (document.readyState === "loading") {
   init();
 }
 
-// report
-
 function renderReport(lines) {
   const box = document.getElementById("reportPanel");
   if (!lines || !lines.length) {
@@ -415,7 +431,7 @@ function renderReport(lines) {
   }).join("");
 }
 
-function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
+function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
   const lines = [];
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
@@ -437,16 +453,31 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
 
   const { cycles, period } = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
-  if (cycles.length != 1) {
+  // if (cycles.length != 1) {
+  if (arePermCyclesConsideredDifferential(cycles)) {
     lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);    
   }
+
+  // first number of each group tells us which blue lines to draw
+  const blueLines = cycles.map(s => s[0]);
 
   const backwardTenorsCount = count87s(rows, stage);
   console.log(`Back tenor count: ${backwardTenorsCount}`);
 
   if (backwardTenorsCount > 0) {
-    lines.push(`[ALERT] backwards tenors at backstroke (${backwardTenorsCount} rows)`);
+    lines.push(`[ALERT] reverse tenors at backstroke (${backwardTenorsCount} rows)`);
   }
+
+  // tenor dist tryout
+
+
+  const distancesList = measureTopPairDistances(stage, rows);
+  const distances = distancesList.join("\n\n");
+  console.log("tenor distances: ", distancesList);
+
+  // lines.push(distancesList);
+  lines.push(distances);
+  //
 
   // --- Duplicate/early-rounds detection (exclude the final row) ---
   if (Array.isArray(rows) && rows.length > 1) {
@@ -486,8 +517,11 @@ function buildGenerationReport({ pnString, stage, rows, maxLeads = 12 }) {
   }
 
   if (!returned) {
-    lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxLeads} leads.`);
+    lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxChanges} changes.`);
   }
 
-  return lines;
+  return {
+    reportLines: lines,
+    blueLineIndexes: blueLines,
+  };
 }

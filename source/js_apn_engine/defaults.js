@@ -5,7 +5,7 @@ export const DEFAULTS = {
   placeNotation: "x16x16x16x16x16x12",
 
   // Playback
-  bpm: 224,          // beats per minute
+  bpm: 280,          // beats per minute
 
   // UI/behavior (you can tweak these too if you like)
   autoGenerateOnLoad: true,   // set true to auto-generate when URL has no params

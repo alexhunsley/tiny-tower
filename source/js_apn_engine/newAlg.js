@@ -17,7 +17,7 @@
  */
 
 // Character set for stage-based inversion (prefix subset by stage)
-const ROUNDS_CHARS = "1234567890ETABCD";
+const ROUNDS_CHARS = "1234567890ETABCDFGHJKLMNPQRSUV";
 
 // Global parser context
 const ParserContext = {
@@ -99,7 +99,7 @@ function parseGroupInner(s) {
       continue;
     }
 
-    if (ch === 'x' || ch === 'X') {
+    if (ch === 'x' || ch === 'X' || ch == '-') {
       flushBuf();      // split before x
       items.push('x'); // literal token
       i++;
@@ -616,7 +616,8 @@ function derivePermCycles(oneLine, alphabetIn) {
   // console.log("alphabetIn = ", alphabetIn);
   // console.log("oneLine = ", oneLine);
 
-  const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
+  // const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
+  const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCDFGHJKLMNPQRSU";
 
   // console.log("alphabet: ", alphabet);
   if (typeof oneLine !== "string" || oneLine.length === 0) {
@@ -709,7 +710,7 @@ function arePermCyclesConsideredDifferential(permCycles) {
   if (permCycles.length == 0 || permCycles.length == 1 && permCycles[0].length == 1) {
     return false;
   }
-  
+
   return permCycles.filter(cycle => cycle.length > 1).length != 1;
 }
 
@@ -729,6 +730,41 @@ function count87s(rows, stage) {
   // console.log(`backwards tenors lists: ${res}`);
   return res.length;
 }
+
+/**
+ * Measure separation between the highest bell and the one just below it
+ * across a list of rows, and return the distribution as percentages.
+ *
+ * @param {number} stage - e.g. 7 for Triples, 8 for Major, 12 for Maximus
+ * @param {string[]} rows - list of rows like ["1234567", "2143657", ...]
+ * @returns {number[]} array of percentages, index = distance apart (1-based)
+ */
+export function measureTopPairDistances(stage, rows) {
+  const alphabet = ROUNDS_CHARS.slice(0, stage);
+  const hiChar = alphabet[stage - 1];
+  const belowChar = alphabet[stage - 2];
+
+  // all possible separations (1..stage-1)
+  const counts = Array(stage).fill(0);
+
+  for (const row of rows) {
+    const hiIndex = row.indexOf(hiChar);
+    const lowIndex = row.indexOf(belowChar);
+    if (hiIndex === -1 || lowIndex === -1) continue;
+
+    const distance = Math.abs(hiIndex - lowIndex); // 0-based separation
+    counts[distance] += 1;
+  }
+
+  const total = rows.length || 1;
+  const percents = counts.map(c => (c / total) * 100);
+
+  return percents;
+}
+
+// composition stuff
+
+
 
 /* -------------------------------------------------------
  * Exports
