@@ -16,6 +16,8 @@
  *       Either side may be empty -> that side yields [].
  */
 
+import { clampStage, STAGE_SYMBOLS } from "./notation.js";
+
 // Character set for stage-based inversion (prefix subset by stage)
 const ROUNDS_CHARS = "1234567890ETABCDFGHJKLMNPQRSUV";
 
@@ -446,13 +448,14 @@ function evaluateExpressionInternal(src) {
   return acc;
 }
 
-function evaluateExpression(input) {
-  console.log("evaluateExpression, passed input =", input);
+// the the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
+// (which comes from the stage text box)
+function evaluateExpression(input, fallbackStage) {
+  console.log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
   let src = input.trim();
   console.log("evaluateExpression, passed input =", input, " src = ", src);
 
-  // Always reset stage for each top-level expression.
-  ParserContext.stage = null;
+  ParserContext.stage = fallbackStage;
 
   // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
   // The *only* valid form is exactly one char before the first pipe: "<char>|".
@@ -476,11 +479,14 @@ function evaluateExpression(input) {
     src = src.slice(2);
 
     console.log("Parsing this: ", input, " stage is : ", ParserContext.stage);
-
+  }
+  else {
+    ParserContext.stage = clampStage(fallbackStage);
+    console.log("Using stage from UI textbox: ", ParserContext.stage)
   }
 
   // From here on, do NOT parse "<char>|" again.
-  return {pn: evaluateExpressionInternal(src), stageFromPipe: ParserContext.stage};
+  return {pnTokens: evaluateExpressionInternal(src), resolvedStage: ParserContext.stage};
 }
 
 /* -------------------------------------------------------

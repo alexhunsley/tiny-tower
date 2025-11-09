@@ -1,4 +1,6 @@
 export function clampStage(n) {
+  console.log("clampStage: ", n);
+
   const v = Number(n);
   return Math.max(4, Math.min(30, Number.isFinite(v) ? v : 6));
 }

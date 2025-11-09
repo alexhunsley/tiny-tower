@@ -159,7 +159,9 @@ function wireNotation() {
   // Stage: don't clamp on input; allow empty/partial edits
   el("stage").addEventListener("input", () => {
     const raw = el("stage").value;
+
     const n = parseStageLoose(raw);
+    console.log(" PART 2: updating stage from control to ", n);
     if (n !== null && n >= 1 && n <= 99) {
       // only write URL if plausibly numeric; do NOT clamp here
       writeURLParamsDebounced({ pn: el("placeNotation").value, stage: n });
@@ -182,7 +184,8 @@ function wireNotation() {
     const stage = clampStage(n == null ? 6 : n);
     el("stage").value = stage; // normalize
 
-    generateAndRender({ pnString, stage });
+    console.log(" PART 1: updating UI control for stage to ", stage);
+    generateAndRender({ pnString, stageFromUI: stage });
     writeURLParams({ pn: pnString, stage });
   });
 
@@ -193,7 +196,7 @@ function wireNotation() {
       const stage = clampStage(el("stage").value);
       const pnString = (el("placeNotation").value || "").trim();
       // Use the same centralized flow so report/overlay are consistent
-      generateAndRender({ pnString, stage });
+      generateAndRender({ pnString, stageFromUI });
       writeURLParams({ pn: pnString, stage });
     }
     if (!generatedRows.length) return;
@@ -347,36 +350,34 @@ async function playAllRows() {
 
 /* -------------------- Centralized generate + render (rows, overlay, report) -------------------- */
 function generateAndRender({ pnString, stageFromUI, maxChanges = 6000 }) {
-  console.log(">> Entered generateAndRender() with pnString = ", pnString);
+  console.log(">> Entered generateAndRender() with pnString = ", pnString, " stageFromUI = ", stageFromUI);
 
   // generatedRows = generateList({ pnString, stage: s, maxChanges });
   // generatedRows = ["12345678"];
 
   // TODO rename - needs to be expandPlaceNotation
-  const { pn, stageFromPipe } = evaluateExpression(pnString) ?? {};
-  const stage = stageFromPipe ?? stageFromUI;
+  const { pnTokens, resolvedStage } = evaluateExpression(pnString, stageFromUI) ?? {};
+  const stage = resolvedStage;
 
   const s = clampStage(stage);
 
-  console.log("PN = ", pn, " pnString = ", pnString);
+  console.log("pnTokens = ", pnTokens, " pnString = ", pnString);
 
   // generatedRows = generateList(pnString, stage);
 
-  generatedRows = generateList({ leadTokens: pn, stage: stage, maxChanges: 6000 });
+  generatedRows = generateList({ leadTokens: pnTokens, stage: s, maxChanges: 6000 });
 
   console.log("generatedRows = ", generatedRows);
 
-  const {reportLines, blueLineIndexes2} = buildGenerationReport({
-    pnString,
+  const {reportLines, blueLineIndexes} = buildGenerationReport({
+    pnTokens,
     stage: s,
     rows: generatedRows,
     maxChanges
   });
   renderReport(reportLines);
 
-  // TEMP override lines
-  const blueLineIndexes = [1, 7, 8];
-
+  // const blueLineIndexes = [1, 7, 8];
   // console.log("================ got blueLine indexes = ", blueLineIndexes, " report lines = ", reportLines);
 
   renderGeneratedList(generatedRows, blueLineIndexes);
@@ -402,7 +403,7 @@ function init() {
     if (pn && stage != null && DEFAULTS.autoGenerateOnLoad) {
       const s = clampStage(el("stage").value);
       const pnString = (el("placeNotation").value || "").trim();
-      generateAndRender({ pnString, stage: s });
+      generateAndRender({ pnString, stageFromUI: s });
 
       /* --- autoplay */
 
@@ -452,25 +453,22 @@ function renderReport(lines) {
 }
 
 // herus
-function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
+function buildGenerationReport({ pnTokens, stage, rows, maxChanges = 6000 }) {
 
-  console.log("buildGenerationReport, pnString = ", pnString, " stage = ", stage);
-
-  const lines = [];
-  const s = clampStage(stage);
-  const rounds = roundsForStage(s);
-
+  console.log("buildGenerationReport, pnTokens = ", pnTokens, " stage = ", stage);
 
   console.log(" calling evaluateExpressionInternal....");
 
-  const {pn, stageFromPipe} = evaluateExpression(pnString);
+  const lines = [];
+  // const s = clampStage(resolvedStage);
+  const rounds = roundsForStage(stage);
 
   // const tokens = expandPlaceNotation(pnString, s);
-  // console.log("Tokens = ", token);
+  console.log("pnTokens = ", pnTokens);
 
-  const fullPN = collapsePlaceNotation(pn);
+  const fullPN = collapsePlaceNotation(pnTokens);
   const steps = Math.max(0, rows.length - 1);
-  const leadLen = Math.max(1, pn.length);
+  const leadLen = Math.max(1, pnTokens.length);
   const fullLeads = Math.floor(steps / leadLen);
   const remainder = steps % leadLen;
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
@@ -485,7 +483,7 @@ function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
   lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
   lines.push(`Lead end: ${firstLeadEndRow}`);
 
-  lines.push(`[OK] Expanded PN: ${fullPN} (length ${pn.length})`);
+  lines.push(`[OK] Expanded PN: ${fullPN} (length ${pnTokens.length})`);
 
   console.log("firstLeadEndRow = ", firstLeadEndRow);
 
