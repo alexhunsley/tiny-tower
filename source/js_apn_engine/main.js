@@ -13,13 +13,15 @@ import {
 import { parseDigits, isSafariFamily } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation, STAGE_SYMBOLS } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
-import { derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
+import { evaluateExpression, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
+
 
 function el(id) {
   const n = document.getElementById(id);
   if (!n) throw new Error(`Element #${id} not found. Check index.html IDs and cache.`);
   return n;
 }
+
 
 // Parse, but allow empty/partial during typing
 function parseStageLoose(v) {
@@ -344,18 +346,36 @@ async function playAllRows() {
 }
 
 /* -------------------- Centralized generate + render (rows, overlay, report) -------------------- */
-function generateAndRender({ pnString, stage, maxChanges = 6000 }) {
-  console.log(">> Entered generateAndRender()");
-  const s = clampStage(stage);
-  generatedRows = generateList({ pnString, stage: s, maxChanges });
+function generateAndRender({ pnString, stageFromUI, maxChanges = 6000 }) {
+  console.log(">> Entered generateAndRender() with pnString = ", pnString);
 
-  const {reportLines, blueLineIndexes} = buildGenerationReport({
+  // generatedRows = generateList({ pnString, stage: s, maxChanges });
+  // generatedRows = ["12345678"];
+
+  // TODO rename - needs to be expandPlaceNotation
+  const { pn, stageFromPipe } = evaluateExpression(pnString) ?? {};
+  const stage = stageFromPipe ?? stageFromUI;
+
+  const s = clampStage(stage);
+
+  console.log("PN = ", pn, " pnString = ", pnString);
+
+  // generatedRows = generateList(pnString, stage);
+
+  generatedRows = generateList({ leadTokens: pn, stage: stage, maxChanges: 6000 });
+
+  console.log("generatedRows = ", generatedRows);
+
+  const {reportLines, blueLineIndexes2} = buildGenerationReport({
     pnString,
     stage: s,
     rows: generatedRows,
     maxChanges
   });
   renderReport(reportLines);
+
+  // TEMP override lines
+  const blueLineIndexes = [1, 7, 8];
 
   // console.log("================ got blueLine indexes = ", blueLineIndexes, " report lines = ", reportLines);
 
@@ -431,18 +451,33 @@ function renderReport(lines) {
   }).join("");
 }
 
+// herus
 function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
+
+  console.log("buildGenerationReport, pnString = ", pnString, " stage = ", stage);
+
   const lines = [];
   const s = clampStage(stage);
   const rounds = roundsForStage(s);
-  const tokens = expandPlaceNotation(pnString, s);
-  const fullPN = collapsePlaceNotation(tokens);
+
+
+  console.log(" calling evaluateExpressionInternal....");
+
+  const {pn, stageFromPipe} = evaluateExpression(pnString);
+
+  // const tokens = expandPlaceNotation(pnString, s);
+  // console.log("Tokens = ", token);
+
+  const fullPN = collapsePlaceNotation(pn);
   const steps = Math.max(0, rows.length - 1);
-  const leadLen = Math.max(1, tokens.length);
+  const leadLen = Math.max(1, pn.length);
   const fullLeads = Math.floor(steps / leadLen);
   const remainder = steps % leadLen;
   const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
   const firstLeadEndRow = rows[leadLen];
+
+  // return {rows: ["12345678"], blueLineIndexes: [1]};
+
 
   // Facts
   lines.push(`Length: ${rows.length - 1}`);
@@ -450,15 +485,18 @@ function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
   lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
   lines.push(`Lead end: ${firstLeadEndRow}`);
 
-  lines.push(`[OK] Expanded PN: ${fullPN} (length ${tokens.length})`);
+  lines.push(`[OK] Expanded PN: ${fullPN} (length ${pn.length})`);
+
+  console.log("firstLeadEndRow = ", firstLeadEndRow);
 
   const { cycles, period } = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
+
   // if (cycles.length != 1) {
   if (arePermCyclesConsideredDifferential(cycles)) {
     lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);    
   }
 
-  // first number of each group tells us which blue lines to draw
+  // // first number of each group tells us which blue lines to draw
   const blueLines = cycles.map(s => s[0]);
 
   const backwardTenorsCount = count87s(rows, stage);
@@ -515,7 +553,7 @@ function buildGenerationReport({ pnString, stage, rows, maxChanges = 6000 }) {
       }
     }
   }
-
+  
   if (!returned) {
     lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxChanges} changes.`);
   }
