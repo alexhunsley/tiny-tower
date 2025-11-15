@@ -21,8 +21,32 @@ const {
 const {
   collapsePlaceNotation,
   roundsForStage,
-  isXChar
+  isXChar,
+  symbolToIndex,
+  indexToSymbol
 } = require('./notation.js');
+
+test('symbolToIndex', () => {
+    assert.equal(symbolToIndex('1'), 1);
+    assert.equal(symbolToIndex('9'), 9);
+    assert.equal(symbolToIndex('0'), 10);
+    assert.equal(symbolToIndex('E'), 11);
+    assert.equal(symbolToIndex('T'), 12);
+    assert.equal(symbolToIndex('A'), 13);
+    assert.equal(symbolToIndex('D'), 16);
+    assert.equal(symbolToIndex('V'), 30);
+});
+
+test('indexToSymbol', () => {
+    assert.equal(indexToSymbol(1),  '1');
+    assert.equal(indexToSymbol(9),  '9');
+    assert.equal(indexToSymbol(10), '0');
+    assert.equal(indexToSymbol(11), 'E');
+    assert.equal(indexToSymbol(12), 'T');
+    assert.equal(indexToSymbol(13), 'A');
+    assert.equal(indexToSymbol(16), 'D');
+    assert.equal(indexToSymbol(30), 'V');
+});
 
 test('basic bracketed examples', () => {
   {
@@ -612,9 +636,10 @@ test('roundsForStage', () => {
   assert.deepEqual(roundsForStage(3), '123');
   assert.deepEqual(roundsForStage(4), '1234');
   assert.deepEqual(roundsForStage(12), '1234567890ET');
-  assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSU');
+  assert.deepEqual(roundsForStage(29), '1234567890ETABCDFGHJKLMNPQRSU');
+  assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSUV');
   // 31 clamps to 30. We should really throw here, rather than silently clamp
-  assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSU');
+  assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSUV');
 });
 
 test('isXChar', () => {
@@ -629,8 +654,6 @@ test('isXChar', () => {
 });
 
 test('equals operator: parsing digit and non-digit stage chars', () => {
-  console.log("it is: ", evaluateExpression('8|7='));
-
   assert.deepEqual(evaluateExpression('8|7=').pnTokens, ['27']);
   assert.deepEqual(evaluateExpression('0|1=').pnTokens, ['10']);
   assert.deepEqual(evaluateExpression('D|ET=').pnTokens, ['56ET']);
@@ -654,8 +677,7 @@ test('equals operator: stage 12, single token 120 -> 1230ET', () => {
 });
 
 test('equals operator: stage 12, single token 36 -> 3670', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('T|36=');
-  assert.deepEqual(out, ['3670']);
+  assert.deepEqual(evaluateExpression('T|36=').pnTokens, ['3670']);
 });
 
 test('equals operator: leaves right side unchanged (passes through)', () => {

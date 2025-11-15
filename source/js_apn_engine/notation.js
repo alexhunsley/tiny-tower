@@ -2,7 +2,7 @@ const MAX_STAGE = 30;
 const MIN_STAGE = 1;
 
 // note the lack of I, O in PN chars -- that's standard
-export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU";
+export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSUV";
 
 const X_CHARS = new Set(["X", "-"]);
 
@@ -110,14 +110,13 @@ function applyTokenToRow(row, token, stage) {
   return out.join("");
 }
 
-
 // Utility: symbol <-> index (1-based)
 export function symbolToIndex(sym) {
   const idx = STAGE_SYMBOLS.indexOf(sym);
   return idx >= 0 ? idx + 1 : null; // 1-based
 }
-function indexToSymbol(pos) {
-  // pos is 1..12
+
+export function indexToSymbol(pos) {
   return STAGE_SYMBOLS[pos - 1] || "";
 }
 
