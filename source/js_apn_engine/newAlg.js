@@ -418,6 +418,8 @@ function evaluateSegmentsNoComma(input) {
 // Internal evaluator that NEVER parses n| and NEVER resets stage.
 // Used by recursive calls (e.g., when evaluating inside single outer parens).
 function evaluateExpressionInternal(src) {
+  console.log("evaluateExpressionInternal, src = ", src);
+
   const { parts, ops } = splitTopLevelByLowOps(src.trim());
 
   if (ops.length === 0) {
@@ -445,7 +447,9 @@ function evaluateExpressionInternal(src) {
 }
 
 function evaluateExpression(input) {
+  console.log("evaluateExpression, passed input =", input);
   let src = input.trim();
+  console.log("evaluateExpression, passed input =", input, " src = ", src);
 
   // Always reset stage for each top-level expression.
   ParserContext.stage = null;
@@ -453,6 +457,8 @@ function evaluateExpression(input) {
   // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
   // The *only* valid form is exactly one char before the first pipe: "<char>|".
   const pipeIndex = src.indexOf('|');
+  console.log(" PIPE INDEX: ", pipeIndex, " on src = ", src);
+
   if (pipeIndex !== -1) {
     // Must be exactly one character before the pipe.
     if (pipeIndex !== 1) {
@@ -468,10 +474,13 @@ function evaluateExpression(input) {
     // Set stage from the single char and strip "<char>|"
     ParserContext.stage = stageIndex + 1;
     src = src.slice(2);
+
+    console.log("Parsing this: ", input, " stage is : ", ParserContext.stage);
+
   }
 
   // From here on, do NOT parse "<char>|" again.
-  return evaluateExpressionInternal(src);
+  return {pn: evaluateExpressionInternal(src), stageFromPipe: ParserContext.stage};
 }
 
 /* -------------------------------------------------------
@@ -614,7 +623,7 @@ function slice_custom(myList, sliceSpec) {
  */
 function derivePermCycles(oneLine, alphabetIn) {
   // console.log("alphabetIn = ", alphabetIn);
-  // console.log("oneLine = ", oneLine);
+  console.log("oneLine = ", oneLine);
 
   // const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
   const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCDFGHJKLMNPQRSU";

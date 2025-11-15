@@ -1,15 +1,37 @@
-export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU"; // positions: 1..12 (10=0, 11=E, 12=T)
-// ^^ note the lack of I, O in above letters! that's PN standard.
-
-//                                     ^         ^         ^      ^37 
 export function clampStage(n) {
   const v = Number(n);
   return Math.max(4, Math.min(30, Number.isFinite(v) ? v : 6));
 }
 
+export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU"; // positions: 1..12 (10=0, 11=E, 12=T)
+// ^^ note the lack of I, O in above letters! that's PN standard.
+
+//                                     ^         ^         ^      ^37 
+
 export function roundsForStage(stage) {
   const s = clampStage(stage);
   return STAGE_SYMBOLS.substring(0, s);
+}
+
+/**
+ * Collapse an expanded token list back into a compact PN string.
+ * Example: ["x","12","56","x","78"] => "x12.56x78"
+ */
+export function collapsePlaceNotation(tokens) {
+  if (!tokens || !tokens.length) return "";
+  let out = "";
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    const prev = i > 0 ? tokens[i - 1] : null;
+
+    // If both prev and current are numbers/places, insert a dot
+    const isNum = t => !isXChange(t);
+    if (prev && isNum(prev) && isNum(tok)) {
+      out += ".";
+    }
+    out += tok;
+  }
+  return out;
 }
 
 const X_CHARS = new Set(["x", "X", "-"]);
@@ -18,34 +40,73 @@ export function isXChange(ch) {
   return X_CHARS.has(ch);
 }
 
-/* ---------------- Base tokenizer for a single segment (no commas) ---------------- */
-// Splits on '.' and treats 'x'/'X' as its own token AND delimiter. Keeps 'x' tokens.
-export function tokenizeSegment(pnSegment) {
-  const src = String(pnSegment || "").trim();
-  if (!src) return [];
-  const allowed = new Set([...STAGE_SYMBOLS]);
-  const tokens = [];
-  let buf = "";
 
-  const flush = () => { if (buf) { tokens.push(buf); buf = ""; } };
+/* ---------------- Generate rows by repeating the lead token list ---------------- */
+export function generateList({ leadTokens, stage, maxChanges = 6000 }) {
+  const s = clampStage(stage);
+  const rounds = roundsForStage(s);
 
-  for (let i = 0; i < src.length; i++) {
-    const ch = src[i];
+  // NOTE: expandPlaceNotation now needs stage (for the ';' mapping)
+  // const leadTokens = expandPlaceNotation(pnString, s);
 
-    if (ch === ".") { flush(); continue; }
-    if (isXChange(ch)) { flush(); tokens.push(ch); continue; }
-    if (/\s/.test(ch)) continue;
+  console.log("calling evaluateExpression with pnString = ", leadTokens);
 
-    if (allowed.has(ch)) {
-      const norm = ch === "e" ? "E" : ch === "t" ? "T" : ch;
-      buf += norm;
-      continue;
+  // const leadTokens = evaluateExpression(pnString);
+
+  if (!leadTokens.length) return [rounds];
+
+  console.log("Expanded PN tokens:", collapsePlaceNotation(leadTokens));
+
+  const rows = [rounds];
+  let current = rounds;
+  let leads = 0;
+
+  while (rows.length <= maxChanges) {
+    for (const t of leadTokens) {
+      current = applyTokenToRow(current, t, s);
+      rows.push(current);
     }
-    // Ignore any other characters silently
+    leads += 1;
+    if (current === rounds) break; // back to rounds
   }
-  flush();
-  return tokens;
+  return rows;
 }
+
+/* ---------------- Apply a token to a row (unchanged) ---------------- */
+function applyTokenToRow(row, token, stage) {
+  const n = row.length;
+  const src = row.split("");
+  const out = src.slice();
+
+  if (isXChange(token)) {
+    for (let i = 0; i + 1 < n; i += 2) {
+      out[i] = src[i + 1];
+      out[i + 1] = src[i];
+    }
+    return out.join("");
+  }
+
+  const places = new Set();
+  for (const ch of token) {
+    const pos = symbolToIndex(ch);
+    if (pos && pos >= 1 && pos <= stage) places.add(pos);
+  }
+
+  let i = 1; // 1-based walk
+  while (i <= n) {
+    const j = i + 1;
+
+    if (places.has(i)) { out[i - 1] = src[i - 1]; i += 1; continue; }
+    if (j > n)         { out[i - 1] = src[i - 1]; i += 1; continue; }
+    if (places.has(j)) { out[i - 1] = src[i - 1]; i += 1; continue; }
+
+    out[i - 1] = src[j - 1];
+    out[j - 1] = src[i - 1];
+    i += 2;
+  }
+  return out.join("");
+}
+
 
 // Utility: symbol <-> index (1-based)
 export function symbolToIndex(sym) {
@@ -153,84 +214,4 @@ export function expandPlaceNotation(pnString, stage) {
   return tokenizeSegment(raw);
 }
 
-/* ---------------- Apply a token to a row (unchanged) ---------------- */
-function applyTokenToRow(row, token, stage) {
-  const n = row.length;
-  const src = row.split("");
-  const out = src.slice();
 
-  if (isXChange(token)) {
-    for (let i = 0; i + 1 < n; i += 2) {
-      out[i] = src[i + 1];
-      out[i + 1] = src[i];
-    }
-    return out.join("");
-  }
-
-  const places = new Set();
-  for (const ch of token) {
-    const pos = symbolToIndex(ch);
-    if (pos && pos >= 1 && pos <= stage) places.add(pos);
-  }
-
-  let i = 1; // 1-based walk
-  while (i <= n) {
-    const j = i + 1;
-
-    if (places.has(i)) { out[i - 1] = src[i - 1]; i += 1; continue; }
-    if (j > n)         { out[i - 1] = src[i - 1]; i += 1; continue; }
-    if (places.has(j)) { out[i - 1] = src[i - 1]; i += 1; continue; }
-
-    out[i - 1] = src[j - 1];
-    out[j - 1] = src[i - 1];
-    i += 2;
-  }
-  return out.join("");
-}
-
-/* ---------------- Generate rows by repeating the lead token list ---------------- */
-export function generateList({ pnString, stage, maxChanges = 6000 }) {
-  const s = clampStage(stage);
-  const rounds = roundsForStage(s);
-
-  // NOTE: expandPlaceNotation now needs stage (for the ';' mapping)
-  const leadTokens = expandPlaceNotation(pnString, s);
-  if (!leadTokens.length) return [rounds];
-
-  console.log("Expanded PN tokens:", collapsePlaceNotation(leadTokens));
-
-  const rows = [rounds];
-  let current = rounds;
-  let leads = 0;
-
-  while (rows.length <= maxChanges) {
-    for (const t of leadTokens) {
-      current = applyTokenToRow(current, t, s);
-      rows.push(current);
-    }
-    leads += 1;
-    if (current === rounds) break; // back to rounds
-  }
-  return rows;
-}
-
-/**
- * Collapse an expanded token list back into a compact PN string.
- * Example: ["x","12","56","x","78"] => "x12.56x78"
- */
-export function collapsePlaceNotation(tokens) {
-  if (!tokens || !tokens.length) return "";
-  let out = "";
-  for (let i = 0; i < tokens.length; i++) {
-    const tok = tokens[i];
-    const prev = i > 0 ? tokens[i - 1] : null;
-
-    // If both prev and current are numbers/places, insert a dot
-    const isNum = t => !isXChange(t);
-    if (prev && isNum(prev) && isNum(tok)) {
-      out += ".";
-    }
-    out += tok;
-  }
-  return out;
-}
