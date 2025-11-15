@@ -218,7 +218,7 @@ function splitTrailingSlices(input) {
 function mirrorExpandToken(str) {
   if (str.toUpperCase() == "X") { return "x" }
   const stage = getStage?.() ?? null;
-  // console.log("In mirror for =, found stage = ", stage);
+  console.log("In mirror for =, found stage = ", stage);
 
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
@@ -278,9 +278,16 @@ function isSingleOuterParens(s) {
 // If stage is not set and this is used (for ';'), we throw.
 function invertTokenWithStage(str) {
   const stage = getStage?.() ?? null;
-  if (!stage || stage < 1) {
-    throw new Error("';' operator requires a valid stage (use '<n>|' prefix).");
+
+  console.log("invertTokenWithStage for ;, got str = ", str, " stage = ", stage);
+
+  if (stage == null || !stage || stage < 1) {
+    // catch this!!
+    throw new Error("';' operator requires stage to be set (use '<n>|' prefix).");
   }
+
+  console.log(" DID NOT THROW ERRORR!!!!!!!!!!!!!!!!!!!!!!!!");
+
   const subset = ROUNDS_CHARS.slice(0, Math.min(stage, ROUNDS_CHARS.length));
   const last = subset.length - 1;
 
@@ -448,7 +455,7 @@ function evaluateExpressionInternal(src) {
   return acc;
 }
 
-// the the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
+// if the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
 // (which comes from the stage text box)
 function evaluateExpression(input, fallbackStage) {
   console.log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
@@ -480,7 +487,7 @@ function evaluateExpression(input, fallbackStage) {
 
     console.log("Parsing this: ", input, " stage is : ", ParserContext.stage);
   }
-  else {
+  else if (fallbackStage !== undefined && fallbackStage != null) {
     ParserContext.stage = clampStage(fallbackStage);
     console.log("Using stage from UI textbox: ", ParserContext.stage)
   }
