@@ -22,30 +22,31 @@ const {
   collapsePlaceNotation
 } = require('./notation.js');
 
-
 test('basic bracketed examples', () => {
   {
     const ast = parseTopLevel('(23.45).(67x)');
-    const {pn: out, stageFromPipe} = evaluateTopLevel(ast);
+    console.log("ast = ", ast);
+    const out = evaluateTopLevel(ast);
+    console.log("out = ", out);
     assert.deepEqual(out, ['23', '45', '67', 'x']);
   }
 
   {
     const ast = parseTopLevel('(45.12)');
-    const {pn: out, stageFromPipe} = evaluateTopLevel(ast);
+    const out = evaluateTopLevel(ast);
     assert.deepEqual(out, ['45', '12']);
   }
 
   {
     const ast = parseTopLevel('(45x89.12)');
-    const {pn: out, stageFromPipe} = evaluateTopLevel(ast);
+    const out = evaluateTopLevel(ast);
     assert.deepEqual(out, ['45', 'x', '89', '12']);
   }
 
   // NOTE: 'x' is both a token and a delimiter
   {
     const ast = parseTopLevel('(12.x)');
-    const {pn: out, stageFromPipe} = evaluateTopLevel(ast);
+    const out = evaluateTopLevel(ast);
     assert.deepEqual(out, ['12', 'x']);
   }
 });
