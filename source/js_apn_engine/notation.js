@@ -1,6 +1,11 @@
 const MAX_STAGE = 30;
 const MIN_STAGE = 1;
 
+// note the lack of I, O in PN chars -- that's standard
+export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU";
+
+const X_CHARS = new Set(["X", "-"]);
+
 export function clampStage(n) {
   console.log("clampStage: ", n);
 
@@ -8,14 +13,10 @@ export function clampStage(n) {
   return Math.max(MIN_STAGE, Math.min(v, MAX_STAGE));
 }
 
-const X_CHARS = new Set(["x", "X", "-"]);
-
-export function isXChange(ch) {
-  return X_CHARS.has(ch);
+export function isXChar(ch) {
+  return X_CHARS.has(ch.toUpperCase());
 }
 
-// note the lack of I, O in PN chars -- that's standard
-export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU";
 
 export function roundsForStage(stage) {
   const s = clampStage(stage);
@@ -34,7 +35,7 @@ export function collapsePlaceNotation(tokens) {
     const prev = i > 0 ? tokens[i - 1] : null;
 
     // If both prev and current are numbers/places, insert a dot
-    const isNum = t => !isXChange(t);
+    const isNum = t => !isXChar(t);
     if (prev && isNum(prev) && isNum(tok)) {
       out += ".";
     }
@@ -80,7 +81,7 @@ function applyTokenToRow(row, token, stage) {
   const src = row.split("");
   const out = src.slice();
 
-  if (isXChange(token)) {
+  if (isXChar(token)) {
     for (let i = 0; i + 1 < n; i += 2) {
       out[i] = src[i + 1];
       out[i + 1] = src[i];
@@ -129,7 +130,7 @@ function mirroredNotate(notate, stage) {
 
 /* ----------- NEW: map token's places via i -> (stage + 1 - i), keep 'x' ----------- */
 function mirrorPlacesWithinToken(token, stage) {
-  if (isXChange(token)) return token;
+  if (isXChar(token)) return token;
   const places = [];
   for (const ch of token) {
     const i = symbolToIndex(ch);

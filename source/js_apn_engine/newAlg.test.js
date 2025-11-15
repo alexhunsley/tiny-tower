@@ -20,7 +20,8 @@ const {
 
 const {
   collapsePlaceNotation,
-  roundsForStage
+  roundsForStage,
+  isXChar
 } = require('./notation.js');
 
 test('basic bracketed examples', () => {
@@ -614,6 +615,17 @@ test('roundsForStage', () => {
   assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSU');
   // 31 clamps to 30. We should really throw here, rather than silently clamp
   assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSU');
+});
+
+test('isXChar', () => {
+  assert.equal(isXChar('x'), true);
+  assert.equal(isXChar('X'), true);
+  assert.equal(isXChar('-'), true);
+
+  assert.equal(isXChar('='), false);
+  assert.equal(isXChar('('), false);
+  assert.equal(isXChar('b'), false);
+  assert.equal(isXChar('1'), false);
 });
 
 test('equals operator: parsing digit and non-digit stage chars', () => {
