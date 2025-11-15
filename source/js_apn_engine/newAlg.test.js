@@ -53,12 +53,12 @@ test('basic bracketed examples', () => {
 
 test('nested example', () => {
   const ast = parseTopLevel('((34.16).(7x)).(9)');
-  const {pn: out, stageFromPipe} = evaluateTopLevel(ast);
+  const out = evaluateTopLevel(ast);
   assert.deepEqual(out, ['34', '16', '7', 'x', '9']);
 });
 
 test('flat tokenizer: "12.34.....xx87x.x"', () => {
-  const {pn: out, stageFromPipe} = tokenizeFlat('12.34.....xx87x.x');
+  const out = tokenizeFlat('12.34.....xx87x.x');
   assert.deepEqual(out, ['12', '34', 'x', 'x', '87', 'x', 'x']);
 });
 
@@ -599,27 +599,28 @@ test('double darrowby expansion full', () => {
 // mirror tests ('=' operator)
 
 test('equals operator: parsing digit and non-digit stage chars', () => {
-  assert.deepEqual(evaluateExpression('8|7='), ['27']);
-  assert.deepEqual(evaluateExpression('0|1='), ['10']);
-  assert.deepEqual(evaluateExpression('D|ET='), ['56ET']);
+  // console.log("it is: ", evaluateExpression('8|7=').pn);
+
+  assert.deepEqual(evaluateExpression('8|7=').pn, ['27']);
+  assert.deepEqual(evaluateExpression('0|1=').pn, ['10']);
+  assert.deepEqual(evaluateExpression('D|ET=').pn, ['56ET']);
 });
 
 test('equals operator: x mirrors to x on any stage', () => {
-  assert.deepEqual(evaluateExpression('4|x='), ['x']);
-  assert.deepEqual(evaluateExpression('6|x='), ['x']);
-  assert.deepEqual(evaluateExpression('8|x='), ['x']);
-  assert.deepEqual(evaluateExpression('0|x='), ['x']);
-  assert.deepEqual(evaluateExpression('T|x='), ['x']);
-  assert.deepEqual(evaluateExpression('D|x='), ['x']);
+  assert.deepEqual(evaluateExpression('4|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('6|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('8|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('0|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('T|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('D|x=').pn, ['x']);
 
   // shouldn't be using x on odd stages, but check it goes to 'x' anyway
-  assert.deepEqual(evaluateExpression('5|x='), ['x']);
-  assert.deepEqual(evaluateExpression('C|x='), ['x']);
+  assert.deepEqual(evaluateExpression('5|x=').pn, ['x']);
+  assert.deepEqual(evaluateExpression('C|x=').pn, ['x']);
 });
 
 test('equals operator: stage 12, single token 120 -> 1230ET', () => {
-  const {pn: out, stageFromPipe} = evaluateExpression('T|120=');
-  assert.deepEqual(out, ['1230ET']);
+  assert.deepEqual(evaluateExpression('T|120=').pn, ['1230ET']);
 });
 
 test('equals operator: stage 12, single token 36 -> 3670', () => {
@@ -629,19 +630,17 @@ test('equals operator: stage 12, single token 36 -> 3670', () => {
 
 test('equals operator: leaves right side unchanged (passes through)', () => {
   // Left: 36 -> 3670 (mirrored per stage 12); Right: "x" stays "x"
-  const {pn: out, stageFromPipe} = evaluateExpression('T|36=,x');
+
   // First '=' with empty right part due to ',', then ',' doubles acc and right.
   // We only assert the immediate '=' behavior by isolating it:
-  const justEq = evaluateExpression('T|36=');
-  assert.deepEqual(justEq, ['3670']);
+  assert.deepEqual(evaluateExpression('T|36=').pn, ['3670']);
   // And check that ',' still composes with an unmodified right:
-  const seq = evaluateExpression('T|36=.x'); // dot means simple concat of "x" segment after '=' result
-  assert.deepEqual(seq, ['3670', 'x']);
+   // dot means simple concat of "x" segment after '=' result
+  assert.deepEqual(evaluateExpression('T|36=.x').pn, ['3670', 'x']);
 });
 
 test('equals operator: empty right is allowed', () => {
-  const {pn: out, stageFromPipe} = evaluateExpression('T|120=');
-  assert.deepEqual(out, ['1230ET']);
+  assert.deepEqual(evaluateExpression('T|120=').pn, ['1230ET']);
 });
 
 test('equals operator: mirror can go right to left', () => {
@@ -651,14 +650,14 @@ test('equals operator: mirror can go right to left', () => {
 
 test('equals operator: requires that stage is set', () => {
   // ';' or '=' without stage is fine if there's nothing being mirrored (e.g. ";", "=")
-  assert.deepEqual(evaluateExpression(';'), []);
-  assert.deepEqual(evaluateExpression('='), []);
+  assert.deepEqual(evaluateExpression(';').pn, []);
+  assert.deepEqual(evaluateExpression('=').pn, []);
 
-  assert.throws(() => evaluateExpression('1='), /operator requires a valid stage/i);
+  assert.throws(() => evaluateExpression('1=').pn, /operator requires a valid stage/i);
   assert.throws(() => evaluateExpression('9.8;'), /operator requires a valid stag/i);
   
-  assert.throws(() => evaluateExpression('120='), /operator requires a valid stage/i);
-  assert.throws(() => evaluateExpression('x.120=,'), /operator requires a valid stage/i);
+  assert.throws(() => evaluateExpression('120=').pn, /operator requires a valid stage/i);
+  assert.throws(() => evaluateExpression('x.120=,').pn, /operator requires a valid stage/i);
 });
 
 test('equals operator: multiple tokens on left (applies per-token)', () => {
@@ -811,7 +810,7 @@ test('stage 7: basic distribution for top two bells (7 & 6)', () => {
     '7123456', // dist 6  (7@0, 6@6)
     '1234567', // dist 1
   ];
-  const {pn: out, stageFromPipe} = measureTopPairDistances(7, rows);
+  const out = measureTopPairDistances(7, rows);
 
   // Expect percentages over 5 rows
   const expected = [0, 40, 20, 0, 20, 0, 20];
@@ -831,7 +830,7 @@ test('stage 12: uses E and T (top two), multiple separations', () => {
     '123456789E0T', // dist 2  (T@11, E@9)
     'T123456789E0', // dist 10 (T@0,  E@10)
   ];
-  const {pn: out, stageFromPipe} = measureTopPairDistances(12, rows);
+  const out = measureTopPairDistances(12, rows);
 
   // Expect 3 distances each 1/3 of rows: indices 1, 2, 10 -> 33.333...%
   const expectedSpots = { 1: 1/3*100, 2: 1/3*100, 10: 1/3*100 };
@@ -848,7 +847,7 @@ test('stage 12: uses E and T (top two), multiple separations', () => {
 });
 
 test('empty rows returns all zeros', () => {
-  const {pn: out, stageFromPipe} = measureTopPairDistances(8, []);
+  const out = measureTopPairDistances(8, []);
   assert.equal(out.length, 8);
   assert.ok(out.every(x => x === 0));
 });
