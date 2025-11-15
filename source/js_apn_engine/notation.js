@@ -1,14 +1,21 @@
+const MAX_STAGE = 30;
+const MIN_STAGE = 1;
+
 export function clampStage(n) {
   console.log("clampStage: ", n);
 
   const v = Number(n);
-  return Math.max(4, Math.min(30, Number.isFinite(v) ? v : 6));
+  return Math.max(MIN_STAGE, Math.min(v, MAX_STAGE));
 }
 
-export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU"; // positions: 1..12 (10=0, 11=E, 12=T)
-// ^^ note the lack of I, O in above letters! that's PN standard.
+const X_CHARS = new Set(["x", "X", "-"]);
 
-//                                     ^         ^         ^      ^37 
+export function isXChange(ch) {
+  return X_CHARS.has(ch);
+}
+
+// note the lack of I, O in PN chars -- that's standard
+export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSU";
 
 export function roundsForStage(stage) {
   const s = clampStage(stage);
@@ -35,13 +42,6 @@ export function collapsePlaceNotation(tokens) {
   }
   return out;
 }
-
-const X_CHARS = new Set(["x", "X", "-"]);
-
-export function isXChange(ch) {
-  return X_CHARS.has(ch);
-}
-
 
 /* ---------------- Generate rows by repeating the lead token list ---------------- */
 export function generateList({ leadTokens, stage, maxChanges = 6000 }) {

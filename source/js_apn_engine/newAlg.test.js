@@ -19,7 +19,8 @@ const {
 } = require('./newAlg.js');
 
 const {
-  collapsePlaceNotation
+  collapsePlaceNotation,
+  roundsForStage
 } = require('./notation.js');
 
 test('basic bracketed examples', () => {
@@ -602,6 +603,18 @@ test('double darrowby expansion full', () => {
 
 ////////////////////////////////////////////////
 // mirror tests ('=' operator)
+
+test('roundsForStage', () => {
+  // 0 clamps to 1. We should really throw here, rather than silently clamp
+  assert.deepEqual(roundsForStage(0), '1');
+  assert.deepEqual(roundsForStage(2), '12');
+  assert.deepEqual(roundsForStage(3), '123');
+  assert.deepEqual(roundsForStage(4), '1234');
+  assert.deepEqual(roundsForStage(12), '1234567890ET');
+  assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSU');
+  // 31 clamps to 30. We should really throw here, rather than silently clamp
+  assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSU');
+});
 
 test('equals operator: parsing digit and non-digit stage chars', () => {
   console.log("it is: ", evaluateExpression('8|7='));
