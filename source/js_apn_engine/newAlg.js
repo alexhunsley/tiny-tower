@@ -23,6 +23,10 @@ const ParserContext = {
   stage: null
 };
 
+function log(str) {
+  // console.log(str)
+}
+
 function getStage() { return ParserContext.stage; }
 
 function parseTopLevel(input) {
@@ -215,7 +219,7 @@ function splitTrailingSlices(input) {
 function mirrorExpandToken(str) {
   if (isXChar(str)) { return CANONICAL_X_CHAR }
   const stage = getStage?.() ?? null;
-  console.log("In mirror for =, found stage = ", stage);
+  log("In mirror for =, found stage = ", stage);
 
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
@@ -394,7 +398,7 @@ function evaluateSegmentsNoComma(input) {
 // Internal evaluator that NEVER parses n| and NEVER resets stage.
 // Used by recursive calls (e.g., when evaluating inside single outer parens).
 function evaluateExpressionInternal(src) {
-  console.log("evaluateExpressionInternal, src = ", src);
+  log("evaluateExpressionInternal, src = ", src);
 
   const { parts, ops } = splitTopLevelByLowOps(src.trim());
 
@@ -425,16 +429,16 @@ function evaluateExpressionInternal(src) {
 // if the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
 // (which comes from the stage text box)
 function evaluateExpression(input, fallbackStage) {
-  console.log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
+  log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
   let src = input.trim();
-  console.log("evaluateExpression, passed input =", input, " src = ", src);
+  log("evaluateExpression, passed input =", input, " src = ", src);
 
   ParserContext.stage = fallbackStage;
 
   // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
   // The *only* valid form is exactly one char before the first pipe: "<char>|".
   const pipeIndex = src.indexOf('|');
-  console.log(" PIPE INDEX: ", pipeIndex, " on src = ", src);
+  log(" PIPE INDEX: ", pipeIndex, " on src = ", src);
 
   if (pipeIndex !== -1) {
     // Must be exactly one character before the pipe.
@@ -452,11 +456,11 @@ function evaluateExpression(input, fallbackStage) {
     ParserContext.stage = stageIndex + 1;
     src = src.slice(2);
 
-    console.log("Parsing this: ", input, " stage is : ", ParserContext.stage);
+    log("Parsing this: ", input, " stage is : ", ParserContext.stage);
   }
   else if (fallbackStage !== undefined && fallbackStage != null) {
     ParserContext.stage = clampStage(fallbackStage);
-    console.log("Using stage from UI textbox: ", ParserContext.stage)
+    log("Using stage from UI textbox: ", ParserContext.stage)
   }
 
   // From here on, do NOT parse "<char>|" again.
@@ -600,12 +604,12 @@ function slice_custom(myList, sliceSpec) {
  * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
  */
 function derivePermCycles(oneLine, alphabetIn) {
-  // console.log("alphabetIn = ", alphabetIn);
-  console.log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
+  // log("alphabetIn = ", alphabetIn);
+  log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
 
   const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
-  console.log("alphabet: ", alphabet);
+  log("alphabet: ", alphabet);
   if (typeof oneLine !== "string" || oneLine.length === 0) {
     throw new Error("oneLine must be a non-empty string");
   }
@@ -618,7 +622,7 @@ function derivePermCycles(oneLine, alphabetIn) {
   // Use only the first n symbols of the alphabet
   const subset = alphabet.slice(0, n);
 
-  console.log("subset: ", subset);
+  log("subset: ", subset);
 
   // Map symbol -> 1-based index within subset
   const idxOf = new Map();
@@ -712,8 +716,8 @@ function count87s(rows, stage) {
 
   const backwardTenors = STAGE_SYMBOLS.slice(stage-2, stage).split('').reverse().join('');
   const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
-  // console.log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
-  // console.log(`backwards tenors lists: ${res}`);
+  // log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
+  // log(`backwards tenors lists: ${res}`);
   return res.length;
 }
 
