@@ -276,14 +276,10 @@ function isSingleOuterParens(s) {
 function invertTokenWithStage(str) {
   const stage = getStage?.() ?? null;
 
-  console.log("invertTokenWithStage for ;, got str = ", str, " stage = ", stage);
-
   if (stage == null || !stage || stage < 1) {
     // catch this!!
     throw new Error("';' operator requires stage to be set (use '<n>|' prefix).");
   }
-
-  console.log(" DID NOT THROW ERRORR!!!!!!!!!!!!!!!!!!!!!!!!");
 
   const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
   const last = subset.length - 1;
@@ -298,38 +294,19 @@ function invertTokenWithStage(str) {
   return mapped.split("").reverse().join("");
 }
 
+/** Mirror/double-up: if len <= 1 -> no-op; else L ++ reverse(L).drop(1). */
+function doubleUp(list) {
+  if (list.length <= 1) return list.slice();
+  const tailRev = list.slice(0, -1).reverse();
+  return list.concat(tailRev);
+}
+
 // Like doubleUp, but invert each item of the appended reversed tail.
 function doubleUpWithInvert(list) {
   if (list.length <= 1) return list.slice();
   const tail = list.slice(0, -1).reverse().map(invertTokenWithStage);
   return list.concat(tail);
 }
-
-/* -------------------------------------------------------
- * Low-precedence comma support
- * ----------------------------------------------------- */
-
-// Split by top-level commas, respecting (...) and [...] (slices)
-// function splitTopLevelByComma(s) {
-//   const parts = [];
-//   let depthPar = 0;
-//   let depthSq = 0;
-//   let start = 0;
-//   for (let i = 0; i < s.length; i++) {
-//     const ch = s[i];
-//     if (ch === '(') depthPar++;
-//     else if (ch === ')') depthPar--;
-//     else if (ch === '[') depthSq++;
-//     else if (ch === ']') depthSq--;
-//     else if (ch === ',' && depthPar === 0 && depthSq === 0) {
-//       parts.push(s.slice(start, i));
-//       start = i + 1;
-//     }
-//   }
-//   if (start <= s.length) parts.push(s.slice(start));
-//   // keep empties (empty side is allowed -> [])
-//   return parts.map(p => p.trim());
-// }
 
 // Split by top-level low-precedence ops (',' and ';'), respecting (...) and [...]
 function splitTopLevelByLowOps(s) {
@@ -354,13 +331,6 @@ function splitTopLevelByLowOps(s) {
   if (start <= s.length) parts.push(s.slice(start));
   // Keep empties (empty side allowed)
   return { parts: parts.map(p => p.trim()), ops };
-}
-
-/** Mirror/double-up: if len <= 1 -> no-op; else L ++ reverse(L).drop(1). */
-function doubleUp(list) {
-  if (list.length <= 1) return list.slice();
-  const tailRev = list.slice(0, -1).reverse();
-  return list.concat(tailRev);
 }
 
 function evaluateSegmentsNoComma(input) {
