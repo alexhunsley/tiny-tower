@@ -2,7 +2,7 @@
 import { DEFAULTS } from "./defaults.js";
 import { formatRowForDisplay } from "./displayMap.js";
 import {
-  playSequence,   // still used by manual player
+  playSequence,
   stopAll,
   setVolume,
   pause as pauseAudio,
@@ -15,13 +15,11 @@ import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNot
 import { renderBlueLineOverlay } from "./blueLine.js";
 import { evaluateExpression, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
-
 function el(id) {
   const n = document.getElementById(id);
   if (!n) throw new Error(`Element #${id} not found. Check index.html IDs and cache.`);
   return n;
 }
-
 
 // Parse, but allow empty/partial during typing
 function parseStageLoose(v) {

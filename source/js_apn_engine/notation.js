@@ -1,12 +1,4 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-
-import util from 'node:util';
-util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
-
-import {
-  log
-} from './newAlg.js';
+import { log } from './newAlg.js';
 
 const MAX_STAGE = 30;
 const MIN_STAGE = 1;

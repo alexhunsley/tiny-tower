@@ -16,18 +16,9 @@
  *       Either side may be empty -> that side yields [].
  */
 
-import test from 'node:test';
-import assert from 'node:assert/strict';
-
-import util from 'node:util';
-util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
-
 import { clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR } from "./notation.js";
 
-// Global parser context
-const ParserContext = {
-  stage: null
-};
+const ParserContext = { stage: null };
 
 export function log(str) {
   // console.log(str)
