@@ -1,3 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import util from 'node:util';
+util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
+
+import {
+  log
+} from './newAlg.js';
+
 const MAX_STAGE = 30;
 const MIN_STAGE = 1;
 
@@ -8,7 +18,7 @@ export const CANONICAL_X_CHAR = "x";
 const X_CHARS = new Set(["X", "-"]);
 
 export function clampStage(n) {
-  console.log("clampStage: ", n);
+  log("clampStage: ", n);
 
   const v = Number(n);
   return Math.max(MIN_STAGE, Math.min(v, MAX_STAGE));
@@ -188,7 +198,7 @@ export function expandPlaceNotation(pnString, stage) {
     const leftTokens = tokenizeSegment(leftRaw);
     const rightMirroredTokens = mirroredNotate(rightRaw, clampStage(stage));
 
-    console.log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
+    log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
 
     // this -1-stage%2 is needed for now for e.g. plain hunt on 7,
     // but I'm barking up the wrong tree; see (A,b),c idea etc.
@@ -197,13 +207,13 @@ export function expandPlaceNotation(pnString, stage) {
       .reverse()
       .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
 
-    console.log("  left tail: ", leftTail);
+    log("  left tail: ", leftTail);
 
     const part1_part2 = [...leftTokens, ...leftTail];
 
     const comma_notation_left = [...part1_part2, rightMirroredTokens];
     raw = collapsePlaceNotation(comma_notation_left) + "," + rightRaw;
-    console.log(" ; HANDLING: made comma version of ", raw);
+    log(" ; HANDLING: made comma version of ", raw);
   }
 
   // Legacy comma behavior (unchanged)

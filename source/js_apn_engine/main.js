@@ -490,9 +490,9 @@ function buildGenerationReport({ pnTokens, stage, rows, maxChanges = 6000 }) {
   const { cycles, period } = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
 
   // if (cycles.length != 1) {
-  if (arePermCyclesConsideredDifferential(cycles)) {
+  // if (arePermCyclesConsideredDifferential(cycles)) {
     lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);    
-  }
+  // }
 
   // // first number of each group tells us which blue lines to draw
   const blueLines = cycles.map(s => s[0]);

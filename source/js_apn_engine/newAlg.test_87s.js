@@ -3,16 +3,15 @@
  * 87s at back detection tests (odd stages) 
  * ---------------------------------------- */
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const util = require('node:util');
+import util from 'node:util';
 util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
 
-const {
+import {
   count87s
-} = require('./newAlg.js');
-
+} from './newAlg.js';
 
 test('count87s identifies bum music at backstroke', () => {
   assert.equal(count87s(["12345678", "12345687", "12345687", "12345678", "12345687", "12345678"], 8), 2);

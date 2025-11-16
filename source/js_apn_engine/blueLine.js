@@ -73,18 +73,18 @@ export function renderBlueLineOverlay({
   targetChar,
   options = {},
 }) {
-  // console.log("Entered renderBlueLineOverlay, rows len = ", rows?.length ?? 0);
+  log("Entered renderBlueLineOverlay, rows len = ", rows?.length ?? 0);
 
   const scroller = resolveScroller(scrollerRef);
   if (!Array.isArray(rows) || rows.length === 0) {
-    console.log("   renderBlueLineOverlay: exiting, no row data");
+    log("   renderBlueLineOverlay: exiting, no row data");
     return;
   }
   if (targetChar == null) {
-    console.log("   renderBlueLineOverlay: exiting, no targetChar");
+    log("   renderBlueLineOverlay: exiting, no targetChar");
     return;
   }
-  // console.log("   renderBlueLineOverlay: got row data");
+  log("   renderBlueLineOverlay: got row data");
 
   // Ensure scroller can host an absolute overlay
   const prevPos = getComputedStyle(scroller).position;

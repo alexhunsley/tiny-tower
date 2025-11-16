@@ -3,15 +3,15 @@
  * comma operator tests
  * --------------------- */
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const util = require('node:util');
+import util from 'node:util';
 util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
 
-const {
+import {
   evaluateExpression
-} = require('./newAlg.js');
+} from './newAlg.js';
 
 /* ---------------------
  * semicolon operator tests

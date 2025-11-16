@@ -1,11 +1,11 @@
 // newAlg.test.js
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const util = require('node:util');
+import util from 'node:util';
 util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
 
-const {
+import {
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
@@ -15,17 +15,17 @@ const {
   arePermCyclesConsideredDifferential,
   count87s,
   measureTopPairDistances,
-  _internals
-} = require('./newAlg.js');
+  log
+} from './newAlg.js';
 
-const {
+import {
   collapsePlaceNotation,
   roundsForStage,
   isXChar,
   symbolToIndex,
   indexToSymbol,
   CANONICAL_X_CHAR
-} = require('./notation.js');
+} from './notation.js';
 
 test('symbolToIndex', () => {
     assert.equal(symbolToIndex('1'), 1);
@@ -52,9 +52,9 @@ test('indexToSymbol', () => {
 test('basic bracketed examples', () => {
   {
     const ast = parseTopLevel('(23.45).(67x)');
-    console.log("ast = ", ast);
+    log("ast = ", ast);
     const out = evaluateTopLevel(ast);
-    console.log("out = ", out);
+    log("out = ", out);
     assert.deepEqual(out, ['23', '45', '67', 'x']);
   }
 
@@ -310,7 +310,7 @@ test('double darrowby expansion full', () => {
   // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|34.16,,x');
 
 
-  console.log("Full lead: ", out.join("."));
+  log("Full lead: ", out.join("."));
 });
 
 ///////////////////////
@@ -589,54 +589,54 @@ test('double darrowby expansion full', () => {
 // });
 // import { collapsePlaceNotation } from "./notation.js";
 
-test('drive comp', () => {
-  const ed_royal = evaluateExpression('0|-30-14-12.50.16-34-10-16-70.16-16.70,10');
-  // 1648203957 (Code: l)
-  // expanded PN: x30x14x12.50.16x34x10x16x70.16x16.70.16x16.70x16x10x34x16.50.12x14x30x10
+// test('drive comp', () => {
+//   const ed_royal = evaluateExpression('0|-30-14-12.50.16-34-10-16-70.16-16.70,10');
+//   // 1648203957 (Code: l)
+//   // expanded PN: x30x14x12.50.16x34x10x16x70.16x16.70.16x16.70x16x10x34x16.50.12x14x30x10
   
-  console.log("Ed's royal expanded PN:", ed_royal);
+//   console.log("Ed's royal expanded PN:", ed_royal);
 
-  console.log(collapsePlaceNotation(ed_royal));
+//   console.log(collapsePlaceNotation(ed_royal));
 
-//     M I X S B W F V H
-// 354769820 – –             
-// 795264830 – – –   –       
-// 927465        –   –       
-// 24967       –           – 
-// 642395870   –   –   –     
-// 643527890   –             –
-// 45362               2     
-// 63254     –         –     
-// 426395870 –       –   –   
-// 234567890   –             3
+// //     M I X S B W F V H
+// // 354769820 – –             
+// // 795264830 – – –   –       
+// // 927465        –   –       
+// // 24967       –           – 
+// // 642395870   –   –   –     
+// // 643527890   –             –
+// // 45362               2     
+// // 63254     –         –     
+// // 426395870 –       –   –   
+// // 234567890   –             3
 
-  // abingdon is same lead head and PB order as ed method.
-  // see https://complib.org/method/36688
+//   // abingdon is same lead head and PB order as ed method.
+//   // see https://complib.org/method/36688
 
-  // tenor masks: maps letter to position of tenor at lead head (handstroke) (including treble! 3 = 3rds place)
-  masks = [
-     // "B", "2",
-     // "I", "3",
-     // "V", "4",
-     // "F", "5",
-     // "S", "6",
-     // "X", "7",   // but complib has this in 5th place at hand?!?!?!?! WTF. 7 is from what blueline site says. trust complib!
-     // "M", "8",
-     // "H", "9",
-     // "W", "0",
+//   // tenor masks: maps letter to position of tenor at lead head (handstroke) (including treble! 3 = 3rds place)
+//   const masks = [
+//      // "B", "2",
+//      // "I", "3",
+//      // "V", "4",
+//      // "F", "5",
+//      // "S", "6",
+//      // "X", "7",   // but complib has this in 5th place at hand?!?!?!?! WTF. 7 is from what blueline site says. trust complib!
+//      // "M", "8",
+//      // "H", "9",
+//      // "W", "0",
 
-    // complib confirmed:
-       "B", "2",
-       "I", "3",
-       "F", "4",
-       "X", "5",
-       "V", "6",
-       "M", "7",
-       "S", "8",
-       "H", "9",
-       "W", "0",
-    ];
-});
+//     // complib confirmed:
+//        "B", "2",
+//        "I", "3",
+//        "F", "4",
+//        "X", "5",
+//        "V", "6",
+//        "M", "7",
+//        "S", "8",
+//        "H", "9",
+//        "W", "0",
+//     ];
+// });
 
 //  in complib, ed's royal method with thee calls in order is a bob every lead:
 //
