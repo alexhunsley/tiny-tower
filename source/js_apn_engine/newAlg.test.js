@@ -24,6 +24,7 @@ import {
   isXChar,
   symbolToIndex,
   indexToSymbol,
+  mirroredNotate,
   CANONICAL_X_CHAR
 } from './notation.js';
 
@@ -117,6 +118,14 @@ test('isXChar', () => {
   assert.equal(isXChar('('), false);
   assert.equal(isXChar('b'), false);
   assert.equal(isXChar('1'), false);
+});
+
+test('mirroredNotate', () => {
+  assert.equal(mirroredNotate("x", "10"), "x");
+  assert.equal(mirroredNotate("x", "11"), "x");
+  assert.equal(mirroredNotate("12", "6"), "56");
+  assert.equal(mirroredNotate("147", "12"), "69T");
+  assert.equal(mirroredNotate("147", "12"), "69T");
 });
 
 test('double darrowby expansion 1/4', () => {

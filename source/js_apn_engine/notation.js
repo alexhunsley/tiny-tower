@@ -130,10 +130,10 @@ export function indexToSymbol(pos) {
   return STAGE_SYMBOLS[pos - 1] || "";
 }
 
-function mirroredNotate(notate, stage) {
+export function mirroredNotate(notate, stage) {
   const mirroredTokens = [...notate].reverse().map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
-  console.log("Mirrored tokens = ", mirroredTokens);
-  console.log("Mirrored tokens.join() = ", mirroredTokens.join(""));
+  log("Mirrored tokens = ", mirroredTokens);
+  log("Mirrored tokens.join() = ", mirroredTokens.join(""));
   return mirroredTokens.join("");
 }
 
