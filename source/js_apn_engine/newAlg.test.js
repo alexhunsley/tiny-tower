@@ -764,6 +764,12 @@ test('reverse permutation "54321" → ["15","24","3"]; period 2', () => {
   assert.equal(period, 2);
 });
 
+test('reverse permutation with non-numeric chars "DCBATE0987654321" → ["1D", "2C", "3B", "4A", "5T", "6E", "70", "89"]; period 2', () => {
+  const { cycles, period } = derivePermCycles('DCBATE0987654321');
+  assert.deepEqual(cycles, ['1D', '2C', '3B', '4A', '5T', '6E', '70', '89']);
+  assert.equal(period, 2);
+});
+
 test('large LCM: cycles (12)(345)(6789) → period 12', () => {
   // Images: 1→2,2→1,3→4,4→5,5→3,6→7,7→8,8→9,9→6
   const { cycles, period } = derivePermCycles('214537896');
@@ -787,15 +793,6 @@ test('invalid: not a permutation (duplicate symbol)', () => {
 test('invalid: symbol not in subset (n too small)', () => {
   // n=4 so subset is "1234"; 'E' is invalid here
   assert.throws(() => derivePermCycles('12E3'), /Invalid symbol/i);
-});
-
-// Optional: ensure extended rounds alphabet is respected when globally defined
-test('uses global ROUNDS_CHARS when second arg omitted (if defined)', () => {
-  global.ROUNDS_CHARS = 'PQRST';
-  const { cycles, period } = derivePermCycles('QRSTP');
-  assert.deepEqual(cycles, ['PQRST']);
-  assert.equal(period, 5);
-  delete global.ROUNDS_CHARS;
 });
 
 // Optional: ensure extended rounds alphabet is respected when globally defined

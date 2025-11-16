@@ -18,9 +18,6 @@
 
 import { clampStage, STAGE_SYMBOLS } from "./notation.js";
 
-// Character set for stage-based inversion (prefix subset by stage)
-const ROUNDS_CHARS = "1234567890ETABCDFGHJKLMNPQRSUV";
-
 // Global parser context
 const ParserContext = {
   stage: null
@@ -223,7 +220,7 @@ function mirrorExpandToken(str) {
   if (!stage || stage < 1) {
     throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
   }
-  const subset = ROUNDS_CHARS.slice(0, Math.min(stage, ROUNDS_CHARS.length));
+  const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
   const last = subset.length - 1;
 
   const present = new Set();
@@ -273,7 +270,7 @@ function isSingleOuterParens(s) {
   }
 }
 
-// Invert every char using the first `stage` chars of ROUNDS_CHARS,
+// Invert every char using the first `stage` chars of STAGE_SYMBOLS,
 // then reverse the whole string to preserve inherent order.
 // If stage is not set and this is used (for ';'), we throw.
 function invertTokenWithStage(str) {
@@ -288,7 +285,7 @@ function invertTokenWithStage(str) {
 
   console.log(" DID NOT THROW ERRORR!!!!!!!!!!!!!!!!!!!!!!!!");
 
-  const subset = ROUNDS_CHARS.slice(0, Math.min(stage, ROUNDS_CHARS.length));
+  const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
   const last = subset.length - 1;
 
   const mapped = Array.from(str, ch => {
@@ -476,7 +473,7 @@ function evaluateExpression(input, fallbackStage) {
     }
 
     const ch = src[0];
-    const stageIndex = ROUNDS_CHARS.indexOf(ch);
+    const stageIndex = STAGE_SYMBOLS.indexOf(ch);
     if (stageIndex === -1) {
       throw new Error("Couldn't parse stage");
     }
@@ -627,8 +624,6 @@ function slice_custom(myList, sliceSpec) {
 //////////////////////////////////
 // perm cycles (differential detection, etc.)
 
-// Example (default): const ROUNDS_CHARS = "1234567890ETABCD";
-
 /**
  * derivePermCycles("21453") -> { cycles: ["12", "345"], period: 6 }
  * The permutation string is a one-line image of the first n symbols of `alphabet`.
@@ -636,12 +631,11 @@ function slice_custom(myList, sliceSpec) {
  */
 function derivePermCycles(oneLine, alphabetIn) {
   // console.log("alphabetIn = ", alphabetIn);
-  console.log("oneLine = ", oneLine);
+  console.log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
 
-  // const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCD";
-  const alphabet = alphabetIn ?? globalThis.ROUNDS_CHARS ?? "1234567890ETABCDFGHJKLMNPQRSU";
+  const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
-  // console.log("alphabet: ", alphabet);
+  console.log("alphabet: ", alphabet);
   if (typeof oneLine !== "string" || oneLine.length === 0) {
     throw new Error("oneLine must be a non-empty string");
   }
@@ -654,7 +648,7 @@ function derivePermCycles(oneLine, alphabetIn) {
   // Use only the first n symbols of the alphabet
   const subset = alphabet.slice(0, n);
 
-  // console.log("subset: ", subset);
+  console.log("subset: ", subset);
 
   // Map symbol -> 1-based index within subset
   const idxOf = new Map();
@@ -746,7 +740,7 @@ function arePermCyclesConsideredDifferential(permCycles) {
 function count87s(rows, stage) {
   if (stage % 2 === 1) { return 0; }
 
-  const backwardTenors = ROUNDS_CHARS.slice(stage-2, stage).split('').reverse().join('');
+  const backwardTenors = STAGE_SYMBOLS.slice(stage-2, stage).split('').reverse().join('');
   const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
   // console.log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
   // console.log(`backwards tenors lists: ${res}`);
@@ -762,7 +756,7 @@ function count87s(rows, stage) {
  * @returns {number[]} array of percentages, index = distance apart (1-based)
  */
 export function measureTopPairDistances(stage, rows) {
-  const alphabet = ROUNDS_CHARS.slice(0, stage);
+  const alphabet = STAGE_SYMBOLS.slice(0, stage);
   const hiChar = alphabet[stage - 1];
   const belowChar = alphabet[stage - 2];
 
