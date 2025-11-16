@@ -3,6 +3,7 @@ const MIN_STAGE = 1;
 
 // note the lack of I, O in PN chars -- that's standard
 export const STAGE_SYMBOLS = "1234567890ETABCDFGHJKLMNPQRSUV";
+export const CANONICAL_X_CHAR = "x";
 
 const X_CHARS = new Set(["X", "-"]);
 
@@ -16,7 +17,6 @@ export function clampStage(n) {
 export function isXChar(ch) {
   return X_CHARS.has(ch.toUpperCase());
 }
-
 
 export function roundsForStage(stage) {
   const s = clampStage(stage);

@@ -16,7 +16,7 @@
  *       Either side may be empty -> that side yields [].
  */
 
-import { clampStage, STAGE_SYMBOLS } from "./notation.js";
+import { clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR } from "./notation.js";
 
 // Global parser context
 const ParserContext = {
@@ -213,7 +213,7 @@ function splitTrailingSlices(input) {
 // then return a single string with unique chars sorted by the stage subset order.
 // Non-subset characters are ignored for '=' expansion.
 function mirrorExpandToken(str) {
-  if (str.toUpperCase() == "X") { return "x" }
+  if (isXChar(str)) { return CANONICAL_X_CHAR }
   const stage = getStage?.() ?? null;
   console.log("In mirror for =, found stage = ", stage);
 
