@@ -20,7 +20,6 @@ test('postfix slice on flat expr', () => {
 test('postfix slice with negative end index -1', () => {
   const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('23.78x1289[:-1]');
   assert.deepEqual(out, ['23', '78', 'x']);
-  // assert.deepEqual(stageFromPipe, null);
 });
 
 test('postfix slice with negative end index -2', () => {
