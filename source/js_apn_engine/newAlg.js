@@ -99,7 +99,7 @@ function parseGroupInner(s) {
       continue;
     }
 
-    if (ch === 'x' || ch === 'X' || ch == '-') {
+    if (ch === 'x' || ch === 'X' || ch === '-') {
       flushBuf();      // split before x
       items.push('x'); // literal token
       i++;
@@ -180,7 +180,7 @@ function tokenizeFlat(s) {
  * Postfix slice parsing and application
  * ----------------------------------------------------- */
 
-/** Pull off any trailing chained [..] slices from a segment. */
+/** Pull off any trailing chained [...] slices from a segment. */
 function splitTrailingSlices(input) {
   const slices = [];
   let i = input.length - 1;
@@ -475,7 +475,7 @@ function slice_custom(myList, sliceSpec) {
 
   // normalize for standard (non-circular) slices:
   //  - negatives wrap from end
-  //  - positives clamp to [0..n] (DO NOT modulo-wrap stop==n to 0)
+  //  - positives clamp to [0...n] (DO NOT modulo-wrap stop==n to 0)
   const normStd = (i, len) => {
     if (len === 0) return 0;
     if (i < 0) {
@@ -516,7 +516,7 @@ function slice_custom(myList, sliceSpec) {
     if (!isInt(leftRaw)) err(`circular start must be an integer, got "${leftRaw}"`);
     const startRaw = parseInt(leftRaw, 10);
 
-    // For circular we DO want modulo wrapping for the starting index.
+    // For circular, we DO want modulo wrapping for the starting index.
     const normalizeCircular = (i, len) => {
       if (len === 0) return 0;
       const m = i % len;
@@ -692,13 +692,13 @@ function derivePermCycles(oneLine, alphabetIn) {
 // e.g. PB4 has cycles ["1", "423"]
 function arePermCyclesConsideredDifferential(permCycles) {
   // Edge case: technically a perm cycle list of one single char string isn't
-  // a differential (e.g permCycle = ["1"]).
+  // a differential (e.g. permCycle = ["1"]).
   // This check could be omitted if you never expect this to come up.
-  if (permCycles.length == 0 || permCycles.length == 1 && permCycles[0].length == 1) {
+  if (permCycles.length === 0 || permCycles.length === 1 && permCycles[0].length === 1) {
     return false;
   }
 
-  return permCycles.filter(cycle => cycle.length > 1).length != 1;
+  return permCycles.filter(cycle => cycle.length > 1).length !== 1;
 }
 
 // test data: "5|45.1" has 5 backwards tenors at backstroke,
@@ -731,7 +731,7 @@ export function measureTopPairDistances(stage, rows) {
   const hiChar = alphabet[stage - 1];
   const belowChar = alphabet[stage - 2];
 
-  // all possible separations (1..stage-1)
+  // all possible separations (1...stage-1)
   const counts = Array(stage).fill(0);
 
   for (const row of rows) {
@@ -742,11 +742,9 @@ export function measureTopPairDistances(stage, rows) {
     const distance = Math.abs(hiIndex - lowIndex); // 0-based separation
     counts[distance] += 1;
   }
-
   const total = rows.length || 1;
-  const percents = counts.map(c => (c / total) * 100);
-
-  return percents;
+  // percentages
+  return counts.map(c => (c / total) * 100);
 }
 
 // composition stuff
@@ -767,17 +765,3 @@ export {
   arePermCyclesConsideredDifferential,
   count87s
 };
-
-export const _internals = {
-  parseGroupInner,
-  evalGroup,
-  evalElement,
-  splitTopLevelByDot,
-  validateParens,
-  findMatchingParen,
-  splitTrailingSlices,
-  doubleUp,
-  slice_custom,
-  evaluateSegmentsNoComma,
-};
-

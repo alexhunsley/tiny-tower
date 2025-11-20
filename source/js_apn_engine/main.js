@@ -2,16 +2,14 @@
 import { DEFAULTS } from "./defaults.js";
 import { formatRowForDisplay } from "./displayMap.js";
 import {
-  playSequence,
   stopAll,
-  setVolume,
   pause as pauseAudio,
   resume as resumeAudio,
   triggerPlace,   // used by live, note-by-note scheduler
   initAudioUnlock
 } from "./audioEngine.js";
-import { parseDigits, isSafariFamily } from "./utils.js";
-import { generateList, clampStage, symbolToIndex, roundsForStage, expandPlaceNotation, collapsePlaceNotation, STAGE_SYMBOLS } from "./notation.js";
+import { isSafariFamily } from "./utils.js";
+import { generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
 import { evaluateExpression, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
@@ -54,7 +52,7 @@ function applyDefaultsToControls() {
   if (!el("bpm").value)           el("bpm").value           = DEFAULTS.bpm;
 }
 
-function getLiveBpm()    { return Math.max(30, Math.min(300, Number(el("bpm").value) || DEFAULTS.bpm)); }
+// function getLiveBpm()    { return Math.max(30, Math.min(300, Number(el("bpm").value) || DEFAULTS.bpm)); }
 
 // simple debounce to avoid spamming history
 function debounce(fn, ms = 250) {
@@ -194,7 +192,7 @@ function wireNotation() {
       const stage = clampStage(el("stage").value);
       const pnString = (el("placeNotation").value || "").trim();
       // Use the same centralized flow so report/overlay are consistent
-      generateAndRender({ pnString, stageFromUI });
+      generateAndRender({ pnString });
       writeURLParams({ pn: pnString, stage });
     }
     if (!generatedRows.length) return;
@@ -354,10 +352,10 @@ function generateAndRender({ pnString, stageFromUI, maxChanges = 6000 }) {
   // generatedRows = ["12345678"];
 
   // TODO rename - needs to be expandPlaceNotation
-  const { pnTokens, resolvedStage } = evaluateExpression(pnString, stageFromUI) ?? {};
-  const stage = resolvedStage;
 
-  const s = clampStage(stage);
+  const { pnTokens} = evaluateExpression(pnString, stageFromUI) ?? {};
+
+  const s = clampStage(stageFromUI);
 
   console.log("pnTokens = ", pnTokens, " pnString = ", pnString);
 
