@@ -5,9 +5,9 @@ export const DEFAULTS = {
   placeNotation: "x16x16x16x16x16x12",
 
   // Playback
-  bpm: 280,          // beats per minute
+  bpm: 350,          // beats per minute
 
-  // UI/behavior (you can tweak these too if you like)
+  // UI/behavior
   autoGenerateOnLoad: true,   // set true to auto-generate when URL has no params
   startHighlightAtRow0: true,
 };
