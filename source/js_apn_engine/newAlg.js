@@ -327,6 +327,9 @@ function splitTopLevelByLowPrecedentOps(s) {
     else if (ch === '[') depthSq++;
     else if (ch === ']') depthSq--;
     else if (depthPar === 0 && depthSq === 0 && isSymmetryOperator(ch)) {
+        if (ops.length === 1) {
+            throw new Error(`Found >1 symmetry operator at same level; not permitted (use explicit parentheses)`);
+        }
       parts.push(s.slice(start, i));
       ops.push(ch);
       start = i + 1;

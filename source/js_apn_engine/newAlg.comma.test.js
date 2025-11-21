@@ -62,13 +62,10 @@ test('comma operator both sides multi + slices per side', () => {
   assert.deepEqual(out, ['b','c','b','y','x','y']);
 });
 
-test('comma chaining is left-associative', () => {
+test('multiple symmetry operators at same level throws', () => {
   // ((a , b) , c)
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('a,b,c');
-  // a -> ["a"] (no-op), b -> ["b"] (no-op) => ["a","b"]
-  // then with c -> left ["a","b"] doubled -> ["a","b","a"]
-  // right ["c"] -> ["c"]
-  assert.deepEqual(out, ['a','b','a','c']);
+  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('a,b,c');
+  assert.throws(() => evaluateExpression('a,b,c'));
 });
 
 test('comma respects low precedence vs dots and slices', () => {
@@ -106,11 +103,11 @@ test('pipe to set stage: unrecognized place char throws error', () => {
   assert.throws(() => evaluateExpression('z|'), /Couldn't parse stage/i);
 });
 
-test('double comma', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('1.2.45,,');
-  // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
-  // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
-  assert.deepEqual(out, ['1', '2', '45', '2', '1',   '2', '45', '2', '1' ]);
+test('consecutive commas at same level throws', () => {
+  assert.throws(() => evaluateExpression('1.2.45,,'));
+  assert.throws(() => evaluateExpression(',,'));
+  assert.throws(() => evaluateExpression(',,1.2.45'));
+  assert.throws(() => evaluateExpression('3,,1.2'));
 });
 
 test('double comma with brackets', () => {
@@ -132,9 +129,4 @@ test('double comma with brackets either side', () => {
   // left: (1.2)[-].3 -> ["2","1","3"] -> doubled -> ["2","1","3","1","2"]
   // right: 4.5[1:2] -> ["5"] -> len<=1 -> ["5"]
   assert.deepEqual(out, ['1', '2', '45', '2', '1', '2', '45', '2', '1',    '6', '8', '34', '8', '6', '8', '34', '8', '6' ]);
-});
-
-test('double comma back-to-back', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('1.2.45,,');
-  assert.deepEqual(out, ['1', '2', '45', '2', '1',   '2', '45', '2', '1' ]);
 });

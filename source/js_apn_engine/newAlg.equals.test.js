@@ -64,7 +64,6 @@ test('equals operator: requires that stage is set', () => {
   assert.throws(() => evaluateExpression('9.8='), /'=' operator requires a valid stage/i);
   
   assert.throws(() => evaluateExpression('120='), /'=' operator requires a valid stage/i);
-  assert.throws(() => evaluateExpression('x.120=,'), /'=' operator requires a valid stage/i);
 });
 
 test('equals operator: multiple tokens on left (applies per-token)', () => {
@@ -80,17 +79,17 @@ test('equals operator: works on 16', () => {
 });
 
 // for methods with internal symmetry, ',' and ';' are equivalent
-test('equals operator: can make double eire minor using =;', () => {
+test('equals operator: can make double eire minor using (=);', () => {
   // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=;x');
+  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|(3.1.3=);x');
   //34.16.34,x => 34.16.34.16.34.x
   assert.deepEqual(out, ['34', '16', '34', '16', '34', 'x']);
 });
 
 // for methods with internal symmetry, ',' and ';' are equivalent
-test('equals operator: can make double eire minor using =,', () => {
+test('equals operator: can make double eire minor using (=),', () => {
   // Left tokens: ["12","36"] -> ["12ET","3670"] under stage 12
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=,x');
+  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|(3.1.3=),x');
   //34.16.34,x => 34.16.34.16.34.x
   assert.deepEqual(out, ['34', '16', '34', '16', '34', 'x']);
 });
