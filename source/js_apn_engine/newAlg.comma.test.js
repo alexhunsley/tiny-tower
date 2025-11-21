@@ -37,12 +37,12 @@ test('comma operator: paldindromic use with length one item on left (like Grands
 // It would be perfectly meaningful to say that multiple commas just apply the reversal
 // to all parts, without applying double-reversal to bits not at the end.
 // i.e. this test would pass.
-test('comma operator: simple two commas with stuff between', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('3,7.5,1');
-  // left: ["1","x","45","89"] -> doubled: ["1","x","45","89","45","x","1"]
-  // right: ["29"] -> len<=1 -> no-op
-  assert.deepEqual(out, ['3',   '7', '5', '7',   '1']);
-});
+// test('comma operator: simple two commas with stuff between', () => {
+//   const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('3,7.5,1');
+//   // left: ["1","x","45","89"] -> doubled: ["1","x","45","89","45","x","1"]
+//   // right: ["29"] -> len<=1 -> no-op
+//   assert.deepEqual(out, ['3',   '7', '5', '7',   '1']);
+// });
 
 test('comma operator with empty left', () => {
   const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression(',29');

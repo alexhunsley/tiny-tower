@@ -309,8 +309,12 @@ function doubleUpWithInvert(list) {
   return list.concat(tail);
 }
 
+function isSymmetryOperator(ch) {
+    return ch === ',' || ch === ';' || ch === '=';
+}
+
 // Split by top-level low-precedence ops (',' and ';'), respecting (...) and [...]
-function splitTopLevelByLowOps(s) {
+function splitTopLevelByLowPrecedentOps(s) {
   const parts = [];
   const ops = [];
   let depthPar = 0, depthSq = 0;
@@ -322,7 +326,7 @@ function splitTopLevelByLowOps(s) {
     else if (ch === ')') depthPar--;
     else if (ch === '[') depthSq++;
     else if (ch === ']') depthSq--;
-    else if ((ch === ',' || ch === ';' || ch === '=') && depthPar === 0 && depthSq === 0) {
+    else if (depthPar === 0 && depthSq === 0 && isSymmetryOperator(ch)) {
       parts.push(s.slice(start, i));
       ops.push(ch);
       start = i + 1;
@@ -334,7 +338,8 @@ function splitTopLevelByLowOps(s) {
   return { parts: parts.map(p => p.trim()), ops };
 }
 
-function evaluateSegmentsNoComma(input) {
+// evaluates segments that we know contain no sym operators (',', ';')
+function evaluateSegmentsWithoutSymOperator(input) {
   const trimmed = input.trim();
   if (trimmed.length === 0) return []; // empty side of a low-precedence op => []
 
@@ -397,16 +402,16 @@ function evaluateSegmentsNoComma(input) {
 function evaluateExpressionInternal(src) {
   log("evaluateExpressionInternal, src = ", src);
 
-  const { parts, ops } = splitTopLevelByLowOps(src.trim());
+  const { parts, ops } = splitTopLevelByLowPrecedentOps(src.trim());
 
   if (ops.length === 0) {
-    return evaluateSegmentsNoComma(parts[0]);
+    return evaluateSegmentsWithoutSymOperator(parts[0]);
   }
 
   // Left-associative fold over , and ;
-  let acc = evaluateSegmentsNoComma(parts[0]);
+  let acc = evaluateSegmentsWithoutSymOperator(parts[0]);
   for (let i = 0; i < ops.length; i++) {
-    const right = evaluateSegmentsNoComma(parts[i + 1]);
+    const right = evaluateSegmentsWithoutSymOperator(parts[i + 1]);
     const op = ops[i];
     if (op === ',') {
       acc = doubleUp(acc).concat(doubleUp(right));
