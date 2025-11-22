@@ -67,21 +67,6 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
     text-align: left;
 }
 
-/*.about-link {*/
-/*    display: inline-block;*/
-/*    margin-left: 0.35em;*/
-/*    font-size: 0.65em;*/
-/*    line-height: 1em;*/
-/*    width: 1.2em;*/
-/*    height: 1.2em;*/
-/*    text-align: left;*/
-/*    border-radius: 50%;*/
-/*    border: 1px solid currentColor;*/
-/*    text-decoration: none;*/
-/*    opacity: 0.65;*/
-/*    transition: opacity 0.2s;*/
-/*}*/
-
 .about-link:hover,
 .about-link:focus {
     opacity: 1;
@@ -204,18 +189,99 @@ input[type="range"] { width:160px; }
   }
 }
 
-/*body::before {
-  content: "✅ NEW CSS LOADED";
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  background: #60a5fa;
-  color: #0b1023;
-  font-weight: bold;
-  font-size: 0.9rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  z-index: 9999;
+.about-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75); /* dark translucent */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-out;
+    z-index: 999;
 }
 
-*/
+.about-modal.open {
+    opacity: 0.9;
+    pointer-events: auto;
+}
+
+.about-dialog {
+    position: relative;
+    background: #020617;
+    border-radius: 12px;
+    padding: 32px 36px 28px;
+    border: 1px solid #1f2937;
+    max-width: 320px;
+    width: min(320px, 90vw);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+}
+
+.about-dialog h2 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.about-dialog p {
+    /*margin: 0 0 6px;*/
+    margin-bottom: 1rem;
+    line-height: 1.5;     /* more breathing room between lines */
+    font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 1rem;      /* optional: set a comfortable size */
+}
+
+.about-close {
+    color: var(--muted);          /* <— use your main text color, not muted */
+}
+
+.about-close:hover {
+    color: var(--accent);
+}
+
+.about-dialog .muted {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.about-dialog .app-title {
+    font-weight: bold;
+    color: #60a5fa;
+}
+
+.about-dialog code {
+    background-color: #2a3550;
+    /*pre code {*/
+    /*display: block;*/
+    padding: 0.2rem 0.2rem;    /* inside breathing room */
+    /*background: #0b1220;      !* your dark panel look *!*/
+    /*border-radius: 8px;*/
+    /*margin: 1rem 0;           !* ← space above & below *!*/
+}
+
+.about-dialog a {
+    color: var(--muted);
+    text-decoration: underline;
+}
+
+/* Close button in top-right of dialog */
+.about-close {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    top: 10px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.about-close:hover {
+    color: var(--accent);
+}

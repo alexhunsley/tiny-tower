@@ -1,5 +1,4 @@
-// main.js
-import { DEFAULTS } from "./defaults.js";
+import { DEFAULTS, TT_VERSION } from "./defaults.js";
 import { formatRowForDisplay } from "./displayMap.js";
 import {
   stopAll,
@@ -416,6 +415,10 @@ function init() {
     console.error(err);
     alert(err.message + "\n\nTip: hard-reload (Ctrl+F5 / Cmd+Shift+R) to bust cache.");
   }
+
+  document.querySelectorAll(".version").forEach(el => {
+      el.textContent = `v${TT_VERSION}`;
+  });
 }
 
 if (document.readyState === "loading") {
@@ -549,3 +552,39 @@ function buildGenerationReport({ pnTokens, stage, rows, maxChanges = 6000 }) {
     blueLineIndexes: blueLines,
   };
 }
+
+(function () {
+    const aboutLink = document.querySelector('.about-link');
+    const modal = document.getElementById('about-modal');
+    const closeBtn = modal?.querySelector('.about-close');
+
+    if (!aboutLink || !modal) return;
+
+    function openAbout(event) {
+        if (event) event.preventDefault(); // don't jump to #about
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeAbout() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    aboutLink.addEventListener('click', openAbout);
+    closeBtn?.addEventListener('click', closeAbout);
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeAbout();
+        }
+    });
+
+    // Close on Escape
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeAbout();
+        }
+    });
+})();

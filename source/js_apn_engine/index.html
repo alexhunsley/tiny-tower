@@ -18,10 +18,10 @@
     <header class="toolbar">
       <div class="bar">
         <h1>
-          🔔 Tiny Tower <span class="version">v0.96</span>
+          🔔 Tiny Tower <span class="version">dsada</span>
 
           <a class="about-link" href="#about" aria-label="About Tiny Tower">about</a>
-            
+
           <span class="byline">by <a href="https://hunsley.io" target="_blank" rel="noopener">hunsley.io</a></span>
         </h1>
 
@@ -70,6 +70,35 @@
 
       </div>
     </main>
+  </div>
+
+  <div id="about-modal" class="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
+      <div class="about-dialog">
+          <button class="about-close" type="button" aria-label="Close about window">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                  <path d="M6 6 L18 18 M6 18 L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+          </button>
+<!--          <h2 id="about-title">About Tiny Tower</h2>-->
+          <p style="margin-bottom: 1rem;">
+              <span class="app-title">Tiny Tower</span> is a method research tool by <a href="https://hunsley.io" target="_blank" rel="noopener">hunsley.io</a>.
+          </p>
+          <p />
+          <p>
+              You can see and hear methods.
+          </p>
+          <p> It's BYOPN (bring your own Place Notation) but some simple method lookups might be added in future.
+          </p>
+          <p>
+              It works with regular place notation of the form <code>x14x,12</code> and also advanced place notation (documentation coming).
+          </p>
+          <p>
+              View project on <a href="https://github.com/alexhunsley/tiny-tower" target="_blank">GitHub</a>
+          </p>
+          <p class="muted">
+              Version <span class="version" />
+          </p>
+      </div>
   </div>
 
   <script type="module" src="./main.js"></script>

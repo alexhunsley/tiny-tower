@@ -1,4 +1,7 @@
 // defaults.js
+
+export const TT_VERSION = "0.96";
+
 export const DEFAULTS = {
   // Core method inputs
   stage: 6,
