@@ -14,7 +14,7 @@ import util from 'node:util';
 util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
 
 import {
-  evaluateExpression,
+  evaluatePNAndStage,
   derivePermCycles,
   arePermCyclesConsideredDifferential
 } from './newAlg.js';

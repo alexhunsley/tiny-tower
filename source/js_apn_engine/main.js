@@ -11,7 +11,7 @@ import {
 import { isSafariFamily } from "./utils.js";
 import { generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation } from "./notation.js";
 import { renderBlueLineOverlay } from "./blueLine.js";
-import { evaluateExpression, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
+import { evaluatePNAndStage, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
 function el(id) {
   const n = document.getElementById(id);
@@ -334,10 +334,7 @@ async function playAllRows() {
       await waitBeatsDynamic(gapBeats, checkPausedAbort);
     }
   }
-
   clearRowHighlight();
-    
-
   playState.playing = false;
   playState.paused  = false;
   playState.abort   = false;
@@ -348,12 +345,7 @@ async function playAllRows() {
 function generateAndRender({ pnString, stageFromUI, maxChanges = 6000 }) {
   console.log(">> Entered generateAndRender() with pnString = ", pnString, " stageFromUI = ", stageFromUI);
 
-  // generatedRows = generateList({ pnString, stage: s, maxChanges });
-  // generatedRows = ["12345678"];
-
-  // TODO rename - needs to be expandPlaceNotation
-
-  const { pnTokens} = evaluateExpression(pnString, stageFromUI) ?? {};
+  const { pnTokens} = evaluatePNAndStage(pnString, stageFromUI) ?? {};
 
   const s = clampStage(stageFromUI);
 

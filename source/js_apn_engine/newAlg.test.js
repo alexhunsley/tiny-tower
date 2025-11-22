@@ -9,7 +9,7 @@ import {
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
-  evaluateExpression,
+  evaluatePNAndStage,
   getStage,
   derivePermCycles,
   arePermCyclesConsideredDifferential,
@@ -129,7 +129,7 @@ test('mirroredNotate', () => {
 });
 
 test('double darrowby expansion 1/4', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36');
+  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36');
   assert.deepEqual(out, 
   	[
       // 'x',  '36', 'x',  '34', 'x',  '36', 'x',
@@ -169,7 +169,7 @@ test('double darrowby expansion 1/4', () => {
 });
 
 test('double darrowby expansion 1/2', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78');
+  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78');
 
   assert.deepEqual(out, 
   	[
@@ -310,7 +310,7 @@ test('double darrowby expansion full', () => {
   // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x34.58x34x18,18).(x58x14.58x58.36.14x14.58x14x18,18)');
 //                                    ^     ^           ^     ^           ^     ^           ^     ^
 
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x14.58x14x18,18).(x58x14.58x58.36.14x34.58x34x18,18)');
+  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(x56x14.56x58.36.14x14.58x14x18,18).(x58x14.58x58.36.14x34.58x34x18,18)');
 
   // works.
   // Factor 8 version

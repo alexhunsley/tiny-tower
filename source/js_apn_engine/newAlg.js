@@ -143,9 +143,9 @@ function findMatchingParen(s, openIdx) {
   throw new Error(`Unmatched "(" at index ${openIdx}`);
 }
 
-/* ---------------------
- * Evaluation (flatten)
- * --------------------- */
+/* -----------
+ * Tokenizing
+ * ----------- */
 
 function evalElement(el) {
   if (typeof el === 'string') {
@@ -314,7 +314,7 @@ function isSymmetryOperator(ch) {
 }
 
 // Split by top-level low-precedence ops (',' and ';'), respecting (...) and [...]
-function splitTopLevelByLowPrecedentOps(s) {
+function splitTopLevelPNByLowPrecedentOps(s) {
   const parts = [];
   const ops = [];
   let depthPar = 0, depthSq = 0;
@@ -323,9 +323,19 @@ function splitTopLevelByLowPrecedentOps(s) {
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (ch === '(') depthPar++;
-    else if (ch === ')') depthPar--;
     else if (ch === '[') depthSq++;
-    else if (ch === ']') depthSq--;
+    else if (ch === ')') {
+        if (depthPar === 0) {
+            throw new Error(`Found unexpected close bracket ')'`)
+        }
+        depthPar--;
+    }
+    else if (ch === ']') {
+        if (depthSq === 0) {
+            throw new Error(`Found unexpected close bracket ']'`)
+        }
+        depthSq--;
+    }
     else if (depthPar === 0 && depthSq === 0 && isSymmetryOperator(ch)) {
         if (ops.length === 1) {
             throw new Error(`Found >1 symmetry operator at same level; not permitted (use explicit parentheses)`);
@@ -336,13 +346,20 @@ function splitTopLevelByLowPrecedentOps(s) {
     }
   }
 
+  if (depthPar > 0) {
+      throw new Error(`Found unmatched opening bracket '('`);
+  }
+  else if (depthSq > 0) {
+      throw new Error(`Found unmatched opening bracket '['`);
+  }
+
   if (start <= s.length) parts.push(s.slice(start));
   // Keep empties (empty side allowed)
   return { parts: parts.map(p => p.trim()), ops };
 }
 
 // evaluates segments that we know contain no sym operators (',', ';')
-function evaluateSegmentsWithoutSymOperator(input) {
+function evaluatePNWithoutSymOperator(input) {
   const trimmed = input.trim();
   if (trimmed.length === 0) return []; // empty side of a low-precedence op => []
 
@@ -372,12 +389,12 @@ function evaluateSegmentsWithoutSymOperator(input) {
     // Multiplier N(<...>) has high precedence within a segment
     const rep = matchRepeatOuter(base);
     if (rep) {
-      const innerList = evaluateExpressionInternal(rep.inner); // no stage parsing here
+      const innerList = splitPN(rep.inner); // no stage parsing here
       list = repeatList(innerList, rep.count);
     } else if (isSingleOuterParens(base)) {
       // Evaluate inside a single outer paren pair (no stage parsing here)
       const inner = base.slice(1, -1).trim();
-      list = evaluateExpressionInternal(inner);
+      list = splitPN(inner);
     } else if (base.includes('(') || base.includes(')')) {
       // Fallback path for complex/nested cases via AST
       const ast = parseTopLevel(base);
@@ -402,19 +419,19 @@ function evaluateSegmentsWithoutSymOperator(input) {
 
 // Internal evaluator that NEVER parses n| and NEVER resets stage.
 // Used by recursive calls (e.g., when evaluating inside single outer parens).
-function evaluateExpressionInternal(src) {
-  log("evaluateExpressionInternal, src = ", src);
+function splitPN(src) {
+  log("splitPN, src = ", src);
 
-  const { parts, ops } = splitTopLevelByLowPrecedentOps(src.trim());
+  const { parts, ops } = splitTopLevelPNByLowPrecedentOps(src.trim());
 
   if (ops.length === 0) {
-    return evaluateSegmentsWithoutSymOperator(parts[0]);
+    return evaluatePNWithoutSymOperator(parts[0]);
   }
 
   // Left-associative fold over , and ;
-  let acc = evaluateSegmentsWithoutSymOperator(parts[0]);
+  let acc = evaluatePNWithoutSymOperator(parts[0]);
   for (let i = 0; i < ops.length; i++) {
-    const right = evaluateSegmentsWithoutSymOperator(parts[i + 1]);
+    const right = evaluatePNWithoutSymOperator(parts[i + 1]);
     const op = ops[i];
     if (op === ',') {
       acc = doubleUp(acc).concat(doubleUp(right));
@@ -433,7 +450,7 @@ function evaluateExpressionInternal(src) {
 
 // if the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
 // (which comes from the stage text box)
-function evaluateExpression(input, fallbackStage) {
+function evaluatePNAndStage(input, fallbackStage) {
   log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
   let src = input.trim();
   log("evaluateExpression, passed input =", input, " src = ", src);
@@ -469,7 +486,7 @@ function evaluateExpression(input, fallbackStage) {
   }
 
   // From here on, do NOT parse "<char>|" again.
-  return {pnTokens: evaluateExpressionInternal(src), resolvedStage: ParserContext.stage};
+  return {pnTokens: splitPN(src), resolvedStage: ParserContext.stage};
 }
 
 /* -------------------------------------------------------
@@ -767,7 +784,7 @@ export {
   parseTopLevel,
   evaluateTopLevel,
   tokenizeFlat,
-  evaluateExpression,
+  evaluatePNAndStage,
   getStage,
   derivePermCycles,
   arePermCyclesConsideredDifferential,
