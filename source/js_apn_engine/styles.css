@@ -16,20 +16,31 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   border-bottom: 1px solid #1f2937;
   box-shadow: 0 2px 12px rgba(0,0,0,.25);
 }
-.toolbar .bar { width:min(1000px, 96vw); margin:0 auto; padding:16px 0; }
-/*.toolbar h1 { margin:0 0 8px; font-size:1.1rem; }*/
+
+.toolbar .bar {
+    width:min(1000px, 96vw);
+    margin:0 auto;
+    padding:16px 0 16px;
+}
+
 .toolbar p { margin:0 0 12px; color:var(--muted); }
 
 .toolbar h1 {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+    margin: 0 0 20px;
+    display: flex;
+    align-items: flex-start;   /* top-align children within the h1 */
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    line-height: 1.1;          /* tighten vertical box a bit */
 }
 
 .toolbar .version {
   color: var(--muted);
   font-weight: normal;
+}
+
+.toolbar .about-link {
+    font-size: 1.0rem;
 }
 
 .toolbar .byline {
@@ -38,15 +49,43 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   color: var(--muted);       /* faint grey text for "by" */
 }
 
-.toolbar .byline a {
+.toolbar a {
   color: var(--muted);       /* faint grey link */
   text-decoration: underline;
 }
-.toolbar .byline a:hover {
+.toolbar a:hover {
   color: var(--accent);      /* your accent blue on hover */
   text-decoration: underline;
 }
 
+/* Then customize the about link only */
+
+/*.toolbar .byline,*/
+.toolbar .about-link {
+    margin-left: 0.5em;
+    display: inline-block;
+    text-align: left;
+}
+
+/*.about-link {*/
+/*    display: inline-block;*/
+/*    margin-left: 0.35em;*/
+/*    font-size: 0.65em;*/
+/*    line-height: 1em;*/
+/*    width: 1.2em;*/
+/*    height: 1.2em;*/
+/*    text-align: left;*/
+/*    border-radius: 50%;*/
+/*    border: 1px solid currentColor;*/
+/*    text-decoration: none;*/
+/*    opacity: 0.65;*/
+/*    transition: opacity 0.2s;*/
+/*}*/
+
+.about-link:hover,
+.about-link:focus {
+    opacity: 1;
+}
 
 /* Workspace uses all remaining vertical space */
 .workspace {
