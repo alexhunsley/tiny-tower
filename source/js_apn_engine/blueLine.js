@@ -2,6 +2,8 @@
 // Draw a "blue line" (polyline) over the centre of a chosen bell symbol in each row,
 // and also generate a standalone SVG file for download.
 
+import { log } from './newAlg.js';
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 /**
