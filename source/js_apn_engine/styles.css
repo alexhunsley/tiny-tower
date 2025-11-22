@@ -83,6 +83,12 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   border-right: 1px solid #273244;  /* separator between panels */
 }
 
+.ghost-digit {
+    color: transparent;              /* no visible ink */
+    text-decoration-color: transparent;
+    /* keep their width / layout */
+}
+
 /* The actual scroller with generated rows */
 #notationOutput {
   height: 100%;
@@ -92,6 +98,17 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
   line-height: 1.3;
   white-space: pre;            /* keep spacing when mapping */
   padding: .5rem .25rem;
+
+    font-family:
+            ui-monospace,
+            "JetBrains Mono",
+            "Fira Mono",
+            "SF Mono",
+            "Cascadia Mono",
+            "Courier New",
+            monospace;
+    font-variant-numeric: tabular-nums; /* fixed-width digits */
+    white-space: pre;                   /* preserve spacing/alignment */
 }
 
 /* Right: report (facts + warnings) — sidebar */

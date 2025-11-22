@@ -11,10 +11,11 @@
  * - show only bell "2": replace '2' with '*', others with spaces
  *   (monospace font recommended in your CSS).
  */
-export function formatRowForDisplay(row, stage) {
-  return row
-  // const target = "2";
-  // const s = row.slice(0, stage);
-  // return [...s].map(ch => (ch === target ? "*" : "&nbsp;&nbsp;")).join("");
-  // // return [...s].map(ch => (ch === target ? "*" : ch)).join("");
+export function formatRowForDisplay(row, digitsToGhost = []) {
+    let html = row;
+
+    for (const d of digitsToGhost) {
+        html = html.replaceAll(d, `<span class="ghost-digit">${d}</span>`);
+    }
+    return html;
 }

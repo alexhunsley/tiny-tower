@@ -101,7 +101,7 @@ function renderGeneratedList(list, blueLines = ["2"]) {
 
   out.innerHTML = list
     .map((row, i) => {
-      const display = formatRowForDisplay(row, stage);
+      const display = formatRowForDisplay(row, blueLines);
       return `<div class="row-item" data-row="${i}"><code>${display}</code></div>`;
     })
     .join("");

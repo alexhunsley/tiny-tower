@@ -24,44 +24,105 @@ function resolveScroller(target) {
  * Assumes rows are rendered as:
  *   <div class="row-item" data-row="i"><code [data-text="original"]>visible</code></div>
  */
-function measurePointsFromDOM(scroller, rows, targetChar) {
-  const points = [];
-  const scrollerRect = scroller.getBoundingClientRect();
+/**
+ * Find the client rect of the character at `charIndex` in the *flattened*
+ * textContent of `root`, even if the text is split across spans/text nodes.
+ */
+function getCharRectInElement(root, charIndex) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let remaining = charIndex;
+    let node;
 
-  // Estimate monospace char width once
-  const charWidth = estimateCharWidth(scroller);
+    while ((node = walker.nextNode())) {
+        const len = node.textContent.length;
+        if (remaining < len) {
+            const range = document.createRange();
+            range.setStart(node, remaining);
+            range.setEnd(node, remaining + 1);
+            const rect = range.getBoundingClientRect();
+            range.detach?.();
+            return rect;
+        }
+        remaining -= len;
+    }
 
-  for (let i = 0; i < rows.length; i++) {
-    const codeEl = scroller.querySelector(`.row-item[data-row="${i}"] code`);
-    if (!codeEl) continue;
+    return null;
+}
 
-    const original = codeEl.dataset?.text || codeEl.textContent || "";
-    const idx = original.indexOf(targetChar);
-    if (idx === -1) continue; // skip rows without the target
+/**
+ * Measure visual points for a given targetChar in each row.
+ * `rows[i]` should be the plain row string (e.g. "123456"),
+ * even if the DOM has ghost spans etc.
+ */
+export function measurePointsFromDOM(scroller, rows, targetChar) {
+    const points = [];
+    const scrollerRect = scroller.getBoundingClientRect();
 
-    const codeRect = codeEl.getBoundingClientRect();
-    // Position relative to the scroller content origin
-    const y = scroller.scrollTop + (codeRect.top - scrollerRect.top) + codeRect.height / 2;
-    const x = scroller.scrollLeft + (codeRect.left - scrollerRect.left) + (idx + 0.5) * charWidth;
-    // console.log("point: ", x, y);
-    points.push([x, y]);
-  }
-  return points;
+    for (let i = 0; i < rows.length; i++) {
+        const codeEl = scroller.querySelector(`.row-item[data-row="${i}"] code`);
+        if (!codeEl) continue;
+
+        const rowText = rows[i] ?? "";
+        const idx = rowText.indexOf(targetChar);
+        if (idx === -1) continue; // row doesn't contain the target
+
+        const charRect = getCharRectInElement(codeEl, idx);
+        if (!charRect || !charRect.width || !charRect.height) continue;
+
+        const x =
+            scroller.scrollLeft +
+            (charRect.left - scrollerRect.left) +
+            charRect.width / 2;
+
+        const y =
+            scroller.scrollTop +
+            (charRect.top - scrollerRect.top) +
+            charRect.height / 2;
+
+        points.push([x, y]);
+    }
+
+    return points;
 }
 
 /**
  * Estimate monospace character width within this scroller.
  */
-function estimateCharWidth(scroller) {
-  const probe = document.createElement("span");
-  probe.textContent = "MMMMMMMMMM"; // 10 Ms
-  probe.style.visibility = "hidden";
-  probe.style.whiteSpace = "pre";
-  probe.style.font = getComputedStyle(scroller).font || "12px ui-monospace, monospace";
-  scroller.appendChild(probe);
-  const w = probe.getBoundingClientRect().width / 10;
-  scroller.removeChild(probe);
-  return w || 10;
+/**
+ * Estimate the width of a single monospace character for the given element.
+ * Intended for centering lines over text in #notationOutput.
+ */
+function estimateCharWidth(element) {
+    const computed = getComputedStyle(element);
+
+    const probe = document.createElement("span");
+
+    // Use lots of digits to reduce measurement error.
+    const sampleChar = "0";
+    const sampleCount = 200;
+    probe.textContent = sampleChar.repeat(sampleCount);
+
+    // Keep it out of view and out of layout flow.
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.whiteSpace = "pre";
+
+    // Copy the relevant font properties (avoid shorthand weirdness).
+    probe.style.fontFamily = computed.fontFamily;
+    probe.style.fontSize = computed.fontSize;
+    probe.style.fontWeight = computed.fontWeight;
+    probe.style.fontStyle = computed.fontStyle;
+    probe.style.fontStretch = computed.fontStretch || "";
+    probe.style.fontVariant = computed.fontVariant || "";
+    probe.style.letterSpacing = computed.letterSpacing;
+
+    // Attach to body so we measure in a neutral context.
+    document.body.appendChild(probe);
+    const width = probe.getBoundingClientRect().width / sampleCount;
+    document.body.removeChild(probe);
+
+    // Sensible fallback if something goes wrong.
+    return width || 10;
 }
 
 /**
