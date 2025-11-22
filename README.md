@@ -29,10 +29,7 @@ Detect common patterns in a method (including wrap-around) -- to spot music pote
 
 Tiny Tower is currently written in bare javascript. I may use a lightweight SPA lib at some point (something like Mithril), and possibly Skeleton UI or similar.
 
-## Bugs
+## Bugs and ideas?
 
 Can be filed under [issues](../../issues).
 
-## Where's the code?!
-
-I'm transferring from elsewhere shortly.
