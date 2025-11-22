@@ -14,11 +14,16 @@ import {
   getStage
 } from './newAlg.js';
 
-test('comma operator: typical paldindromic use', () => {
+test('comma operator: typical paldindromic use (random)', () => {
   const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('1x45.89,29');
   // left: ["1","x","45","89"] -> doubled: ["1","x","45","89","45","x","1"]
   // right: ["29"] -> len<=1 -> no-op
   assert.deepEqual(out, ['1','x','45','89','45','x','1','29']);
+});
+
+test('comma operator: typical paldindromic use (PB 6)', () => {
+    const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('x16x16x16,12');
+    assert.deepEqual(out, ['x', '16', 'x', '16', 'x', '16', 'x', '16', 'x', '16', 'x', '12']);
 });
 
 test('comma operator: paldindromic use with length one item on left (like Grandsire)', () => {

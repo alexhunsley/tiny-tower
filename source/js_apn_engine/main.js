@@ -480,9 +480,14 @@ function buildGenerationReport({ pnTokens, stage, rows, maxChanges = 6000 }) {
 
   const { cycles, period } = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
 
-  // if (cycles.length != 1) {
+  // TODO make this helper more comprehensive and return the cycle
+  // too (for when not differential) and also hunt bell count
   if (arePermCyclesConsideredDifferential(cycles)) {
     lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);    
+  }
+  else {
+      const pbOrder = cycles.filter(cycle => cycle.length > 1)[0];
+      lines.push(`[OK] PB ORDER: ${pbOrder}`)
   }
 
   // // first number of each group tells us which blue lines to draw
@@ -495,16 +500,15 @@ function buildGenerationReport({ pnTokens, stage, rows, maxChanges = 6000 }) {
     lines.push(`[ALERT] reverse tenors at backstroke (${backwardTenorsCount} rows)`);
   }
 
-  // tenor dist tryout
-
-
+  // TODO come back to this: maybe a graph? or label the distances and put % next to number.
   const distancesList = measureTopPairDistances(stage, rows);
-  const distances = distancesList.join("\n\n");
-  console.log("tenor distances: ", distancesList);
+  const results = distancesList.map((x, i) => `${i}: ${x}%`);
 
-  // lines.push(distancesList);
-  lines.push(distances);
-  //
+    lines.push(`[OK] -----------------------`);
+    lines.push(`[OK] tenor distances report:`);
+
+    lines.push(...results);
+
 
   // --- Duplicate/early-rounds detection (exclude the final row) ---
   if (Array.isArray(rows) && rows.length > 1) {
