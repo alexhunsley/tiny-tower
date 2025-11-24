@@ -627,11 +627,11 @@ function slice_custom(myList, sliceSpec) {
  */
 function derivePermCycles(oneLine, alphabetIn) {
   // log("alphabetIn = ", alphabetIn);
-  log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
+  // log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
 
   const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
-  log("alphabet: ", alphabet);
+  // log("alphabet: ", alphabet);
   if (typeof oneLine !== "string" || oneLine.length === 0) {
     throw new Error("oneLine must be a non-empty string");
   }
@@ -643,8 +643,6 @@ function derivePermCycles(oneLine, alphabetIn) {
 
   // Use only the first n symbols of the alphabet
   const subset = alphabet.slice(0, n);
-
-  log("subset: ", subset);
 
   // Map symbol -> 1-based index within subset
   const idxOf = new Map();
