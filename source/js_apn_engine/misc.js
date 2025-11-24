@@ -13,7 +13,7 @@
 // import { evaluatePNAndStage, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
 import {derivePermCycles} from "./newAlg.js";
-import { STAGE_SYMBOLS } from "./notation.js";
+import {STAGE_SYMBOLS} from "./notation.js";
 
 // console.log("G7:\n\nPlain lead: ", derivePermCycles('1253746'));
 //

@@ -12,12 +12,10 @@ import assert from 'node:assert/strict';
 
 import util from 'node:util';
 import {
-    evaluatePNAndStage,
-    derivePermCycles,
-    arePermCyclesConsideredDifferential
+    evaluatePNAndStage, derivePermCycles, arePermCyclesConsideredDifferential
 } from './newAlg.js';
 
-util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
+util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 
 ////////////////////////////////////////////////
 // perm cycle tests (differential detection)
@@ -30,20 +28,20 @@ util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: 
 // });
 
 test('example: "234561" → ["654321"], period 6', () => {
-    const { cycles, period } = derivePermCycles('234561');
+    const {cycles, period} = derivePermCycles('234561');
     assert.deepEqual(cycles, ['654321']);
     assert.equal(period, 6);
 });
 
 test('example: "345612" → ["631", "642"], period 6', () => {
-    const { cycles, period } = derivePermCycles('345612');
+    const {cycles, period} = derivePermCycles('345612');
     assert.deepEqual(cycles, ['531', '642']);
     assert.equal(period, 3);
 });
 
 // TODO only assert on lexicographic equals (i.e. sort both strings same lexicographic order, then assert equals)
 test('example: "612345" → ["654321"], period 6', () => {
-    const { cycles, period } = derivePermCycles('612345');
+    const {cycles, period} = derivePermCycles('612345');
     assert.deepEqual(cycles, ['234561']);
     assert.equal(period, 6);
 });
@@ -119,25 +117,25 @@ test('example: "612345" → ["654321"], period 6', () => {
 
 // Optional: ensure extended rounds alphabet is respected when globally defined
 test('criteria for differential detection behave as expected', () => {
-  // no cycles is considered no-differential
-  assert.equal(arePermCyclesConsideredDifferential([]), false);
+    // no cycles is considered no-differential
+    assert.equal(arePermCyclesConsideredDifferential([]), false);
 
-  assert.equal(arePermCyclesConsideredDifferential(["12345"]), false);
-  assert.equal(arePermCyclesConsideredDifferential(["2345", "1"]), false);
+    assert.equal(arePermCyclesConsideredDifferential(["12345"]), false);
+    assert.equal(arePermCyclesConsideredDifferential(["2345", "1"]), false);
 
-  assert.equal(arePermCyclesConsideredDifferential(["534", "1", "2"]), false);
-  assert.equal(arePermCyclesConsideredDifferential(["54", "1", "2", "3"]), false);
+    assert.equal(arePermCyclesConsideredDifferential(["534", "1", "2"]), false);
+    assert.equal(arePermCyclesConsideredDifferential(["54", "1", "2", "3"]), false);
 
-  assert.equal(arePermCyclesConsideredDifferential(["123", "45"]), true);
-  assert.equal(arePermCyclesConsideredDifferential(["123", "45", "6", "7", "8"]), true);
+    assert.equal(arePermCyclesConsideredDifferential(["123", "45"]), true);
+    assert.equal(arePermCyclesConsideredDifferential(["123", "45", "6", "7", "8"]), true);
 
-  // cycles all being 1 is considered a differential
-  assert.equal(arePermCyclesConsideredDifferential(["6", "7", "8"]), true);
+    // cycles all being 1 is considered a differential
+    assert.equal(arePermCyclesConsideredDifferential(["6", "7", "8"]), true);
 
-  // single cycle of length 1 is NOT considered a differential
-  assert.equal(arePermCyclesConsideredDifferential(["1"]), false);
+    // single cycle of length 1 is NOT considered a differential
+    assert.equal(arePermCyclesConsideredDifferential(["1"]), false);
 
-  // two cycles of length 1 are considered a differential
-  assert.equal(arePermCyclesConsideredDifferential(["1", "2"]), true);
+    // two cycles of length 1 are considered a differential
+    assert.equal(arePermCyclesConsideredDifferential(["1", "2"]), true);
 });
 

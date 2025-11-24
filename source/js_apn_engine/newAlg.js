@@ -16,131 +16,129 @@
  *       Either side may be empty -> that side yields [].
  */
 
-import { clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR } from "./notation.js";
+import {clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR} from "./notation.js";
 
-const ParserContext = { stage: null };
+const ParserContext = {stage: null};
 
 export function log(str) {
-  // console.log(str)
+    // console.log(str)
 }
 
-function getStage() { return ParserContext.stage; }
+function getStage() {
+    return ParserContext.stage;
+}
 
 function parseTopLevel(input) {
-  const src = input.trim();
-  validateParens(src);
-  const parts = splitTopLevelByDot(src);
-  return parts.map(part => {
-    const trimmed = part.trim();
-    if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
-      throw new Error(`Expected a bracketed group at top level, got: ${trimmed}`);
-    }
-    return parseGroup(trimmed);
-  });
+    const src = input.trim();
+    validateParens(src);
+    const parts = splitTopLevelByDot(src);
+    return parts.map(part => {
+        const trimmed = part.trim();
+        if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
+            throw new Error(`Expected a bracketed group at top level, got: ${trimmed}`);
+        }
+        return parseGroup(trimmed);
+    });
 }
 
 function splitTopLevelByDot(s) {
-  const parts = [];
-  let depthPar = 0;
-  let start = 0;
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch === '(') depthPar++;
-    else if (ch === ')') depthPar--;
-    else if (ch === '.' && depthPar === 0) {
-      parts.push(s.slice(start, i));
-      start = i + 1;
+    const parts = [];
+    let depthPar = 0;
+    let start = 0;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '(') depthPar++; else if (ch === ')') depthPar--; else if (ch === '.' && depthPar === 0) {
+            parts.push(s.slice(start, i));
+            start = i + 1;
+        }
     }
-  }
-  if (start <= s.length) parts.push(s.slice(start));
-  return parts.filter(p => p.length > 0);
+    if (start <= s.length) parts.push(s.slice(start));
+    return parts.filter(p => p.length > 0);
 }
 
 function parseGroup(groupText) {
-  if (groupText[0] !== '(' || groupText[groupText.length - 1] !== ')') {
-    throw new Error(`Group must start with '(' and end with ')': ${groupText}`);
-  }
-  const inner = groupText.slice(1, -1);
-  const items = parseGroupInner(inner);
-  return { type: 'Group', items };
+    if (groupText[0] !== '(' || groupText[groupText.length - 1] !== ')') {
+        throw new Error(`Group must start with '(' and end with ')': ${groupText}`);
+    }
+    const inner = groupText.slice(1, -1);
+    const items = parseGroupInner(inner);
+    return {type: 'Group', items};
 }
 
 function parseGroupInner(s) {
-  const items = [];
-  let i = 0;
-  let buf = "";
+    const items = [];
+    let i = 0;
+    let buf = "";
 
-  const flushBuf = () => {
-    if (buf.length > 0) {
-      items.push(buf);
-      buf = "";
+    const flushBuf = () => {
+        if (buf.length > 0) {
+            items.push(buf);
+            buf = "";
+        }
+    };
+
+    while (i < s.length) {
+        const ch = s[i];
+
+        if (ch === '(') {
+            const end = findMatchingParen(s, i); // throws if unmatched
+            flushBuf();
+            const nestedText = s.slice(i, end + 1);
+            items.push(parseGroup(nestedText));
+            i = end + 1;
+            continue;
+        }
+
+        if (ch === ')') {
+            throw new Error("Unexpected ')' inside group");
+        }
+
+        if (ch === '.') {
+            flushBuf();  // delimiter only
+            i++;
+            continue;
+        }
+
+        if (ch === 'x' || ch === 'X' || ch === '-') {
+            flushBuf();      // split before x
+            items.push('x'); // literal token
+            i++;
+            continue;
+        }
+
+        buf += ch;
+        i++;
     }
-  };
 
-  while (i < s.length) {
-    const ch = s[i];
-
-    if (ch === '(') {
-      const end = findMatchingParen(s, i); // throws if unmatched
-      flushBuf();
-      const nestedText = s.slice(i, end + 1);
-      items.push(parseGroup(nestedText));
-      i = end + 1;
-      continue;
-    }
-
-    if (ch === ')') {
-      throw new Error("Unexpected ')' inside group");
-    }
-
-    if (ch === '.') {
-      flushBuf();  // delimiter only
-      i++;
-      continue;
-    }
-
-    if (ch === 'x' || ch === 'X' || ch === '-') {
-      flushBuf();      // split before x
-      items.push('x'); // literal token
-      i++;
-      continue;
-    }
-
-    buf += ch;
-    i++;
-  }
-
-  flushBuf();
-  return items.filter(tok => !(typeof tok === 'string' && tok.length === 0));
+    flushBuf();
+    return items.filter(tok => !(typeof tok === 'string' && tok.length === 0));
 }
 
 /** Validate parentheses globally; throw clear "Unmatched" errors. */
 function validateParens(s) {
-  const stack = [];
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch === '(') stack.push(i);
-    else if (ch === ')') {
-      if (stack.length === 0) throw new Error(`Unmatched ")" at index ${i}`);
-      stack.pop();
+    const stack = [];
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '(') stack.push(i); else if (ch === ')') {
+            if (stack.length === 0) throw new Error(`Unmatched ")" at index ${i}`);
+            stack.pop();
+        }
     }
-  }
-  if (stack.length) {
-    const openIdx = stack[stack.length - 1];
-    throw new Error(`Unmatched "(" at index ${openIdx}`);
-  }
+    if (stack.length) {
+        const openIdx = stack[stack.length - 1];
+        throw new Error(`Unmatched "(" at index ${openIdx}`);
+    }
 }
 
 function findMatchingParen(s, openIdx) {
-  let depth = 0;
-  for (let i = openIdx; i < s.length; i++) {
-    if (s[i] === '(') depth++;
-    else if (s[i] === ')') {
-      depth--;
-      if (depth === 0) return i;
+    let depth = 0;
+    for (let i = openIdx; i < s.length; i++) {
+        if (s[i] === '(') depth++; else if (s[i] === ')') {
+            depth--;
+            if (depth === 0) return i;
+        }
     }
-  }
-  throw new Error(`Unmatched "(" at index ${openIdx}`);
+    throw new Error(`Unmatched "(" at index ${openIdx}`);
 }
 
 /* -----------
@@ -148,32 +146,32 @@ function findMatchingParen(s, openIdx) {
  * ----------- */
 
 function evalElement(el) {
-  if (typeof el === 'string') {
-    return el.length ? [el] : [];
-  }
-  return evalGroup(el);
+    if (typeof el === 'string') {
+        return el.length ? [el] : [];
+    }
+    return evalGroup(el);
 }
 
 function evalGroup(group) {
-  const out = [];
-  for (const item of group.items) {
-    const part = evalElement(item);
-    if (part.length) out.push(...part);
-  }
-  return out;
+    const out = [];
+    for (const item of group.items) {
+        const part = evalElement(item);
+        if (part.length) out.push(...part);
+    }
+    return out;
 }
 
 function evaluateTopLevel(groups) {
-  const out = [];
-  for (const g of groups) out.push(...evalGroup(g));
-  return out;
+    const out = [];
+    for (const g of groups) out.push(...evalGroup(g));
+    return out;
 }
 
 /** Tokenize a flat (non-parenthesized) segment using inner rules. */
 function tokenizeFlat(s) {
-  const items = parseGroupInner(s);
-  const flatten = el => (typeof el === 'string' ? [el] : evalGroup(el));
-  return items.flatMap(flatten);
+    const items = parseGroupInner(s);
+    const flatten = el => (typeof el === 'string' ? [el] : evalGroup(el));
+    return items.flatMap(flatten);
 }
 
 /* -------------------------------------------------------
@@ -182,29 +180,28 @@ function tokenizeFlat(s) {
 
 /** Pull off any trailing chained [...] slices from a segment. */
 function splitTrailingSlices(input) {
-  const slices = [];
-  let i = input.length - 1;
-  while (i >= 0) {
-    if (input[i] !== ']') break;
-    let depth = 0;
-    let j = i;
-    while (j >= 0) {
-      const ch = input[j];
-      if (ch === ']') depth++;
-      else if (ch === '[') {
-        depth--;
-        if (depth === 0) break;
-      }
-      j--;
+    const slices = [];
+    let i = input.length - 1;
+    while (i >= 0) {
+        if (input[i] !== ']') break;
+        let depth = 0;
+        let j = i;
+        while (j >= 0) {
+            const ch = input[j];
+            if (ch === ']') depth++; else if (ch === '[') {
+                depth--;
+                if (depth === 0) break;
+            }
+            j--;
+        }
+        if (j < 0 || input[j] !== '[') break;
+        const sliceSpec = input.slice(j, i + 1);
+        slices.unshift(sliceSpec);
+        i = j - 1;
+        while (i >= 0 && /\s/.test(input[i])) i--;
     }
-    if (j < 0 || input[j] !== '[') break;
-    const sliceSpec = input.slice(j, i + 1);
-    slices.unshift(sliceSpec);
-    i = j - 1;
-    while (i >= 0 && /\s/.test(input[i])) i--;
-  }
-  const base = input.slice(0, i + 1).trim();
-  return { base, slices };
+    const base = input.slice(0, i + 1).trim();
+    return {base, slices};
 }
 
 
@@ -214,99 +211,101 @@ function splitTrailingSlices(input) {
 // then return a single string with unique chars sorted by the stage subset order.
 // Non-subset characters are ignored for '=' expansion.
 function mirrorExpandToken(str) {
-  if (isXChar(str)) { return CANONICAL_X_CHAR }
-  const stage = getStage?.() ?? null;
-  log("In mirror for =, found stage = ", stage);
-
-  if (!stage || stage < 1) {
-    throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
-  }
-  const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
-  const last = subset.length - 1;
-
-  const present = new Set();
-  for (const ch of str) {
-    const idx = subset.indexOf(ch);
-    if (idx !== -1) {
-      present.add(ch);
-      present.add(subset[last - idx]); // add mirror char
+    if (isXChar(str)) {
+        return CANONICAL_X_CHAR
     }
-  }
+    const stage = getStage?.() ?? null;
+    log("In mirror for =, found stage = ", stage);
 
-  // Emit in canonical subset order
-  let out = '';
-  for (const ch of subset) {
-    if (present.has(ch)) out += ch;
-  }
-  return out;
+    if (!stage || stage < 1) {
+        throw new Error("'=' operator requires a valid stage (use '<n>|' prefix).");
+    }
+    const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
+    const last = subset.length - 1;
+
+    const present = new Set();
+    for (const ch of str) {
+        const idx = subset.indexOf(ch);
+        if (idx !== -1) {
+            present.add(ch);
+            present.add(subset[last - idx]); // add mirror char
+        }
+    }
+
+    // Emit in canonical subset order
+    let out = '';
+    for (const ch of subset) {
+        if (present.has(ch)) out += ch;
+    }
+    return out;
 }
 
 // Detects N(<...>) where '(' at that position closes at the very end
 function matchRepeatOuter(base) {
-  const s = base.trim();
-  const open = s.indexOf('(');
-  if (open <= 0) return null;                 // must have digits before '('
-  const prefix = s.slice(0, open).trim();
-  if (!/^\d+$/.test(prefix)) return null;     // prefix must be an integer
-  const end = findMatchingParen(s, open);     // throws if unmatched
-  if (end !== s.length - 1) return null;      // '(' must match the last ')'
-  return { count: parseInt(prefix, 10), inner: s.slice(open + 1, end).trim() };
+    const s = base.trim();
+    const open = s.indexOf('(');
+    if (open <= 0) return null;                 // must have digits before '('
+    const prefix = s.slice(0, open).trim();
+    if (!/^\d+$/.test(prefix)) return null;     // prefix must be an integer
+    const end = findMatchingParen(s, open);     // throws if unmatched
+    if (end !== s.length - 1) return null;      // '(' must match the last ')'
+    return {count: parseInt(prefix, 10), inner: s.slice(open + 1, end).trim()};
 }
 
 function repeatList(list, n) {
-  if (n <= 0 || list.length === 0) return [];
-  const out = [];
-  for (let i = 0; i < n; i++) out.push(...list);
-  return out;
+    if (n <= 0 || list.length === 0) return [];
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(...list);
+    return out;
 }
 
 // Returns true iff s is exactly one balanced (...) pair (no extra chars outside)
 function isSingleOuterParens(s) {
-  if (!s || s[0] !== '(' || s[s.length - 1] !== ')') return false;
-  try {
-    const end = findMatchingParen(s, 0);
-    return end === s.length - 1;
-  } catch {
-    return false;
-  }
+    if (!s || s[0] !== '(' || s[s.length - 1] !== ')') return false;
+    try {
+        const end = findMatchingParen(s, 0);
+        return end === s.length - 1;
+    } catch {
+        return false;
+    }
 }
 
 // Invert every char using the first `stage` chars of STAGE_SYMBOLS,
 // then reverse the whole string to preserve inherent order.
 // If stage is not set and this is used (for ';'), we throw.
 function invertTokenWithStage(str) {
-  const stage = getStage?.() ?? null;
+    const stage = getStage?.() ?? null;
 
-  if (stage == null || !stage || stage < 1) {
-    // catch this!!
-    throw new Error("';' operator requires stage to be set (use '<n>|' prefix).");
-  }
+    if (stage == null || !stage || stage < 1) {
+        // catch this!!
+        throw new Error("';' operator requires stage to be set (use '<n>|' prefix).");
+    }
 
-  const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
-  const last = subset.length - 1;
+    const subset = STAGE_SYMBOLS.slice(0, Math.min(stage, STAGE_SYMBOLS.length));
+    const last = subset.length - 1;
 
-  const mapped = Array.from(str, ch => {
-    const idx = subset.indexOf(ch);
-    if (idx === -1) return ch;                 // leave unknown chars unchanged
-    return subset[last - idx];                 // mirror across subset
-  }).join("");
+    const mapped = Array.from(str, ch => {
+        const idx = subset.indexOf(ch);
+        if (idx === -1) return ch;                 // leave unknown chars unchanged
+        return subset[last - idx];                 // mirror across subset
+    }).join("");
 
-  // reverse the mapped string
-  return mapped.split("").reverse().join("");
+    // reverse the mapped string
+    return mapped.split("").reverse().join("");
 }
 
 /** Mirror/double-up: if len <= 1 -> no-op; else L ++ reverse(L).drop(1). */
 function doubleUp(list) {
-  if (list.length <= 1) return list.slice();
-  const tailRev = list.slice(0, -1).reverse();
-  return list.concat(tailRev);
+    if (list.length <= 1) return list.slice();
+    const tailRev = list.slice(0, -1).reverse();
+    return list.concat(tailRev);
 }
 
 // Like doubleUp, but invert each item of the appended reversed tail.
 function doubleUpWithInvert(list) {
-  if (list.length <= 1) return list.slice();
-  const tail = list.slice(0, -1).reverse().map(invertTokenWithStage);
-  return list.concat(tail);
+    if (list.length <= 1) return list.slice();
+    const tail = list.slice(0, -1).reverse().map(invertTokenWithStage);
+    return list.concat(tail);
 }
 
 function isSymmetryOperator(ch) {
@@ -315,178 +314,172 @@ function isSymmetryOperator(ch) {
 
 // Split by top-level low-precedence ops (',' and ';'), respecting (...) and [...]
 function splitTopLevelPNByLowPrecedentOps(s) {
-  const parts = [];
-  const ops = [];
-  let depthPar = 0, depthSq = 0;
-  let start = 0;
+    const parts = [];
+    const ops = [];
+    let depthPar = 0, depthSq = 0;
+    let start = 0;
 
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch === '(') depthPar++;
-    else if (ch === '[') depthSq++;
-    else if (ch === ')') {
-        if (depthPar === 0) {
-            throw new Error(`Found unexpected close bracket ')'`)
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '(') depthPar++; else if (ch === '[') depthSq++; else if (ch === ')') {
+            if (depthPar === 0) {
+                throw new Error(`Found unexpected close bracket ')'`)
+            }
+            depthPar--;
+        } else if (ch === ']') {
+            if (depthSq === 0) {
+                throw new Error(`Found unexpected close bracket ']'`)
+            }
+            depthSq--;
+        } else if (depthPar === 0 && depthSq === 0 && isSymmetryOperator(ch)) {
+            if (ops.length === 1) {
+                throw new Error(`Found >1 symmetry operator at same level; not permitted (use explicit parentheses)`);
+            }
+            parts.push(s.slice(start, i));
+            ops.push(ch);
+            start = i + 1;
         }
-        depthPar--;
     }
-    else if (ch === ']') {
-        if (depthSq === 0) {
-            throw new Error(`Found unexpected close bracket ']'`)
-        }
-        depthSq--;
-    }
-    else if (depthPar === 0 && depthSq === 0 && isSymmetryOperator(ch)) {
-        if (ops.length === 1) {
-            throw new Error(`Found >1 symmetry operator at same level; not permitted (use explicit parentheses)`);
-        }
-      parts.push(s.slice(start, i));
-      ops.push(ch);
-      start = i + 1;
-    }
-  }
 
-  if (depthPar > 0) {
-      throw new Error(`Found unmatched opening bracket '('`);
-  }
-  else if (depthSq > 0) {
-      throw new Error(`Found unmatched opening bracket '['`);
-  }
+    if (depthPar > 0) {
+        throw new Error(`Found unmatched opening bracket '('`);
+    } else if (depthSq > 0) {
+        throw new Error(`Found unmatched opening bracket '['`);
+    }
 
-  if (start <= s.length) parts.push(s.slice(start));
-  // Keep empties (empty side allowed)
-  return { parts: parts.map(p => p.trim()), ops };
+    if (start <= s.length) parts.push(s.slice(start));
+    // Keep empties (empty side allowed)
+    return {parts: parts.map(p => p.trim()), ops};
 }
 
 // evaluates segments that we know contain no sym operators (',', ';')
 function evaluatePNWithoutSymOperator(input) {
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return []; // empty side of a low-precedence op => []
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return []; // empty side of a low-precedence op => []
 
-  const hasParens = trimmed.includes('(') || trimmed.includes(')');
+    const hasParens = trimmed.includes('(') || trimmed.includes(')');
 
-  // Case A: no parentheses -> treat the whole thing as one flat base,
-  // and apply any trailing slice chain to the WHOLE list.
-  if (!hasParens) {
-    const { base, slices } = splitTrailingSlices(trimmed);
-    let list = base.length === 0 ? [] : tokenizeFlat(base);
-    for (const spec of slices) {
-      list = slice_custom(list, spec);
-    }
-    return list;
-  }
-
-  // Case B: parentheses present -> split by top-level '.' into segments,
-  // and let each segment have its own trailing slice chain.
-  const parts = splitTopLevelByDot(trimmed);
-  const results = [];
-
-  for (const part of parts) {
-    const { base, slices } = splitTrailingSlices(part.trim());
-
-    let list;
-
-    // Multiplier N(<...>) has high precedence within a segment
-    const rep = matchRepeatOuter(base);
-    if (rep) {
-      const innerList = splitPN(rep.inner); // no stage parsing here
-      list = repeatList(innerList, rep.count);
-    } else if (isSingleOuterParens(base)) {
-      // Evaluate inside a single outer paren pair (no stage parsing here)
-      const inner = base.slice(1, -1).trim();
-      list = splitPN(inner);
-    } else if (base.includes('(') || base.includes(')')) {
-      // Fallback path for complex/nested cases via AST
-      const ast = parseTopLevel(base);
-      list = evaluateTopLevel(ast);
-    } else if (base.length === 0 && slices.length > 0) {
-      list = [];
-    } else {
-      // Plain flat tokens ('.' delimiter; 'x' token+delimiter)
-      list = tokenizeFlat(base);
+    // Case A: no parentheses -> treat the whole thing as one flat base,
+    // and apply any trailing slice chain to the WHOLE list.
+    if (!hasParens) {
+        const {base, slices} = splitTrailingSlices(trimmed);
+        let list = base.length === 0 ? [] : tokenizeFlat(base);
+        for (const spec of slices) {
+            list = slice_custom(list, spec);
+        }
+        return list;
     }
 
-    // Apply this segment’s trailing slice chain AFTER multiplier/parens
-    for (const spec of slices) {
-      list = slice_custom(list, spec);
+    // Case B: parentheses present -> split by top-level '.' into segments,
+    // and let each segment have its own trailing slice chain.
+    const parts = splitTopLevelByDot(trimmed);
+    const results = [];
+
+    for (const part of parts) {
+        const {base, slices} = splitTrailingSlices(part.trim());
+
+        let list;
+
+        // Multiplier N(<...>) has high precedence within a segment
+        const rep = matchRepeatOuter(base);
+        if (rep) {
+            const innerList = splitPN(rep.inner); // no stage parsing here
+            list = repeatList(innerList, rep.count);
+        } else if (isSingleOuterParens(base)) {
+            // Evaluate inside a single outer paren pair (no stage parsing here)
+            const inner = base.slice(1, -1).trim();
+            list = splitPN(inner);
+        } else if (base.includes('(') || base.includes(')')) {
+            // Fallback path for complex/nested cases via AST
+            const ast = parseTopLevel(base);
+            list = evaluateTopLevel(ast);
+        } else if (base.length === 0 && slices.length > 0) {
+            list = [];
+        } else {
+            // Plain flat tokens ('.' delimiter; 'x' token+delimiter)
+            list = tokenizeFlat(base);
+        }
+
+        // Apply this segment’s trailing slice chain AFTER multiplier/parens
+        for (const spec of slices) {
+            list = slice_custom(list, spec);
+        }
+
+        results.push(...list);
     }
 
-    results.push(...list);
-  }
-
-  return results;
+    return results;
 }
 
 // Internal evaluator that NEVER parses n| and NEVER resets stage.
 // Used by recursive calls (e.g., when evaluating inside single outer parens).
 function splitPN(src) {
-  log("splitPN, src = ", src);
+    log("splitPN, src = ", src);
 
-  const { parts, ops } = splitTopLevelPNByLowPrecedentOps(src.trim());
+    const {parts, ops} = splitTopLevelPNByLowPrecedentOps(src.trim());
 
-  if (ops.length === 0) {
-    return evaluatePNWithoutSymOperator(parts[0]);
-  }
-
-  // Left-associative fold over , and ;
-  let acc = evaluatePNWithoutSymOperator(parts[0]);
-  for (let i = 0; i < ops.length; i++) {
-    const right = evaluatePNWithoutSymOperator(parts[i + 1]);
-    const op = ops[i];
-    if (op === ',') {
-      acc = doubleUp(acc).concat(doubleUp(right));
-    } else if (op === ';') {
-      acc = doubleUpWithInvert(acc).concat(doubleUpWithInvert(right));
-    } else if (op === '=') {
-      // '=' only affects the left: mirror-expand each left token; right passes through unchanged
-      const leftMirrored = acc.map(mirrorExpandToken);
-      acc = leftMirrored.concat(right);
-    } else {
-      throw new Error(`Unknown operator: ${op}`);
+    if (ops.length === 0) {
+        return evaluatePNWithoutSymOperator(parts[0]);
     }
-  }
-  return acc;
+
+    // Left-associative fold over , and ;
+    let acc = evaluatePNWithoutSymOperator(parts[0]);
+    for (let i = 0; i < ops.length; i++) {
+        const right = evaluatePNWithoutSymOperator(parts[i + 1]);
+        const op = ops[i];
+        if (op === ',') {
+            acc = doubleUp(acc).concat(doubleUp(right));
+        } else if (op === ';') {
+            acc = doubleUpWithInvert(acc).concat(doubleUpWithInvert(right));
+        } else if (op === '=') {
+            // '=' only affects the left: mirror-expand each left token; right passes through unchanged
+            const leftMirrored = acc.map(mirrorExpandToken);
+            acc = leftMirrored.concat(right);
+        } else {
+            throw new Error(`Unknown operator: ${op}`);
+        }
+    }
+    return acc;
 }
 
 // if the input pn doesn't contain a stage (using pipe "N|") then fallbackStage is used
 // (which comes from the stage text box)
 function evaluatePNAndStage(input, fallbackStage) {
-  log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
-  let src = input.trim();
-  log("evaluateExpression, passed input =", input, " src = ", src);
+    log("evaluateExpression, fallbackStage = ", fallbackStage, " passed input =", input);
+    let src = input.trim();
+    log("evaluateExpression, passed input =", input, " src = ", src);
 
-  ParserContext.stage = fallbackStage;
+    ParserContext.stage = fallbackStage;
 
-  // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
-  // The *only* valid form is exactly one char before the first pipe: "<char>|".
-  const pipeIndex = src.indexOf('|');
-  log(" PIPE INDEX: ", pipeIndex, " on src = ", src);
+    // If a pipe exists anywhere, we treat it as the (only) stage delimiter.
+    // The *only* valid form is exactly one char before the first pipe: "<char>|".
+    const pipeIndex = src.indexOf('|');
+    log(" PIPE INDEX: ", pipeIndex, " on src = ", src);
 
-  if (pipeIndex !== -1) {
-    // Must be exactly one character before the pipe.
-    if (pipeIndex !== 1) {
-      throw new Error("Couldn't parse stage");
+    if (pipeIndex !== -1) {
+        // Must be exactly one character before the pipe.
+        if (pipeIndex !== 1) {
+            throw new Error("Couldn't parse stage");
+        }
+
+        const ch = src[0];
+        const stageIndex = STAGE_SYMBOLS.indexOf(ch);
+        if (stageIndex === -1) {
+            throw new Error("Couldn't parse stage");
+        }
+
+        // Set stage from the single char and strip "<char>|"
+        ParserContext.stage = stageIndex + 1;
+        src = src.slice(2);
+
+        log("Parsing this: ", input, " stage is : ", ParserContext.stage);
+    } else if (fallbackStage !== undefined && fallbackStage != null) {
+        ParserContext.stage = clampStage(fallbackStage);
+        log("Using stage from UI textbox: ", ParserContext.stage)
     }
 
-    const ch = src[0];
-    const stageIndex = STAGE_SYMBOLS.indexOf(ch);
-    if (stageIndex === -1) {
-      throw new Error("Couldn't parse stage");
-    }
-
-    // Set stage from the single char and strip "<char>|"
-    ParserContext.stage = stageIndex + 1;
-    src = src.slice(2);
-
-    log("Parsing this: ", input, " stage is : ", ParserContext.stage);
-  }
-  else if (fallbackStage !== undefined && fallbackStage != null) {
-    ParserContext.stage = clampStage(fallbackStage);
-    log("Using stage from UI textbox: ", ParserContext.stage)
-  }
-
-  // From here on, do NOT parse "<char>|" again.
-  return {pnTokens: splitPN(src), resolvedStage: ParserContext.stage};
+    // From here on, do NOT parse "<char>|" again.
+    return {pnTokens: splitPN(src), resolvedStage: ParserContext.stage};
 }
 
 /* -------------------------------------------------------
@@ -494,127 +487,128 @@ function evaluatePNAndStage(input, fallbackStage) {
  * ----------------------------------------------------- */
 
 function slice_custom(myList, sliceSpec) {
-  const n = myList.length;
+    const n = myList.length;
 
-  const err = (msg) => { throw new Error(`slice_custom: ${msg}`); };
-
-  // normalize for standard (non-circular) slices:
-  //  - negatives wrap from end
-  //  - positives clamp to [0...n] (DO NOT modulo-wrap stop==n to 0)
-  const normStd = (i, len) => {
-    if (len === 0) return 0;
-    if (i < 0) {
-      const m = i % len;              // negative or 0
-      return m < 0 ? m + len : m;     // wrap from end
-    }
-    return i > len ? len : i;         // clamp (i==len stays len)
-  };
-
-  const isInt = (s) => /^[-+]?\d+$/.test(s);
-
-  const s = sliceSpec.trim();
-  if (!s.startsWith('[') || !s.endsWith(']')) {
-    err(`spec must be like "[...]", got "${sliceSpec}"`);
-  }
-  const inner = s.slice(1, -1).trim();
-
-  // Reverse shorthand: [-]
-  if (inner === '-') {
-    const out = myList.slice();
-    out.reverse();
-    return out;
-  }
-
-  const colonIdx = inner.indexOf(':');
-  if (colonIdx === -1) err(`missing ":" in spec "${sliceSpec}"`);
-  const leftRaw = inner.slice(0, colonIdx).trim();
-  const rightRaw = inner.slice(colonIdx + 1).trim();
-
-  // Circular mode?
-  const isCircular = rightRaw.startsWith('>') || rightRaw.startsWith('<');
-  if (isCircular) {
-    if (n === 0) err('cannot perform circular slice on empty list');
-
-    const dir = rightRaw[0]; // '>' or '<'
-    const countStr = rightRaw.slice(1).trim();
-
-    if (!isInt(leftRaw)) err(`circular start must be an integer, got "${leftRaw}"`);
-    const startRaw = parseInt(leftRaw, 10);
-
-    // For circular, we DO want modulo wrapping for the starting index.
-    const normalizeCircular = (i, len) => {
-      if (len === 0) return 0;
-      const m = i % len;
-      return m < 0 ? m + len : m;
+    const err = (msg) => {
+        throw new Error(`slice_custom: ${msg}`);
     };
-    const start = normalizeCircular(startRaw, n);
 
-    let count;
-    if (countStr === '') count = n;
-    else {
-      if (!/^\d+$/.test(countStr)) err(`count must be a non-negative integer, got "${countStr}"`);
-      count = parseInt(countStr, 10);
+    // normalize for standard (non-circular) slices:
+    //  - negatives wrap from end
+    //  - positives clamp to [0...n] (DO NOT modulo-wrap stop==n to 0)
+    const normStd = (i, len) => {
+        if (len === 0) return 0;
+        if (i < 0) {
+            const m = i % len;              // negative or 0
+            return m < 0 ? m + len : m;     // wrap from end
+        }
+        return i > len ? len : i;         // clamp (i==len stays len)
+    };
+
+    const isInt = (s) => /^[-+]?\d+$/.test(s);
+
+    const s = sliceSpec.trim();
+    if (!s.startsWith('[') || !s.endsWith(']')) {
+        err(`spec must be like "[...]", got "${sliceSpec}"`);
+    }
+    const inner = s.slice(1, -1).trim();
+
+    // Reverse shorthand: [-]
+    if (inner === '-') {
+        const out = myList.slice();
+        out.reverse();
+        return out;
     }
 
-    if (count === 0) return [];
+    const colonIdx = inner.indexOf(':');
+    if (colonIdx === -1) err(`missing ":" in spec "${sliceSpec}"`);
+    const leftRaw = inner.slice(0, colonIdx).trim();
+    const rightRaw = inner.slice(colonIdx + 1).trim();
 
-    const out = [];
-    if (dir === '>') {
-      let idx = start;
-      for (let t = 0; t < count; t++) {
-        out.push(myList[idx]);
-        idx = (idx + 1) % n;
-      }
+    // Circular mode?
+    const isCircular = rightRaw.startsWith('>') || rightRaw.startsWith('<');
+    if (isCircular) {
+        if (n === 0) err('cannot perform circular slice on empty list');
+
+        const dir = rightRaw[0]; // '>' or '<'
+        const countStr = rightRaw.slice(1).trim();
+
+        if (!isInt(leftRaw)) err(`circular start must be an integer, got "${leftRaw}"`);
+        const startRaw = parseInt(leftRaw, 10);
+
+        // For circular, we DO want modulo wrapping for the starting index.
+        const normalizeCircular = (i, len) => {
+            if (len === 0) return 0;
+            const m = i % len;
+            return m < 0 ? m + len : m;
+        };
+        const start = normalizeCircular(startRaw, n);
+
+        let count;
+        if (countStr === '') count = n; else {
+            if (!/^\d+$/.test(countStr)) err(`count must be a non-negative integer, got "${countStr}"`);
+            count = parseInt(countStr, 10);
+        }
+
+        if (count === 0) return [];
+
+        const out = [];
+        if (dir === '>') {
+            let idx = start;
+            for (let t = 0; t < count; t++) {
+                out.push(myList[idx]);
+                idx = (idx + 1) % n;
+            }
+        } else {
+            let idx = start;
+            for (let t = 0; t < count; t++) {
+                out.push(myList[idx]);
+                idx = (idx - 1 + n) % n;
+            }
+        }
+        return out;
+    }
+
+    // ---------- Standard (no wrap) ----------
+    if (n === 0) return [];
+
+    const leftIsEmpty = leftRaw === '';
+    const rightIsEmpty = rightRaw === '';
+
+    let startNorm = null;
+    let stopNorm = null;
+
+    if (!leftIsEmpty) {
+        if (!isInt(leftRaw)) err(`invalid start index "${leftRaw}"`);
+        startNorm = normStd(parseInt(leftRaw, 10), n);
+    }
+    if (!rightIsEmpty) {
+        if (!isInt(rightRaw)) err(`invalid stop index "${rightRaw}"`);
+        stopNorm = normStd(parseInt(rightRaw, 10), n);
+    }
+
+    const bothPresent = startNorm !== null && stopNorm !== null;
+
+    if (!bothPresent) {
+        // Forward, no wrap: inclusive start, exclusive stop
+        const start = startNorm ?? 0;
+        const stop = stopNorm ?? n;
+        if (start >= stop) return [];
+        return myList.slice(start, stop);
     } else {
-      let idx = start;
-      for (let t = 0; t < count; t++) {
-        out.push(myList[idx]);
-        idx = (idx - 1 + n) % n;
-      }
+        const start = startNorm;
+        const stop = stopNorm;
+        if (start === stop) return [];
+        if (start < stop) {
+            // Forward, exclusive stop
+            return myList.slice(start, stop);
+        } else {
+            // Backward, inclusive both ends
+            const out = [];
+            for (let i = start; i >= stop; i--) out.push(myList[i]);
+            return out;
+        }
     }
-    return out;
-  }
-
-  // ---------- Standard (no wrap) ----------
-  if (n === 0) return [];
-
-  const leftIsEmpty = leftRaw === '';
-  const rightIsEmpty = rightRaw === '';
-
-  let startNorm = null;
-  let stopNorm = null;
-
-  if (!leftIsEmpty) {
-    if (!isInt(leftRaw)) err(`invalid start index "${leftRaw}"`);
-    startNorm = normStd(parseInt(leftRaw, 10), n);
-  }
-  if (!rightIsEmpty) {
-    if (!isInt(rightRaw)) err(`invalid stop index "${rightRaw}"`);
-    stopNorm = normStd(parseInt(rightRaw, 10), n);
-  }
-
-  const bothPresent = startNorm !== null && stopNorm !== null;
-
-  if (!bothPresent) {
-    // Forward, no wrap: inclusive start, exclusive stop
-    const start = startNorm ?? 0;
-    const stop = stopNorm ?? n;
-    if (start >= stop) return [];
-    return myList.slice(start, stop);
-  } else {
-    const start = startNorm;
-    const stop = stopNorm;
-    if (start === stop) return [];
-    if (start < stop) {
-      // Forward, exclusive stop
-      return myList.slice(start, stop);
-    } else {
-      // Backward, inclusive both ends
-      const out = [];
-      for (let i = start; i >= stop; i--) out.push(myList[i]);
-      return out;
-    }
-  }
 }
 
 //////////////////////////////////
@@ -722,7 +716,7 @@ function arePermCyclesConsideredDifferential(permCycles) {
         return false;
     }
 
-  return permCycles.filter(cycle => cycle.length > 1).length !== 1;
+    return permCycles.filter(cycle => cycle.length > 1).length !== 1;
 }
 
 // test data: "5|45.1" has 5 backwards tenors at backstroke,
@@ -733,13 +727,15 @@ function arePermCyclesConsideredDifferential(permCycles) {
 //            "4|12x14x14x14x" (PB4 rotated by 1)
 //
 function count87s(rows, stage) {
-  if (stage % 2 === 1) { return 0; }
+    if (stage % 2 === 1) {
+        return 0;
+    }
 
-  const backwardTenors = STAGE_SYMBOLS.slice(stage-2, stage).split('').reverse().join('');
-  const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
-  // log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
-  // log(`backwards tenors lists: ${res}`);
-  return res.length;
+    const backwardTenors = STAGE_SYMBOLS.slice(stage - 2, stage).split('').reverse().join('');
+    const res = rows.filter((row, i) => (i % 2 === 0) && row.endsWith(backwardTenors))
+    // log(`Checking rows for ending with ${backwardTenors}, given stage ${stage}, row 1 = ${rows[1]}`);
+    // log(`backwards tenors lists: ${res}`);
+    return res.length;
 }
 
 /**
@@ -751,32 +747,31 @@ function count87s(rows, stage) {
  * @returns {number[]} array of percentages, index = distance apart (1-based)
  */
 export function measureTopPairDistances(stage, rows) {
-  const alphabet = STAGE_SYMBOLS.slice(0, stage);
-  const hiChar = alphabet[stage - 1];
-  const belowChar = alphabet[stage - 2];
+    const alphabet = STAGE_SYMBOLS.slice(0, stage);
+    const hiChar = alphabet[stage - 1];
+    const belowChar = alphabet[stage - 2];
 
-  console.log("got rows: ", rows);
-  // all possible separations (1...stage-1)
-  const counts = Array(stage-1).fill(0);
+    console.log("got rows: ", rows);
+    // all possible separations (1...stage-1)
+    const counts = Array(stage - 1).fill(0);
 
-  for (const row of rows) {
-    const hiIndex = row.indexOf(hiChar);
-    const lowIndex = row.indexOf(belowChar);
-    if (hiIndex === -1 || lowIndex === -1) continue;
+    for (const row of rows) {
+        const hiIndex = row.indexOf(hiChar);
+        const lowIndex = row.indexOf(belowChar);
+        if (hiIndex === -1 || lowIndex === -1) continue;
 
-    const distance = Math.abs(hiIndex - lowIndex); // 0-based separation
-    // sub 1 for 0-based separation
-    counts[distance-1] += 1;
-    console.log("Reg 1 for dist = ", distance, " from hi, low = ", hiIndex, " ", lowIndex);
-  }
-  const total = rows.length || 1;
-  // percentages
-  //   return [1, 2, 3];
-  return counts.map(c => Math.round((c / total) * 100));
+        const distance = Math.abs(hiIndex - lowIndex); // 0-based separation
+        // sub 1 for 0-based separation
+        counts[distance - 1] += 1;
+        console.log("Reg 1 for dist = ", distance, " from hi, low = ", hiIndex, " ", lowIndex);
+    }
+    const total = rows.length || 1;
+    // percentages
+    //   return [1, 2, 3];
+    return counts.map(c => Math.round((c / total) * 100));
 }
 
 // composition stuff
-
 
 
 /* -------------------------------------------------------
@@ -784,12 +779,12 @@ export function measureTopPairDistances(stage, rows) {
  * ----------------------------------------------------- */
 
 export {
-  parseTopLevel,
-  evaluateTopLevel,
-  tokenizeFlat,
-  evaluatePNAndStage,
-  getStage,
-  derivePermCycles,
-  arePermCyclesConsideredDifferential,
-  count87s
+    parseTopLevel,
+    evaluateTopLevel,
+    tokenizeFlat,
+    evaluatePNAndStage,
+    getStage,
+    derivePermCycles,
+    arePermCyclesConsideredDifferential,
+    count87s
 };

@@ -2,7 +2,7 @@
 // Draw a "blue line" (polyline) over the centre of a chosen bell symbol in each row,
 // and also generate a standalone SVG file for download.
 
-import { log } from './newAlg.js';
+import {log} from './newAlg.js';
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -10,13 +10,13 @@ const SVG_NS = "http://www.w3.org/2000/svg";
  * Ensure we can find the scroller (#notationOutput) from a node or id.
  */
 function resolveScroller(target) {
-  if (!target) throw new Error("blueLine: missing scroller target");
-  if (typeof target === "string") {
-    const el = document.getElementById(target) || document.querySelector(target);
-    if (!el) throw new Error(`blueLine: no element matches selector/id "${target}"`);
-    return el;
-  }
-  return target;
+    if (!target) throw new Error("blueLine: missing scroller target");
+    if (typeof target === "string") {
+        const el = document.getElementById(target) || document.querySelector(target);
+        if (!el) throw new Error(`blueLine: no element matches selector/id "${target}"`);
+        return el;
+    }
+    return target;
 }
 
 /**
@@ -69,15 +69,9 @@ export function measurePointsFromDOM(scroller, rows, targetChar) {
         const charRect = getCharRectInElement(codeEl, idx);
         if (!charRect || !charRect.width || !charRect.height) continue;
 
-        const x =
-            scroller.scrollLeft +
-            (charRect.left - scrollerRect.left) +
-            charRect.width / 2;
+        const x = scroller.scrollLeft + (charRect.left - scrollerRect.left) + charRect.width / 2;
 
-        const y =
-            scroller.scrollTop +
-            (charRect.top - scrollerRect.top) +
-            charRect.height / 2;
+        const y = scroller.scrollTop + (charRect.top - scrollerRect.top) + charRect.height / 2;
 
         points.push([x, y]);
     }
@@ -131,88 +125,82 @@ function estimateCharWidth(element) {
  * so it naturally scrolls with the content.
  */
 export function renderBlueLineOverlay({
-  scroller: scrollerRef = "#notationOutput",
-  rows,
-  targetChar,
-  options = {},
-}) {
-  log("Entered renderBlueLineOverlay, rows len = ", rows?.length ?? 0);
+                                          scroller: scrollerRef = "#notationOutput", rows, targetChar, options = {},
+                                      }) {
+    log("Entered renderBlueLineOverlay, rows len = ", rows?.length ?? 0);
 
-  const scroller = resolveScroller(scrollerRef);
-  if (!Array.isArray(rows) || rows.length === 0) {
-    log("   renderBlueLineOverlay: exiting, no row data");
-    return;
-  }
-  if (targetChar == null) {
-    log("   renderBlueLineOverlay: exiting, no targetChar");
-    return;
-  }
-  log("   renderBlueLineOverlay: got row data");
+    const scroller = resolveScroller(scrollerRef);
+    if (!Array.isArray(rows) || rows.length === 0) {
+        log("   renderBlueLineOverlay: exiting, no row data");
+        return;
+    }
+    if (targetChar == null) {
+        log("   renderBlueLineOverlay: exiting, no targetChar");
+        return;
+    }
+    log("   renderBlueLineOverlay: got row data");
 
-  // Ensure scroller can host an absolute overlay
-  const prevPos = getComputedStyle(scroller).position;
-  if (prevPos === "static") scroller.style.position = "relative";
+    // Ensure scroller can host an absolute overlay
+    const prevPos = getComputedStyle(scroller).position;
+    if (prevPos === "static") scroller.style.position = "relative";
 
-  // Ensure we have an SVG overlay
-  let svg = scroller.querySelector("svg.blue-line-overlay");
-  if (!svg) {
-    svg = document.createElementNS(SVG_NS, "svg");
-    svg.classList.add("blue-line-overlay");
-    Object.assign(svg.style, {
-      position: "absolute",
-      left: "0",
-      top: "0",
-      pointerEvents: "none", // overlay shouldn't eat scroll/hover
-    });
-    scroller.appendChild(svg);
-  }
+    // Ensure we have an SVG overlay
+    let svg = scroller.querySelector("svg.blue-line-overlay");
+    if (!svg) {
+        svg = document.createElementNS(SVG_NS, "svg");
+        svg.classList.add("blue-line-overlay");
+        Object.assign(svg.style, {
+            position: "absolute", left: "0", top: "0", pointerEvents: "none", // overlay shouldn't eat scroll/hover
+        });
+        scroller.appendChild(svg);
+    }
 
-  // Size overlay to content (covers full scroll area)
-  const contentW = Math.max(scroller.scrollWidth, scroller.clientWidth);
-  const contentH = Math.max(scroller.scrollHeight, scroller.clientHeight);
-  svg.setAttribute("width", String(contentW));
-  svg.setAttribute("height", String(contentH));
-  svg.setAttribute("viewBox", `0 0 ${contentW} ${contentH}`);
-  svg.style.width = contentW + "px";
-  svg.style.height = contentH + "px";
+    // Size overlay to content (covers full scroll area)
+    const contentW = Math.max(scroller.scrollWidth, scroller.clientWidth);
+    const contentH = Math.max(scroller.scrollHeight, scroller.clientHeight);
+    svg.setAttribute("width", String(contentW));
+    svg.setAttribute("height", String(contentH));
+    svg.setAttribute("viewBox", `0 0 ${contentW} ${contentH}`);
+    svg.style.width = contentW + "px";
+    svg.style.height = contentH + "px";
 
-  // --- multiple overlays support: one <g> layer per targetChar ---
-  const layerKey = String(targetChar);
-  const safeKey = CSS && CSS.escape ? CSS.escape(layerKey) : layerKey.replace(/"/g, '&quot;');
+    // --- multiple overlays support: one <g> layer per targetChar ---
+    const layerKey = String(targetChar);
+    const safeKey = CSS && CSS.escape ? CSS.escape(layerKey) : layerKey.replace(/"/g, '&quot;');
 
-  let layer = svg.querySelector(`g[data-key="${safeKey}"]`);
-  if (!layer) {
-    layer = document.createElementNS(SVG_NS, "g");
-    layer.setAttribute("data-key", layerKey);
-    svg.appendChild(layer);
-  } else {
-    // Clear only this target's layer (do NOT wipe entire svg)
-    while (layer.firstChild) layer.removeChild(layer.firstChild);
-  }
+    let layer = svg.querySelector(`g[data-key="${safeKey}"]`);
+    if (!layer) {
+        layer = document.createElementNS(SVG_NS, "g");
+        layer.setAttribute("data-key", layerKey);
+        svg.appendChild(layer);
+    } else {
+        // Clear only this target's layer (do NOT wipe entire svg)
+        while (layer.firstChild) layer.removeChild(layer.firstChild);
+    }
 
-  // Compute points for this target
-  const pts = measurePointsFromDOM(scroller, rows, targetChar);
+    // Compute points for this target
+    const pts = measurePointsFromDOM(scroller, rows, targetChar);
 
-  // Draw this target's polyline into its own layer
-  if (pts.length >= 2) {
-    const poly = document.createElementNS(SVG_NS, "polyline");
-    poly.setAttribute("points", pts.map(([x, y]) => `${x},${y}`).join(" "));
-    poly.setAttribute("fill", "none");
-    poly.setAttribute("stroke", options.color || "dodgerblue");
-    poly.setAttribute("stroke-width", String(options.width ?? 2));
-    poly.setAttribute("stroke-linejoin", "round");
-    poly.setAttribute("stroke-linecap", "round");
-    layer.appendChild(poly);
-  }
+    // Draw this target's polyline into its own layer
+    if (pts.length >= 2) {
+        const poly = document.createElementNS(SVG_NS, "polyline");
+        poly.setAttribute("points", pts.map(([x, y]) => `${x},${y}`).join(" "));
+        poly.setAttribute("fill", "none");
+        poly.setAttribute("stroke", options.color || "dodgerblue");
+        poly.setAttribute("stroke-width", String(options.width ?? 2));
+        poly.setAttribute("stroke-linejoin", "round");
+        poly.setAttribute("stroke-linecap", "round");
+        layer.appendChild(poly);
+    }
 }
 
 /**
  * Remove the overlay SVG (if present).
  */
 export function removeBlueLineOverlay(scrollerRef = "#notationOutput") {
-  const scroller = resolveScroller(scrollerRef);
-  const svg = scroller.querySelector("svg.blue-line-overlay");
-  if (svg) svg.remove();
+    const scroller = resolveScroller(scrollerRef);
+    const svg = scroller.querySelector("svg.blue-line-overlay");
+    if (svg) svg.remove();
 }
 
 /**
@@ -225,61 +213,51 @@ export function removeBlueLineOverlay(scrollerRef = "#notationOutput") {
  *   paddingX / paddingY: outer padding
  */
 export function buildBlueLineSVG(rows, targetChar, options = {}, metrics = {}) {
-  const {
-    rowHeight = 20,
-    charWidth = 12,
-    paddingX = 8,
-    paddingY = 8,
-  } = metrics;
+    const {
+        rowHeight = 20, charWidth = 12, paddingX = 8, paddingY = 8,
+    } = metrics;
 
-  const pts = [];
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? "";
-    const idx = row.indexOf(targetChar);
-    if (idx === -1) continue;
-    const x = paddingX + (idx + 0.5) * charWidth;
-    const y = paddingY + i * rowHeight + rowHeight / 2;
-    pts.push([x, y]);
-  }
-  if (pts.length < 2) {
-    // Return minimal SVG if not enough points
-    const w = paddingX * 2 + 10 * charWidth;
-    const h = paddingY * 2 + Math.max(1, rows.length) * rowHeight;
-    return `<svg xmlns="${SVG_NS}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"></svg>`;
-  }
+    const pts = [];
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] ?? "";
+        const idx = row.indexOf(targetChar);
+        if (idx === -1) continue;
+        const x = paddingX + (idx + 0.5) * charWidth;
+        const y = paddingY + i * rowHeight + rowHeight / 2;
+        pts.push([x, y]);
+    }
+    if (pts.length < 2) {
+        // Return minimal SVG if not enough points
+        const w = paddingX * 2 + 10 * charWidth;
+        const h = paddingY * 2 + Math.max(1, rows.length) * rowHeight;
+        return `<svg xmlns="${SVG_NS}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"></svg>`;
+    }
 
-  // compute bounds
-  const maxX = Math.max(...pts.map(([x]) => x)) + paddingX;
-  const maxY = Math.max(...pts.map(([, y]) => y)) + paddingY;
+    // compute bounds
+    const maxX = Math.max(...pts.map(([x]) => x)) + paddingX;
+    const maxY = Math.max(...pts.map(([, y]) => y)) + paddingY;
 
-  const stroke = options.color || "dodgerblue";
-  const strokeW = String(options.width ?? 2);
+    const stroke = options.color || "dodgerblue";
+    const strokeW = String(options.width ?? 2);
 
-  return [
-    `<svg xmlns="${SVG_NS}" width="${Math.ceil(maxX)}" height="${Math.ceil(maxY)}` +
-      `" viewBox="0 0 ${Math.ceil(maxX)} ${Math.ceil(maxY)}">`,
-    `<polyline points="${pts.map(([x, y]) => `${x},${y}`).join(" ")}"`,
-    `  fill="none" stroke="${escapeAttr(stroke)}" stroke-width="${strokeW}"`,
-    `  stroke-linejoin="round" stroke-linecap="round" />`,
-    `</svg>`,
-  ].join("\n");
+    return [`<svg xmlns="${SVG_NS}" width="${Math.ceil(maxX)}" height="${Math.ceil(maxY)}` + `" viewBox="0 0 ${Math.ceil(maxX)} ${Math.ceil(maxY)}">`, `<polyline points="${pts.map(([x, y]) => `${x},${y}`).join(" ")}"`, `  fill="none" stroke="${escapeAttr(stroke)}" stroke-width="${strokeW}"`, `  stroke-linejoin="round" stroke-linecap="round" />`, `</svg>`,].join("\n");
 }
 
 /**
  * Trigger a download of the given SVG string.
  */
 export function downloadSVG(svgString, filename = "blue-line.svg") {
-  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const blob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function escapeAttr(s) {
-  return String(s).replace(/"/g, "&quot;");
+    return String(s).replace(/"/g, "&quot;");
 }

@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 
 import util from 'node:util';
 
-util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
+util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 
-import { canonicalRotation } from './newAlg.util.js';
+import {canonicalRotation} from './newAlg.util.js';
 
 test('string canonicalisation', () => {
     assert.deepEqual(canonicalRotation(''), '');

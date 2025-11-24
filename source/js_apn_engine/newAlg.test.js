@@ -3,29 +3,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import util from 'node:util';
-util.inspect.defaultOptions = { depth: null, maxArrayLength: null, breakLength: Infinity };
+
+util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 
 import {
-  parseTopLevel,
-  evaluateTopLevel,
-  tokenizeFlat,
-  evaluatePNAndStage,
-  getStage,
-  derivePermCycles,
-  arePermCyclesConsideredDifferential,
-  count87s,
-  measureTopPairDistances,
-  log
+    parseTopLevel,
+    evaluateTopLevel,
+    tokenizeFlat,
+    evaluatePNAndStage,
+    getStage,
+    derivePermCycles,
+    arePermCyclesConsideredDifferential,
+    count87s,
+    measureTopPairDistances,
+    log
 } from './newAlg.js';
 
 import {
-  collapsePlaceNotation,
-  roundsForStage,
-  isXChar,
-  symbolToIndex,
-  indexToSymbol,
-  mirroredNotate,
-  CANONICAL_X_CHAR
+    collapsePlaceNotation, roundsForStage, isXChar, symbolToIndex, indexToSymbol, mirroredNotate, CANONICAL_X_CHAR
 } from './notation.js';
 
 test('symbolToIndex', () => {
@@ -40,8 +35,8 @@ test('symbolToIndex', () => {
 });
 
 test('indexToSymbol', () => {
-    assert.equal(indexToSymbol(1),  '1');
-    assert.equal(indexToSymbol(9),  '9');
+    assert.equal(indexToSymbol(1), '1');
+    assert.equal(indexToSymbol(9), '9');
     assert.equal(indexToSymbol(10), '0');
     assert.equal(indexToSymbol(11), 'E');
     assert.equal(indexToSymbol(12), 'T');
@@ -51,178 +46,166 @@ test('indexToSymbol', () => {
 });
 
 test('basic bracketed examples', () => {
-  {
-    const ast = parseTopLevel('(23.45).(67x)');
-    log("ast = ", ast);
-    const out = evaluateTopLevel(ast);
-    log("out = ", out);
-    assert.deepEqual(out, ['23', '45', '67', 'x']);
-  }
+    {
+        const ast = parseTopLevel('(23.45).(67x)');
+        log("ast = ", ast);
+        const out = evaluateTopLevel(ast);
+        log("out = ", out);
+        assert.deepEqual(out, ['23', '45', '67', 'x']);
+    }
 
-  {
-    const ast = parseTopLevel('(45.12)');
-    const out = evaluateTopLevel(ast);
-    assert.deepEqual(out, ['45', '12']);
-  }
+    {
+        const ast = parseTopLevel('(45.12)');
+        const out = evaluateTopLevel(ast);
+        assert.deepEqual(out, ['45', '12']);
+    }
 
-  {
-    const ast = parseTopLevel('(45x89.12)');
-    const out = evaluateTopLevel(ast);
-    assert.deepEqual(out, ['45', 'x', '89', '12']);
-  }
+    {
+        const ast = parseTopLevel('(45x89.12)');
+        const out = evaluateTopLevel(ast);
+        assert.deepEqual(out, ['45', 'x', '89', '12']);
+    }
 
-  // NOTE: 'x' is both a token and a delimiter
-  {
-    const ast = parseTopLevel('(12.x)');
-    const out = evaluateTopLevel(ast);
-    assert.deepEqual(out, ['12', 'x']);
-  }
+    // NOTE: 'x' is both a token and a delimiter
+    {
+        const ast = parseTopLevel('(12.x)');
+        const out = evaluateTopLevel(ast);
+        assert.deepEqual(out, ['12', 'x']);
+    }
 });
 
 test('nested example', () => {
-  const ast = parseTopLevel('((34.16).(7x)).(F)');
-  const out = evaluateTopLevel(ast);
-  assert.deepEqual(out, ['34', '16', '7', 'x', 'F']);
+    const ast = parseTopLevel('((34.16).(7x)).(F)');
+    const out = evaluateTopLevel(ast);
+    assert.deepEqual(out, ['34', '16', '7', 'x', 'F']);
 });
 
 test('flat tokenizer: "12.34.....xx87x.x"', () => {
-  const out = tokenizeFlat('12.34.....xx87x.x');
-  assert.deepEqual(out, ['12', '34', 'x', 'x', '87', 'x', 'x']);
+    const out = tokenizeFlat('12.34.....xx87x.x');
+    assert.deepEqual(out, ['12', '34', 'x', 'x', '87', 'x', 'x']);
 });
 
 test('throws on unmatched parentheses', () => {
-  assert.throws(() => parseTopLevel('(12.34'), /Unmatched/);
-  assert.throws(() => parseTopLevel('(12.(34)'), /Unmatched/);
-  assert.throws(() => parseTopLevel(')'), /Unmatched/);
+    assert.throws(() => parseTopLevel('(12.34'), /Unmatched/);
+    assert.throws(() => parseTopLevel('(12.(34)'), /Unmatched/);
+    assert.throws(() => parseTopLevel(')'), /Unmatched/);
 });
 
 test('roundsForStage', () => {
-  // 0 clamps to 1. We should really throw here, rather than silently clamp
-  assert.deepEqual(roundsForStage(0), '1');
-  assert.deepEqual(roundsForStage(2), '12');
-  assert.deepEqual(roundsForStage(3), '123');
-  assert.deepEqual(roundsForStage(4), '1234');
-  assert.deepEqual(roundsForStage(12), '1234567890ET');
-  assert.deepEqual(roundsForStage(29), '1234567890ETABCDFGHJKLMNPQRSU');
-  assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSUV');
-  // 31 clamps to 30. We should really throw here, rather than silently clamp
-  assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSUV');
+    // 0 clamps to 1. We should really throw here, rather than silently clamp
+    assert.deepEqual(roundsForStage(0), '1');
+    assert.deepEqual(roundsForStage(2), '12');
+    assert.deepEqual(roundsForStage(3), '123');
+    assert.deepEqual(roundsForStage(4), '1234');
+    assert.deepEqual(roundsForStage(12), '1234567890ET');
+    assert.deepEqual(roundsForStage(29), '1234567890ETABCDFGHJKLMNPQRSU');
+    assert.deepEqual(roundsForStage(30), '1234567890ETABCDFGHJKLMNPQRSUV');
+    // 31 clamps to 30. We should really throw here, rather than silently clamp
+    assert.deepEqual(roundsForStage(31), '1234567890ETABCDFGHJKLMNPQRSUV');
 });
 
 test('isXChar', () => {
-  assert.equal(isXChar('x'), true);
-  assert.equal(isXChar('X'), true);
-  assert.equal(isXChar('-'), true);
+    assert.equal(isXChar('x'), true);
+    assert.equal(isXChar('X'), true);
+    assert.equal(isXChar('-'), true);
 
-  assert.equal(isXChar('='), false);
-  assert.equal(isXChar('('), false);
-  assert.equal(isXChar('b'), false);
-  assert.equal(isXChar('1'), false);
+    assert.equal(isXChar('='), false);
+    assert.equal(isXChar('('), false);
+    assert.equal(isXChar('b'), false);
+    assert.equal(isXChar('1'), false);
 });
 
 test('mirroredNotate', () => {
-  assert.equal(mirroredNotate("x", "10"), "x");
-  assert.equal(mirroredNotate("x", "11"), "x");
-  assert.equal(mirroredNotate("12", "6"), "56");
-  assert.equal(mirroredNotate("147", "12"), "69T");
-  assert.equal(mirroredNotate("147", "12"), "69T");
+    assert.equal(mirroredNotate("x", "10"), "x");
+    assert.equal(mirroredNotate("x", "11"), "x");
+    assert.equal(mirroredNotate("12", "6"), "56");
+    assert.equal(mirroredNotate("147", "12"), "69T");
+    assert.equal(mirroredNotate("147", "12"), "69T");
 });
 
 test('double darrowby expansion 1/4', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36');
-  assert.deepEqual(out, 
-  	[
-      // 'x',  '36', 'x',  '34', 'x',  '36', 'x',
-      // '56', 'x',  '36', 'x',  '34', 'x',  '36',
-      // 'x',  '56', 'x',  '36', 'x',  '34', 'x',
-      // '36', 'x',  '14', 'x',  '58', 'x',  '58',
-      // 'x',  '58', 'x',  '56', 'x',  '58', 'x',
-      // '58', 'x',  '58', 'x',  '56', 'x',  '58',
-      // 'x',  '58', 'x',  '58', 'x',  '36'
+    const {
+        pnTokens: out, resolvedStage: stageFromPipe
+    } = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36');
+    assert.deepEqual(out, [// 'x',  '36', 'x',  '34', 'x',  '36', 'x',
+        // '56', 'x',  '36', 'x',  '34', 'x',  '36',
+        // 'x',  '56', 'x',  '36', 'x',  '34', 'x',
+        // '36', 'x',  '14', 'x',  '58', 'x',  '58',
+        // 'x',  '58', 'x',  '56', 'x',  '58', 'x',
+        // '58', 'x',  '58', 'x',  '56', 'x',  '58',
+        // 'x',  '58', 'x',  '58', 'x',  '36'
 
-      // 3 leads of PB4 (in 3-6 place), trim 1 from end
-      'x', '36', 'x', '34', 'x', '36', 'x', '56',
-      'x', '36', 'x', '34', 'x', '36', 'x', '56',
-      'x', '36', 'x', '34', 'x', '36', 'x', 
+        // 3 leads of PB4 (in 3-6 place), trim 1 from end
+        'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x',
 
-                         '14',   // treble from 1/2 to 3/4
+        '14',   // treble from 1/2 to 3/4
 
- 	   // 3 leads of PB4 (in 5-8 place), trim 1 from end
-      'x', '58', 'x', '58', 'x', '58', 'x', '56',
-      'x', '58', 'x', '58', 'x', '58', 'x', '56',
-      'x', '58', 'x', '58', 'x', '58', 'x',
+        // 3 leads of PB4 (in 5-8 place), trim 1 from end
+        'x', '58', 'x', '58', 'x', '58', 'x', '56', 'x', '58', 'x', '58', 'x', '58', 'x', '56', 'x', '58', 'x', '58', 'x', '58', 'x',
 
-                         '36',    // quarter symmetry point (Rot symm)
+        '36',    // quarter symmetry point (Rot symm)
     ]);
 
-  //x36x34x36x
-  //56x36x34x36
-  //x56x36x34x
-  //36x14x58x58
-  //x58x56x58x
-  //58x58x56x58
-  //x58x58x36
+    //x36x34x36x
+    //56x36x34x36
+    //x56x36x34x
+    //36x14x58x58
+    //x58x56x58x
+    //58x58x56x58
+    //x58x58x36
 
-  // then the doubled bit after first 1/4:
-  // x14x14x14x34x14x14x14x34x14x14x14x58x36x56x36x34x36x56x36x34x36x56x36x78,12
+    // then the doubled bit after first 1/4:
+    // x14x14x14x34x14x14x14x34x14x14x14x58x36x56x36x34x36x56x36x34x36x56x36x78,12
 
 });
 
 test('double darrowby expansion 1/2', () => {
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78');
+    const {
+        pnTokens: out, resolvedStage: stageFromPipe
+    } = evaluatePNAndStage('8|(3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78');
 
-  assert.deepEqual(out, 
-  	[
-      // 3 leads of double PB4 (in 3-6 place), trim 1 from end
-      'x', '36', 'x', '34', 'x', '36', 'x', '56',
-      'x', '36', 'x', '34', 'x', '36', 'x', '56',
-      'x', '36', 'x', '34', 'x', '36', 'x', 
-                         
-                         '14',   // treble from 1/2 to 3/4
+    assert.deepEqual(out, [// 3 leads of double PB4 (in 3-6 place), trim 1 from end
+        'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x',
 
- 	   // 3 leads of PB4 (in 5-8 place), trim 1 from end
-      'x', '58', 'x', '58', 'x', '58', 'x', '56',
-      'x', '58', 'x', '58', 'x', '58', 'x', '56',
-      'x', '58', 'x', '58', 'x', '58', 'x',
-                         
-                         '36',  // quarter symmetry point (Rot symm)
+        '14',   // treble from 1/2 to 3/4
 
-      // ... reverse of above...
-             'x', '14', 'x', '14', 'x', '14', 'x',
-       '34', 'x', '14', 'x', '14', 'x', '14', 'x',
-       '34', 'x', '14', 'x', '14', 'x', '14', 'x',
+        // 3 leads of PB4 (in 5-8 place), trim 1 from end
+        'x', '58', 'x', '58', 'x', '58', 'x', '56', 'x', '58', 'x', '58', 'x', '58', 'x', '56', 'x', '58', 'x', '58', 'x', '58', 'x',
 
-       					 '58',  // treble from 5/6 to 7/8
+        '36',  // quarter symmetry point (Rot symm)
 
-             'x', '36', 'x', '56', 'x', '36', 'x',
-       '34', 'x', '36', 'x', '56', 'x', '36', 'x',
-       '34', 'x', '36', 'x', '56', 'x', '36', 'x',
+        // ... reverse of above...
+        'x', '14', 'x', '14', 'x', '14', 'x', '34', 'x', '14', 'x', '14', 'x', '14', 'x', '34', 'x', '14', 'x', '14', 'x', '14', 'x',
 
-                         '78'  // half lead
+        '58',  // treble from 5/6 to 7/8
+
+        'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x', '34', 'x', '36', 'x', '56', 'x', '36', 'x',
+
+        '78'  // half lead
     ]);
 });
 
 test('double darrowby expansion full', () => {
-  // full lead:
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78),12');
-  // bristol-alike:
-  // based on minimus of x14xx14x14x i.e. 
-  //   this has 864 etc coursing, make less false with places on front:
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((4(x36xx36x36x))[:-1].14.(4(x58xx58x58x))[:-1].36;78),12');
+    // full lead:
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((3(x36x34,56))[:-1].14.(3(x58x58,56))[:-1].36;78),12');
+    // bristol-alike:
+    // based on minimus of x14xx14x14x i.e.
+    //   this has 864 etc coursing, make less false with places on front:
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((4(x36xx36x36x))[:-1].14.(4(x58xx58x58x))[:-1].36;78),12');
 
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((2(x36x12.36.12.36.12))[2:<][:-1].14.(2(x58x12.58.12.58.12))[2:>][:-1].36;78),12');
-
- 
-  // I can't believe it's not DD alliance royal:
-  //  ((5(x38x38x78,34))[:-1].14.(5(x50x50x90,56))[:-1].38x;90),12
-
-  // alliance royal: length 70 plain bob-alike to get peal length: 5076 changes (564 per lead)
-
-  // reg version pb variant:  x16x16x16x16x16x1256x56  -> in 5-10 place: x50x50x50x50x50x5690x90
-  // dble version pb variant: x16x16x56x16x16x1256x56  -> in 3-8 place:  x38x38x78x38x38x3478x78
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|((2(x36x12.36.12.36.12))[2:<][:-1].14.(2(x58x12.58.12.58.12))[2:>][:-1].36;78),12');
 
 
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|((5(x16x16x56x16x16x1256x56)))[2:<][:-1]');
+    // I can't believe it's not DD alliance royal:
+    //  ((5(x38x38x78,34))[:-1].14.(5(x50x50x90,56))[:-1].38x;90),12
+
+    // alliance royal: length 70 plain bob-alike to get peal length: 5076 changes (564 per lead)
+
+    // reg version pb variant:  x16x16x16x16x16x1256x56  -> in 5-10 place: x50x50x50x50x50x5690x90
+    // dble version pb variant: x16x16x56x16x16x1256x56  -> in 3-8 place:  x38x38x78x38x38x3478x78
+
+
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|((5(x16x16x56x16x16x1256x56)))[2:<][:-1]');
 
 
 // DDmajor: 
@@ -231,95 +214,96 @@ test('double darrowby expansion full', () => {
 
 //  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|(38.14.90.70;90),12');
 
-  // -- analysis of start->end mapping of PB4 bits:
+    // -- analysis of start->end mapping of PB4 bits:
 
-  // part1: 345678 -> 354768   AKA  123456 -> 132546  (2 swaps)
- 
-  // part2: 748690 -> 476890   AKA  123456 -> 214356  (2 swaps)
+    // part1: 345678 -> 354768   AKA  123456 -> 132546  (2 swaps)
 
-  // so any two even-row methods bits that don't repeat internally and do those changes will work.
+    // part2: 748690 -> 476890   AKA  123456 -> 214356  (2 swaps)
 
-  // part1: 16.
-  // part2: 34.12
+    // so any two even-row methods bits that don't repeat internally and do those changes will work.
 
-  // 132546
-  // 132546
-  // 315264
+    // part1: 16.
+    // part2: 34.12
 
-  // hmm, peal plain course has 78 09s at back -- ah, due to the dodges in my PB alike method at back. Can fix that.
+    // 132546
+    // 132546
+    // 315264
 
-  // https://complib.org/composition/148579
+    // hmm, peal plain course has 78 09s at back -- ah, due to the dodges in my PB alike method at back. Can fix that.
 
-  // to ring 3948, call three bobbed leads (bobs: 14 as usual)  (true)
+    // https://complib.org/composition/148579
 
-
-  // ok, fixing my can't believe nethod to not do stuff at back that gets us tenors swapped at back:
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x78x38x38x3478x78))[2:<][:-1].14.(5(x50x50x50x50x50x5690x90))[:-1].38x;90),12');
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x78x38x38x3478x78))[2:<][:-1].14.(5(x50x50x50x50x50x56x50))[:-1].38x;90),12');
+    // to ring 3948, call three bobbed leads (bobs: 14 as usual)  (true)
 
 
-  // true, no-diff, 4x78s at back though, using just pb6 at both. 2z coursing order.
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x38x38x38x34))[:-1].14.(5(x50x50x50x50x50x56))[:-1].38x;90),12');
+    // ok, fixing my can't believe nethod to not do stuff at back that gets us tenors swapped at back:
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x78x38x38x3478x78))[2:<][:-1].14.(5(x50x50x50x50x50x5690x90))[:-1].38x;90),12');
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x78x38x38x3478x78))[2:<][:-1].14.(5(x50x50x50x50x50x56x50))[:-1].38x;90),12');
 
 
+    // true, no-diff, 4x78s at back though, using just pb6 at both. 2z coursing order.
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((5(x38x38x38x38x38x34))[:-1].14.(5(x50x50x50x50x50x56))[:-1].38x;90),12');
 
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((2(x38x38x38x38x38x34))[:-1].14.(3(x50x50x50x50x50x56))[:-1].38x;90),12');
+
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('0|((2(x38x38x38x38x38x34))[:-1].14.(3(x50x50x50x50x50x56))[:-1].38x;90),12');
 
 
-  // pal + double (align): for eire minor
+    // pal + double (align): for eire minor
 
-  // Factor 4 version. 
-  // works, but overly complicated, don't need ; cos we have = already
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=;x');
+    // Factor 4 version.
+    // works, but overly complicated, don't need ; cos we have = already
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=;x');
 
-  // Factor 8 version.
-  // works - but ';' is OTT since we have = already
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1=;,x');
+    // Factor 8 version.
+    // works - but ';' is OTT since we have = already
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1=;,x');
 
-  // works.
-  // Factor 8 version. ideal, only need ,, due to '='
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1=,,x');
+    // works.
+    // Factor 8 version. ideal, only need ,, due to '='
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1=,,x');
 
-  // Factor 4 version.
-  // works.
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=,x');
+    // Factor 4 version.
+    // works.
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|3.1.3=,x');
 
-  // simpler pal + internal example (factor 4)
-  // 
-  // interesting: 
-  //   DIFFERENTIAL: period=6 cycles=1,273,49,58,60E,T
-  // but is still double, as that's how we constructed the thing.
-  // so double methods don't guarantee the differential lines inside   <<<<--------------------------------------------------------
-  // them have rot sym? yes. they have pal though.
-  //
-  // ah. the simpler factor 4 version of pal + double aligned sym -- that's
-  // how we can get weird differentials where parts don't have rot sym?
-  // can't get those with the factor 8 version, then?
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('T|1x12x3x67=,67');
+    // simpler pal + internal example (factor 4)
+    //
+    // interesting:
+    //   DIFFERENTIAL: period=6 cycles=1,273,49,58,60E,T
+    // but is still double, as that's how we constructed the thing.
+    // so double methods don't guarantee the differential lines inside   <<<<--------------------------------------------------------
+    // them have rot sym? yes. they have pal though.
+    //
+    // ah. the simpler factor 4 version of pal + double aligned sym -- that's
+    // how we can get weird differentials where parts don't have rot sym?
+    // can't get those with the factor 8 version, then?
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('T|1x12x3x67=,67');
 
-  // bristol+double dublin
-  //  -false if you just append them
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x34.58x34x18,18).(x58x14.58x58.36.14x14.58x14x18,18)');
+    // bristol+double dublin
+    //  -false if you just append them
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x34.58x34x18,18).(x58x14.58x58.36.14x14.58x14x18,18)');
 //                                     (x58x14.58x58.36.14x14.58x14x18,18)
 //                                       ^     ^           ^     ^
 
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x58x14.56x58.36.14x34.58x34x18,18).(x56x14.58x58.36.14x34.58x14x18,18)');
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x58x14.56x58.36.14x34.58x34x18,18).(x56x14.58x58.36.14x34.58x14x18,18)');
 //                                       ^     ^           ^     ^           ^     ^           ^     ^
 
     // THIS IS THE CORRECT ALTERETED bristol, dd:
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x34.58x34x18,18).(x58x14.58x58.36.14x14.58x14x18,18)');
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('8|(x56x14.56x58.36.14x34.58x34x18,18).(x58x14.58x58.36.14x14.58x14x18,18)');
 //                                    ^     ^           ^     ^           ^     ^           ^     ^
 
-  const {pnTokens: out, resolvedStage: stageFromPipe} = evaluatePNAndStage('8|(x56x14.56x58.36.14x14.58x14x18,18).(x58x14.58x58.36.14x34.58x34x18,18)');
+    const {
+        pnTokens: out, resolvedStage: stageFromPipe
+    } = evaluatePNAndStage('8|(x56x14.56x58.36.14x14.58x14x18,18).(x58x14.58x58.36.14x34.58x34x18,18)');
 
-  // works.
-  // Factor 8 version
-  //  NOTE: factor 8 seems 'repetitive' given the factor 4 picture for same thing (pal + double-align)
-  //  but it needs less information to express. So it appears that is *is* factor 8 symmetry as a method.
-  // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|34.16,,x');
+    // works.
+    // Factor 8 version
+    //  NOTE: factor 8 seems 'repetitive' given the factor 4 picture for same thing (pal + double-align)
+    //  but it needs less information to express. So it appears that is *is* factor 8 symmetry as a method.
+    // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('6|34.16,,x');
 
 
-  log("Full lead: ", out.join("."));
+    log("Full lead: ", out.join("."));
 });
 
 ///////////////////////
@@ -382,11 +366,11 @@ test('double darrowby expansion full', () => {
 
 //   // ok, 1063479528 (Code: 2z)
 //   // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('10|((1(x38x38x78,34))[3:<][:-1].14.(1(x50x50x90,56))[:-1].38x;90),12');
-  
+
 //   // ok too, 1540729638 (Code: 2z)
 //   // 100 rows per lead
 //   // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('10|((1(x38x38x78,34))[4:<][:-1].14.(1(x50x50x90,56))[:-1].38x;90),12');
-  
+
 //   //ok: 1560428937 (Code: 2z)
 //   // const {pnTokens: out, resolvedStage: stageFromPipe} = evaluateExpression('10|((1(x38x38x78,34))[5:<][:-1].14.(1(x50x50x90,56))[:-1].38x;90),12');
 
@@ -431,7 +415,6 @@ test('double darrowby expansion full', () => {
 
 //   // 
 // });
-
 
 
 // test('double eire simple extensions', () => {
@@ -490,9 +473,6 @@ test('double darrowby expansion full', () => {
 // // bristol: 14263857 (Code: m)  camb + 3
 
 
-
-
-
 // // x.12.x.12  x.14.x.14.x.38.x.36.x.16.x.58.x.58.x.   18x78x1278x78x18    .x.58.x.58.x.16.x.36.x.38.x.14.x.14.x.12 .x.12.x.16
 // // x.12.x.12  x.14.x.14.x.38.x.36.x.16.x.58.x.58.x.   18x78x1278,16
 //   // THIS WORKS NOW. jeez.
@@ -506,7 +486,6 @@ test('double darrowby expansion full', () => {
 
 //   // uneven alliance, ok CO, splits tenors:
 //   // https://rsw.me.uk/blueline/methods/view?stage=8&notation=x.12.x.12%20%20x.14.x.14.x.38.x.36.x.16.x.58.x.58.x.18.x.58.x.58.x.16.x.36.x.38.x.14.x.14.x.12%20.x.12.x.12
-
 
 
 //   // hmmm the ';' processing doesn't work recursively!
@@ -535,7 +514,6 @@ test('double darrowby expansion full', () => {
 //       // evaluateExpression('0|12.x;34;56').join("."));
 //       // // this DOES work, makes "12.x.90.x.90" which is actually correct!
 //       // evaluateExpression('0|12.x;;').join("."));
-
 
 
 // //mine, then lead of bristol:
@@ -602,7 +580,7 @@ test('double darrowby expansion full', () => {
 //   const ed_royal = evaluateExpression('0|-30-14-12.50.16-34-10-16-70.16-16.70,10');
 //   // 1648203957 (Code: l)
 //   // expanded PN: x30x14x12.50.16x34x10x16x70.16x16.70.16x16.70x16x10x34x16.50.12x14x30x10
-  
+
 //   console.log("Ed's royal expanded PN:", ed_royal);
 
 //   console.log(collapsePlaceNotation(ed_royal));
