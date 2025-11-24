@@ -621,87 +621,88 @@ function slice_custom(myList, sliceSpec) {
 // perm cycles (differential detection, etc.)
 
 /**
- * derivePermCycles("21453") -> { cycles: ["12", "345"], period: 6 }
+ * derivePermCycles("21453") -> { cycles: ["12", "543"], period: 6 }
  * The permutation string is a one-line image of the first n symbols of `alphabet`.
  * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
  */
 function derivePermCycles(oneLine, alphabetIn) {
-  // log("alphabetIn = ", alphabetIn);
-  // log("oneLine = ", oneLine, " alphabetIn = ", alphabetIn);
+    const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
-  const alphabet = alphabetIn ?? STAGE_SYMBOLS;
-
-  // log("alphabet: ", alphabet);
-  if (typeof oneLine !== "string" || oneLine.length === 0) {
-    throw new Error("oneLine must be a non-empty string");
-  }
-
-  const n = oneLine.length;
-  if (n > alphabet.length) {
-    throw new Error(`Permutation length ${n} exceeds alphabet length ${alphabet.length}`);
-  }
-
-  // Use only the first n symbols of the alphabet
-  const subset = alphabet.slice(0, n);
-
-  // Map symbol -> 1-based index within subset
-  const idxOf = new Map();
-  for (let i = 0; i < n; i++) idxOf.set(subset[i], i + 1);
-
-  // Build mapping p: i -> p(i), with i in 1..n
-  const p = new Array(n + 1);
-  for (let i = 1; i <= n; i++) {
-    const ch = oneLine[i - 1];
-    const v = idxOf.get(ch);
-    if (v == null) {
-      throw new Error(`Invalid symbol '${ch}' at position ${i}; expected one of "${subset}"`);
-    }
-    p[i] = v;
-  }
-
-  // Validate it's a permutation (all images unique)
-  const seenVals = new Set();
-  for (let i = 1; i <= n; i++) {
-    if (p[i] < 1 || p[i] > n) {
-      throw new Error(`Image out of range at ${i}: ${p[i]}`);
-    }
-    seenVals.add(p[i]);
-  }
-  if (seenVals.size !== n) {
-    throw new Error(`Input is not a permutation of the first ${n} symbols of the alphabet`);
-  }
-
-  // Extract cycles
-  const visited = new Array(n + 1).fill(false);
-  const cycles = [];
-  const lengths = [];
-
-  for (let start = 1; start <= n; start++) {
-    if (visited[start]) continue;
-
-    let cur = start;
-    const cycleIdx = [];
-    while (!visited[cur]) {
-      visited[cur] = true;
-      cycleIdx.push(cur);
-      cur = p[cur];
+    if (typeof oneLine !== "string" || oneLine.length === 0) {
+        throw new Error("oneLine must be a non-empty string");
     }
 
-    // Convert indices to alphabet symbols for the cycle string
-    const cycleStr = cycleIdx.map(i => subset[i - 1]).join("");
-    cycles.push(cycleStr);
-    lengths.push(cycleIdx.length);
-  }
+    const n = oneLine.length;
+    if (n > alphabet.length) {
+        throw new Error(`Permutation length ${n} exceeds alphabet length ${alphabet.length}`);
+    }
 
-  // Period = LCM of cycle lengths
-  const gcd = (a, b) => {
-    while (b) [a, b] = [b, a % b];
-    return a;
-  };
-  const lcm = (a, b) => (a === 0 || b === 0) ? 0 : (a / gcd(a, b)) * b;
-  const period = lengths.reduce((acc, k) => lcm(acc, k), 1);
+    // Use only the first n symbols of the alphabet
+    const subset = alphabet.slice(0, n);
 
-  return { cycles, period };
+    // Map symbol -> 1-based index within subset
+    const idxOf = new Map();
+    for (let i = 0; i < n; i++) idxOf.set(subset[i], i + 1);
+
+    // Build mapping p: i -> p(i), with i in 1..n
+    const p = new Array(n + 1);
+    for (let i = 1; i <= n; i++) {
+        const ch = oneLine[i - 1];
+        const v = idxOf.get(ch);
+        if (v == null) {
+            throw new Error(`Invalid symbol '${ch}' at position ${i}; expected one of "${subset}"`);
+        }
+        p[i] = v;
+    }
+
+    // Validate it's a permutation (all images unique)
+    const seenVals = new Set();
+    for (let i = 1; i <= n; i++) {
+        if (p[i] < 1 || p[i] > n) {
+            throw new Error(`Image out of range at ${i}: ${p[i]}`);
+        }
+        seenVals.add(p[i]);
+    }
+    if (seenVals.size !== n) {
+        throw new Error(`Input is not a permutation of the first ${n} symbols of the alphabet`);
+    }
+
+    // Extract cycles
+    const visited = new Array(n + 1).fill(false);
+    const cycles = [];
+    const lengths = [];
+
+    for (let start = 1; start <= n; start++) {
+        if (visited[start]) continue;
+
+        let cur = start;
+        const cycleIdx = [];
+        while (!visited[cur]) {
+            visited[cur] = true;
+            cycleIdx.push(cur);
+            cur = p[cur];
+        }
+
+        // Convert indices to alphabet symbols for the cycle string,
+        // then reverse to avoid the "sorted" (increasing) look.
+        const cycleStr = cycleIdx
+            .map(i => subset[i - 1])
+            .reverse()
+            .join("");
+
+        cycles.push(cycleStr);
+        lengths.push(cycleIdx.length);
+    }
+
+    // Period = LCM of cycle lengths
+    const gcd = (a, b) => {
+        while (b) [a, b] = [b, a % b];
+        return a;
+    };
+    const lcm = (a, b) => (a === 0 || b === 0) ? 0 : (a / gcd(a, b)) * b;
+    const period = lengths.reduce((acc, k) => lcm(acc, k), 1);
+
+    return {cycles, period};
 }
 
 //   later!
@@ -714,12 +715,12 @@ function derivePermCycles(oneLine, alphabetIn) {
 // takes a list of strings representing perm cycles,
 // e.g. PB4 has cycles ["1", "423"]
 function arePermCyclesConsideredDifferential(permCycles) {
-  // Edge case: technically a perm cycle list of one single char string isn't
-  // a differential (e.g. permCycle = ["1"]).
-  // This check could be omitted if you never expect this to come up.
-  if (permCycles.length === 0 || permCycles.length === 1 && permCycles[0].length === 1) {
-    return false;
-  }
+    // Edge case: technically a perm cycle list of one single char string isn't
+    // a differential (e.g. permCycle = ["1"]).
+    // This check could be omitted if you never expect this to come up.
+    if (permCycles.length === 0 || permCycles.length === 1 && permCycles[0].length === 1) {
+        return false;
+    }
 
   return permCycles.filter(cycle => cycle.length > 1).length !== 1;
 }
