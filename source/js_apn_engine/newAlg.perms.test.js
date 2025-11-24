@@ -46,25 +46,6 @@ test('example: "612345" → ["654321"], period 6', () => {
     assert.equal(period, 6);
 });
 
-/**
- * Assert that `value` and every string in `list` are equal **after applying `fn`**.
- *
- * @param {string} value       The reference string
- * @param {string[]} list      Strings to compare against
- * @param {Function} fn        Transform function applied to both sides
- */
-export function assertAllEqualTransformed(value, list, fn) {
-    const mappedValue = fn(value);
-    for (const s of list) {
-        console.log("input, mapped = ", mappedValue, fn(s));
-        assert.deepEqual(mappedValue, fn(s));
-    }
-}
-
-export function assertAllEqualCanon(value, list) {
-    return assertAllEqualTransformed(value, list, canonicalRotation)
-}
-
 test('example: "21453" → ["12","543"], period 6', () => {
   const { cycles, period } = derivePermCycles('21453');
   assert.deepEqual(cycles, ['21', '543']);
@@ -138,4 +119,3 @@ test('criteria for differential detection behave as expected', () => {
     // two cycles of length 1 are considered a differential
     assert.equal(arePermCyclesConsideredDifferential(["1", "2"]), true);
 });
-
