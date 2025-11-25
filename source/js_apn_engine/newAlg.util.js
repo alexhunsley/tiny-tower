@@ -1,3 +1,7 @@
+export function reverseString(s) {
+    return s.split("").reverse().join("");
+}
+
 /**
  * Return a canonical representative of a string under rotation:
  * the lexicographically smallest rotation.
