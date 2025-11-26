@@ -8,8 +8,9 @@ import {isSafariFamily} from "./utils.js";
 import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation} from "./notation.js";
 import {renderBlueLineOverlay} from "./blueLine.js";
 import {
-    evaluatePNAndStage, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances
+    evaluatePNAndStage, count87s, measureTopPairDistances
 } from "./newAlg.js";
+import { Perm } from "./Permutation.js";
 
 function el(id) {
     const n = document.getElementById(id);
@@ -469,19 +470,20 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     console.log("firstLeadEndRow = ", firstLeadEndRow);
 
-    const {cycles, period} = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
+    const perm = Perm.fromOneLine(firstLeadEndRow)
+    // const {cycles, period} = derivePermCycles(firstLeadEndRow); //, STAGE_SYMBOLS.slice(0, 6));
 
     // TODO make this helper more comprehensive and return the cycle
     // too (for when not differential) and also hunt bell count
-    if (arePermCyclesConsideredDifferential(cycles)) {
+    if (perm.isConsideredDifferential()) {
         lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);
     } else {
-        const pbOrder = cycles.filter(cycle => cycle.length > 1)[0];
+        const pbOrder = perm.cycles.filter(cycle => cycle.length > 1)[0];
         lines.push(`[OK] PB ORDER: ${pbOrder}`)
     }
 
     // // first number of each group tells us which blue lines to draw
-    const blueLines = cycles.map(s => s[0]);
+    const blueLines = perm.cycles.map(s => s[0]);
 
     const backwardTenorsCount = count87s(rows, stage);
     console.log(`Back tenor count: ${backwardTenorsCount}`);
