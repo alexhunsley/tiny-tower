@@ -14,6 +14,7 @@
 
 import {derivePermCycles} from "./newAlg.js";
 import {reverseString} from "./newAlg.util.js";
+import {composeManyCycles, composePerms, Perm} from "./Permutation.js";
 
 import {STAGE_SYMBOLS} from "./notation.js";
 
@@ -32,97 +33,6 @@ import {STAGE_SYMBOLS} from "./notation.js";
 //
 // // outputs 12, 345 -- correct for 12, incorrect for 345! so yes some sorting thing.
 // console.log(derivePermCycles('21453'));
-
-/**
- * Convert a list of cycle strings into a mapping value -> image.
- *
- * Example: ["472","653"] means (4 7 2)(6 5 3)
- */
-function cyclesToMapping(cycles) {
-    const mapping = new Map();
-
-    for (const cyc of cycles) {
-        const n = cyc.length;
-        if (n === 0) continue;
-        for (let i = 0; i < n; i++) {
-            const from = cyc[i];
-            const to   = cyc[(i + 1) % n];
-            mapping.set(from, to);
-        }
-    }
-
-    return mapping;
-}
-
-/**
- * Convert a mapping back into an array of cycle strings.
- * `alphabet` controls which symbols to consider and in what order.
- */
-function mappingToCycles(mapping, alphabet) {
-    const visited = new Set();
-    const cycles = [];
-
-    for (const start of alphabet) {
-        if (visited.has(start)) continue;
-
-        let cur = start;
-        const cyc = [];
-        while (!visited.has(cur)) {
-            visited.add(cur);
-            cyc.push(cur);
-            const next = mapping.get(cur) ?? cur; // identity if not moved
-            cur = next;
-        }
-
-        if (cyc.length > 1) {
-            cycles.push(cyc.join(""));
-        } else {
-            // 1-cycle: record it explicitly as a string of length 1
-            cycles.push(cyc[0]);
-        }
-    }
-
-    return cycles;
-}
-
-/**
- * Compose two permutations P and Q given as arrays of cycle strings.
- * Returns an array of cycle strings for Q ∘ P (apply P first, then Q).
- *
- * Example:
- *   P = ["1","472","653"]
- *   Q = ["1","473652"]
- *   composePerms(P, Q)  // => ["1","435627"]
- */
-export function composeCycles(pCycles, qCycles) {
-    // Alphabet: all symbols that appear anywhere, in first-seen order
-    const alphabet = [
-        ...new Set(pCycles.join("") + qCycles.join(""))
-    ];
-
-    // Build mapping for P and Q
-    const mapP = cyclesToMapping(pCycles);
-    const mapQ = cyclesToMapping(qCycles);
-
-    // Compose: (Q ∘ P)(x) = Q(P(x))
-    const composed = new Map();
-    for (const x of alphabet) {
-        const y = mapP.get(x) ?? x;      // P(x)
-        const z = mapQ.get(y) ?? y;      // Q(P(x))
-        composed.set(x, z);
-    }
-
-    // Turn mapping back into cycle strings
-    return mappingToCycles(composed, alphabet);
-}
-
-// compose an array of permutations, each as array-of-cycle-strings
-export function composeManyCycles(listOfPerms) {
-    if (listOfPerms.length === 0) {
-        throw new Error("Need at least one permutation");
-    }
-    return listOfPerms.reduce((acc, perm) => composeCycles(acc, perm));
-}
 
 /**
  * Given a list of cycle strings (e.g. ["12","34"]),
@@ -197,60 +107,82 @@ console.log("gs_c =", gs_c);
 // const cyc1 = derivePermCycles(c1)
 // console.log("BBPP =", c1, cyc1);
 
-const repo = rep(5, gp_c);
-console.log("repo = ", repo);
 
-// expect a plain course (no change)
-const compPx7 = composeManyCycles(repo);
-console.log("compPx7 = ", compPx7);
-
-const compBBPP = composeManyCycles([gb_c, gb_c, gp_c, gp_c]);
-console.log("compBBPP = ", compBBPP, cyclesToPermutationString(compBBPP));
-
-const compPBBP = composeManyCycles([gp_c, gb_c, gb_c, gp_c]);
-console.log("compPBBP = ", compPBBP, cyclesToPermutationString(compPBBP));
-// mixes in the 7! splitty
-const compPPBB = composeManyCycles([gp_c, gp_c, gb_c, gb_c]);
-console.log("compPPBB = ", compPPBB, cyclesToPermutationString(compPPBB));
-
-// moves the 6 (splitty)
-const compBSPP = composeManyCycles([gb_c, gs_c, gp_c, gp_c]);
-console.log("compBSPP = ", compBSPP, cyclesToPermutationString(compBSPP));
-
-const compPBSP = composeManyCycles([gp_c, gb_c, gs_c, gp_c]);
-console.log("compPBSP = ", compPBSP, cyclesToPermutationString(compPBSP));
-
-// mixes in 7
-const compPPBS = composeManyCycles([gp_c, gp_c, gb_c, gs_c]);
-console.log("compPPBS = ", compPPBS, cyclesToPermutationString(compPPBS));
-
-// mixes in 7 and 6, into sep groups (7 in a triple, 6 in a pair)
-const compPPSB = composeManyCycles([gp_c, gp_c, gs_c, gb_c]);
-console.log("compPPSB = ", compPPSB, cyclesToPermutationString(compPPSB));
-
-// swaps 23 and 67. over cycle 2
-const compBPBP = composeManyCycles([gb_c, gp_c, gb_c, gp_c]);
-console.log("compBPBP = ", compBPBP, cyclesToPermutationString(compBPBP));
-
-
-// const compBBPPx2 = composeManyCycles([gb_c, gb_c, gp_c, gp_c,  gb_c, gb_c, gp_c, gp_c]);
-// console.log("compBBPPx2 = ", compBBPPx2, cyclesToPermutationString(compBBPPx2));
+// const repo = rep(5, gp_c);
+// console.log("repo = ", repo);
 //
-// const compBBPPx3 = composeManyCycles([gb_c, gb_c, gp_c, gp_c,  gb_c, gb_c, gp_c, gp_c,   gb_c, gb_c, gp_c, gp_c]);
-// console.log("compBBPPx3 = ", compBBPPx3, cyclesToPermutationString(compBBPPx3));
+// // expect a plain course (no change)
+// const compPx7 = composeManyCycles(repo);
+// console.log("compPx7 = ", compPx7);
+//
+// const compBBPP = composeManyCycles([gb_c, gb_c, gp_c, gp_c]);
+// console.log("compBBPP = ", compBBPP, cyclesToPermutationString(compBBPP));
+//
+// const compPBBP = composeManyCycles([gp_c, gb_c, gb_c, gp_c]);
+// console.log("compPBBP = ", compPBBP, cyclesToPermutationString(compPBBP));
+// // mixes in the 7! splitty
+// const compPPBB = composeManyCycles([gp_c, gp_c, gb_c, gb_c]);
+// console.log("compPPBB = ", compPPBB, cyclesToPermutationString(compPPBB));
+//
+// // moves the 6 (splitty)
+// const compBSPP = composeManyCycles([gb_c, gs_c, gp_c, gp_c]);
+// console.log("compBSPP = ", compBSPP, cyclesToPermutationString(compBSPP));
+//
+// const compPBSP = composeManyCycles([gp_c, gb_c, gs_c, gp_c]);
+// console.log("compPBSP = ", compPBSP, cyclesToPermutationString(compPBSP));
+//
+// // mixes in 7
+// const compPPBS = composeManyCycles([gp_c, gp_c, gb_c, gs_c]);
+// console.log("compPPBS = ", compPPBS, cyclesToPermutationString(compPPBS));
+//
+// // mixes in 7 and 6, into sep groups (7 in a triple, 6 in a pair)
+// const compPPSB = composeManyCycles([gp_c, gp_c, gs_c, gb_c]);
+// console.log("compPPSB = ", compPPSB, cyclesToPermutationString(compPPSB));
+//
+// // swaps 23 and 67. over cycle 2
+// const compBPBP = composeManyCycles([gb_c, gp_c, gb_c, gp_c]);
+// console.log("compBPBP = ", compBPBP, cyclesToPermutationString(compBPBP));
+//
+//
+// // const compBBPPx2 = composeManyCycles([gb_c, gb_c, gp_c, gp_c,  gb_c, gb_c, gp_c, gp_c]);
+// // console.log("compBBPPx2 = ", compBBPPx2, cyclesToPermutationString(compBBPPx2));
+// //
+// // const compBBPPx3 = composeManyCycles([gb_c, gb_c, gp_c, gp_c,  gb_c, gb_c, gp_c, gp_c,   gb_c, gb_c, gp_c, gp_c]);
+// // console.log("compBBPPx3 = ", compBBPPx3, cyclesToPermutationString(compBBPPx3));
+//
+// // swaps 67 and rots 253
+// const compPSBP = composeManyCycles([gp_c, gs_c, gb_c, gp_c]);
+// console.log("compPSBP = ", compPSBP, cyclesToPermutationString(compPSBP));
+//
+//
+// // this works, flips 67 overall, so a two part.
+// const tryMix = composeManyCycles([compPBSP, compPSBP]);
+// console.log(tryMix, cyclesToPermutationString(tryMix));
+//
+// // swap 45 and 36
+// const compPSPBS = composeManyCycles([gp_c, gs_c, gp_c, gb_c, gs_c]);
+// console.log("compPSPBS = ", compPSPBS, cyclesToPermutationString(compPSPBS));
+//
+//
+let p = Perm([[1, 2], [3, 4]]);
+let p2 = Perm([[1, 2], [3, 4]]);
+let p3 = Perm([[1, 2], [3]]);
+//
+console.log("p = ", p.toString());
+console.log("p = ", p.toString());
+console.log("p3 = ", p3.toString());
+console.log(p == p2);
+console.log(p === p2);
+console.log(p.equals(p2));
+console.log(p.equals(p3));
 
-// swaps 67 and rots 253
-const compPSBP = composeManyCycles([gp_c, gs_c, gb_c, gp_c]);
-console.log("compPSBP = ", compPSBP, cyclesToPermutationString(compPSBP));
+// console.log(composePerms(p, p2));
+
+console.log(composeManyCycles(p.cycles));
 
 
-// this works, flips 67 overall, so a two part.
-const tryMix = composeManyCycles([compPBSP, compPSBP]);
-console.log(tryMix, cyclesToPermutationString(tryMix));
 
-// swap 45 and 36
-const compPSPBS = composeManyCycles([gp_c, gs_c, gp_c, gb_c, gs_c]);
-console.log("compPSPBS = ", compPSPBS, cyclesToPermutationString(compPSPBS));
+// console.log(Object.getOwnPropertyDescriptor(p, "toString"));
 
 // console.log("tryMix = ", tryMix, cyclesToPermutationString(tryMix));
 
