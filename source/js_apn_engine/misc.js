@@ -1,17 +1,3 @@
-// import { DEFAULTS, TT_VERSION } from "./defaults.js";
-// import { formatRowForDisplay } from "./displayMap.js";
-// import {
-//     stopAll,
-//     pause as pauseAudio,
-//     resume as resumeAudio,
-//     triggerPlace,   // used by live, note-by-note scheduler
-//     initAudioUnlock
-// } from "./audioEngine.js";
-// import { isSafariFamily } from "./utils.js";
-// import { generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation } from "./notation.js";
-// import { renderBlueLineOverlay } from "./blueLine.js";
-// import { evaluatePNAndStage, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
-
 import {reverseString} from "./newAlg.util.js";
 import {Perm} from "./Permutation.js";
 

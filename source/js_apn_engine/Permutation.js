@@ -2,7 +2,6 @@
  * @typedef {ReturnType<typeof Perm>} PermType
  */
 
-// import {derivePermCycles} from "./newAlg.js";
 import {STAGE_SYMBOLS} from "./notation.js";
 
 /**

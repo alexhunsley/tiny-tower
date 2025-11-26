@@ -12,9 +12,7 @@ import assert from 'node:assert/strict';
 
 import util from 'node:util';
 
-import {
-    Perm
-} from './Permutation.js';
+import {Perm} from './Permutation.js';
 
 util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 

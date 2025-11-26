@@ -15,7 +15,7 @@ import {
 } from './newAlg.js';
 
 import {
-    collapsePlaceNotation, roundsForStage, isXChar, symbolToIndex, indexToSymbol, mirroredNotate, CANONICAL_X_CHAR
+    roundsForStage, isXChar, symbolToIndex, indexToSymbol, mirroredNotate
 } from './notation.js';
 
 test('symbolToIndex', () => {
