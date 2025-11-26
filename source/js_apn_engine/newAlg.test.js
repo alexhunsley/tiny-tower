@@ -11,11 +11,6 @@ import {
     evaluateTopLevel,
     tokenizeFlat,
     evaluatePNAndStage,
-    getStage,
-    derivePermCycles,
-    arePermCyclesConsideredDifferential,
-    count87s,
-    measureTopPairDistances,
     log
 } from './newAlg.js';
 

@@ -12,9 +12,8 @@
 // import { renderBlueLineOverlay } from "./blueLine.js";
 // import { evaluatePNAndStage, derivePermCycles, count87s, arePermCyclesConsideredDifferential, measureTopPairDistances } from "./newAlg.js";
 
-import {derivePermCycles} from "./newAlg.js";
 import {reverseString} from "./newAlg.util.js";
-import {composeManyCycles, composePerms, Perm} from "./Permutation.js";
+import {Perm} from "./Permutation.js";
 
 import {STAGE_SYMBOLS} from "./notation.js";
 
@@ -77,31 +76,28 @@ const rep = (n, x) => Array(n).fill(x);
 /// named changes
 
 // queens = { cycles: [ '1', '532', '674' ], period: 3 }
-console.log("queens =", derivePermCycles('1357246'));
+console.log("queens =", Perm.fromOneLine('1357246'));
 
 
 /// GRANDSIRE
 
 // g P = { cycles: [ '1', '2', '46753' ], period: 5 }
-const gp = '1253746';
-const gp_c = derivePermCycles(gp).cycles;
-console.log("g P =", gp_c);
+// const gp = '1253746';
+
+const gp = Perm.fromOneLine('1253746')
+console.log("g P =", gp);
 
 // handstroke of lead (lead end)
 // g P' = { cycles: [ '1', '352', '74', '6' ], period: 6 }
-console.log("g P' =", derivePermCycles('1527364'));
-
+const gpH = Perm.fromOneLine('1527364')
+console.log("g P' =", gpH);
 
 // g - = { cycles: [ '1', '472', '653' ], period: 3 }
-const gb = '1752634';
-const gb_c = derivePermCycles(gb).cycles;
-console.log("gb_c - =", gb_c);
+const gb = Perm.fromOneLine('1752634')
+console.log("gb =", gb);
 
-// g s = { cycles: [ '1', '473652' ], period: 6 }
-const gs = '1572634';
-const gs_c = derivePermCycles(gs).cycles;
-console.log("gs_c =", gs_c);
-
+const gs = Perm.fromOneLine('1572634')
+console.log("gs =", gs.toString());
 
 // const c1 = composeCycles([gb, gb, gp, gp]);
 // const cyc1 = derivePermCycles(c1)
@@ -166,20 +162,24 @@ console.log("gs_c =", gs_c);
 //
 let p = Perm([[1, 2], [3, 4]]);
 let p2 = Perm([[1, 2], [3, 4]]);
-let p3 = Perm([[1, 2], [3]]);
+let p3 = Perm([[1, 2]]);
 //
 console.log("p = ", p.toString());
-console.log("p = ", p.toString());
+console.log("p2 = ", p2.toString());
 console.log("p3 = ", p3.toString());
 console.log(p == p2);
 console.log(p === p2);
 console.log(p.equals(p2));
 console.log(p.equals(p3));
 
+
+// composePerms([])
+// let queens = mappingToCycles("13572468", "12345678");
+// console.log("queens = ", queens);
+
 // console.log(composePerms(p, p2));
 
-console.log(composeManyCycles(p.cycles));
-
+// console.log("Comp: ", composePerms([p, p3]));
 
 
 // console.log(Object.getOwnPropertyDescriptor(p, "toString"));
