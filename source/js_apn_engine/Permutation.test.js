@@ -47,13 +47,13 @@ test('identity permutation returns singletons; period 1', () => {
 
 test('reverse permutation "54321" → ["51","42","3"]; period 2', () => {
     let p = Perm.fromOneLine('54321');
-    assert.deepEqual(p.cycles, ['51','42','3']);
+    assert.deepEqual(p.cycles, ['3', '42', '51']);
     assert.equal(p.period(), 2);
 });
 
 test('reverse permutation with non-numeric chars "DCBATE0987654321" → ["1D", "2C", "3B", "4A", "5T", "6E", "70", "89"]; period 2', () => {
     let p = Perm.fromOneLine('DCBATE0987654321');
-    assert.deepEqual(p.cycles, ['D1', 'C2', 'B3', 'A4', 'T5', 'E6', '07', '98']);
+    assert.deepEqual(p.cycles, ['07', '98', 'A4', 'B3', 'C2', 'D1', 'E6', 'T5' ]);
     assert.equal(p.period(), 2);
 });
 

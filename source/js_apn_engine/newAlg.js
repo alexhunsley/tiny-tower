@@ -17,6 +17,7 @@
  */
 
 import {clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR} from "./notation.js";
+import {repeatList} from "./utils.js";
 
 const ParserContext = {stage: null};
 
@@ -250,13 +251,6 @@ function matchRepeatOuter(base) {
     const end = findMatchingParen(s, open);     // throws if unmatched
     if (end !== s.length - 1) return null;      // '(' must match the last ')'
     return {count: parseInt(prefix, 10), inner: s.slice(open + 1, end).trim()};
-}
-
-function repeatList(list, n) {
-    if (n <= 0 || list.length === 0) return [];
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(...list);
-    return out;
 }
 
 // Returns true iff s is exactly one balanced (...) pair (no extra chars outside)

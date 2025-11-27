@@ -13,3 +13,10 @@ export function isSafariFamily() {
   const isSafariUA = /Safari/.test(ua) && !/(Chrome|Chromium|CriOS|Edg|OPR|Brave)/.test(ua);
   return isSafariVendor && isSafariUA;
 }
+
+export function repeatList(list, n) {
+    if (n <= 0 || list.length === 0) return [];
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(...list);
+    return out;
+}

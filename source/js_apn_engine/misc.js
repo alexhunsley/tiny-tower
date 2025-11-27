@@ -1,5 +1,6 @@
 import {reverseString} from "./newAlg.util.js";
 import {Perm} from "./Permutation.js";
+import {repeatList} from "./utils.js";
 
 import {STAGE_SYMBOLS} from "./notation.js";
 
@@ -63,7 +64,8 @@ const rep = (n, x) => Array(n).fill(x);
 
 // queens = { cycles: [ '1', '532', '674' ], period: 3 }
 console.log("queens =", Perm.fromOneLine('1357246').toString());
-
+console.log("tittums =", Perm.fromOneLine('1526374').toString());
+// console.log('to one line: ', Perm([[1,4], [2,3]]).toOneLine());
 
 /// GRANDSIRE
 
@@ -85,15 +87,64 @@ console.log("gb =", gb.toString());
 const gs = Perm.fromOneLine('1572634')
 console.log("gs =", gs.toString());
 
+
+function composeCalls(callStr, reps=1) {
+    const charToPerm = { 'P' : gp, 'B' : gb, 'S' : gs };
+    const allCallPerms = callStr.split("").map(c => charToPerm[c]);
+    const composedPerm = Perm.composePerms(repeatList(allCallPerms, reps))
+    console.log('calls: ', callStr, ' x ', reps, '  composedPerm: ', composedPerm.toString());
+}
+
+
 const callStr = "PBS";
-const charToPerm = { 'P' : gp, 'B' : gb, 'S' : gs };
+// console.log('allCallPerms: ', allCallPerms);
 
-const allCallPerms = callStr.split("").map(c => charToPerm[c]);
+// composeCalls('P');
+// composeCalls('PPPPP');
+// composeCalls('BBPP');
+// composeCalls('BBPP', 3);
 
-console.log('allCallPerms: ', allCallPerms);
+composeCalls('BBPP');
+composeCalls('PBBP');
+composeCalls('PPBB');
+composeCalls('BPPB');
 
-console.log('Compose all: ', Perm.composePerms(allCallPerms));
+console.log("\n=================\n");
 
+composeCalls('PPSS');
+composeCalls('PSSP');
+composeCalls('SSPP');
+composeCalls('SPPS');
+
+console.log("\n=================\n");
+
+composeCalls('SBPP');
+composeCalls('PSBP');
+composeCalls('PPSB');
+composeCalls('BPPS');
+
+console.log("\n=================\n");
+
+
+composeCalls('BPPP');
+composeCalls('PBPP');
+composeCalls('PPBP');
+composeCalls('PPPB');
+
+//
+// composeCalls('SPSP');
+// queens in 4 leads
+composeCalls('PSPSPP');
+
+// console.log('Compose all: ', );
+// console.log('Compose all: ', composeCalls('PP'));
+// console.log('Compose all: ', composeCalls('BBPP'));
+// console.log('Compose all: ', composeCalls('BBPP', 3));
+
+// console.log('Compose all: ', Perm.composePerms(allCallPerms));
+
+// console.log('Compose perm pair: ', Perm.composePermPair(gp, gp));
+// console.log('Compose perm pair generally: ', Perm.composePerms([gp, gp]));
 
 // const c1 = composeCycles([gb, gb, gp, gp]);
 // const cyc1 = derivePermCycles(c1)

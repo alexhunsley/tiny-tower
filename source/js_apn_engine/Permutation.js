@@ -14,18 +14,48 @@ export function Perm(cycles) {
     let _period = null;
     let _isConsideredDifferential = null;
 
+    // Make a sorted copy of the incoming array
+    const sortedCycles = [...cycles].sort();
+
     const obj = {
-        cycles,
+        cycles: sortedCycles,
 
         toString() {
             if (_string === null) {
-                console.log("EXECUTING TO string");
-
                 // using JSON.stringify to get sensible array of arrays to string
-                _string = cycles.map(c => '(' + c + ')').join(' ') + '  ' + JSON.stringify(cycles)
-                    + ' period: ' + this.period() + (this.isConsideredDifferential() ? ' (diff)' : '');
+                _string = this.toOneLine() + '  ' +  this.permutationString()
+                    // + '  ' + JSON.stringify(cycles.sort())
+                    + '  period: ' + this.period() + (this.isConsideredDifferential() ? ' (diff)' : '');
             }
             return _string;
+        },
+
+        toOneLine() {
+            const map = {};
+
+            for (const cycle of cycles) {
+                const len = cycle.length;
+                for (let i = 0; i < len; i++) {
+                    const from = cycle[i];
+                    const to = cycle[(i + 1) % len];
+                    // I swapped this, was from, to originally, but wrong way round
+                    map[to] = from;
+                }
+            }
+
+            // console.log("map: ", map);
+            // FIX: cast keys to numbers
+            const max = Math.max(...Object.keys(map).map(Number));
+
+            let result = "";
+            for (let i = 1; i <= max; i++) {
+                result += map[i] ?? i;
+            }
+            return result;
+        },
+
+        permutationString() {
+            return cycles.map(c => '(' + c + ')').sort().join(' ');
         },
 
         period() {
@@ -153,7 +183,7 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
         // lengths.push(cycleIdx.length);
     }
 
-    return Perm(cycles)
+    return Perm(cycles.sort())
 
     // TODO put period derivation into Perm
     // return {cycles, period};
@@ -178,7 +208,7 @@ Perm.composePermPair = function (permA, permB) {
     const mapA = Perm.cyclesToMapping(permA);
     const mapB = Perm.cyclesToMapping(permB);
 
-    console.log("maps: ", mapA, mapB);
+    // console.log("maps: ", mapA, mapB);
 
     // Compose: (Q ∘ P)(x) = Q(P(x))
     const composed = new Map();
@@ -189,7 +219,7 @@ Perm.composePermPair = function (permA, permB) {
     }
     // Turn mapping back into cycle strings
     // return mappingToCycles(composed, alphabet);
-    return Perm(Perm.mappingToCycles(composed, STAGE_SYMBOLS));
+    return Perm(Perm.mappingToCycles(composed, alphabet));
 }
 
 Perm.composePerms = function (listOfPerms) {
