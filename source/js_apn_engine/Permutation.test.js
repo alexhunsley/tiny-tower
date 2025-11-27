@@ -1,11 +1,5 @@
-//////////////////////////////////
-// perm cycles (differential detection, etc.)
-
-/**
- * derivePermCycles("21453") -> { cycles: ["12", "345"], period: 6 }
- * The permutation string is a one-line image of the first n symbols of `alphabet`.
- * Position i (1-based) maps to the symbol at oneLine[i-1], which must be among the first n symbols.
- */
+//////////////////////////////////////////////////////
+// permutation cycles (differential detection, etc.)
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

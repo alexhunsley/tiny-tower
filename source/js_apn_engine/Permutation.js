@@ -1,17 +1,15 @@
-/**
- * @typedef {ReturnType<typeof Perm>} PermType
- */
-
 import {STAGE_SYMBOLS} from "./notation.js";
 
+/**
+ * @typedef {ReturnType<typeof Perm>} Perm
+ */
 /**
  * Create a Perm value-type.
  *
  * @param {string[][]} cycles - A list of lists of strings.
- * @returns {PermType} Perm value object
+ * @returns {Perm} Perm value object
  */
 export function Perm(cycles) {
-    // private memoised string, lives in the closure, not on the object
     let _string = null;
     let _period = null;
     let _isConsideredDifferential = null;
@@ -24,7 +22,8 @@ export function Perm(cycles) {
                 console.log("EXECUTING TO string");
 
                 // using JSON.stringify to get sensible array of arrays to string
-                _string = cycles.map(c => '(' + c + ')').join(' ') + '  ' + JSON.stringify(cycles);
+                _string = cycles.map(c => '(' + c + ')').join(' ') + '  ' + JSON.stringify(cycles)
+                    + ' period: ' + this.period() + (this.isConsideredDifferential() ? ' (diff)' : '');
             }
             return _string;
         },
@@ -169,15 +168,15 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
  *   Q = ["1","473652"]
  *   composePerms(P, Q)  // => ["1","435627"]
  */
-export function composePermPair(permA, permB) {
+Perm.composePermPair = function (permA, permB) {
     // Alphabet: all symbols that appear anywhere, in first-seen order
     const alphabet = [
         ...new Set(permA.cycles.join("") + permB.cycles.join(""))
     ];
 
     // Build mapping for P and Q
-    const mapA = cyclesToMapping(permA);
-    const mapB = cyclesToMapping(permB);
+    const mapA = Perm.cyclesToMapping(permA);
+    const mapB = Perm.cyclesToMapping(permB);
 
     console.log("maps: ", mapA, mapB);
 
@@ -190,7 +189,14 @@ export function composePermPair(permA, permB) {
     }
     // Turn mapping back into cycle strings
     // return mappingToCycles(composed, alphabet);
-    return Perm(mappingToCycles(composed, alphabet));
+    return Perm(Perm.mappingToCycles(composed, STAGE_SYMBOLS));
+}
+
+Perm.composePerms = function (listOfPerms) {
+    if (listOfPerms.length === 0) {
+        throw new Error("composePerms: Need at least one permutation");
+    }
+    return listOfPerms.reduce((acc, perm) => Perm.composePermPair(acc, perm));
 }
 
 /**
@@ -198,7 +204,7 @@ export function composePermPair(permA, permB) {
  *
  * Example: ["472","653"] means (4 7 2)(6 5 3)
  */
-export function cyclesToMapping(perm) {
+Perm.cyclesToMapping = function (perm) {
     const mapping = new Map();
 
     for (let cyc of perm.cycles) {
@@ -210,14 +216,14 @@ export function cyclesToMapping(perm) {
             mapping.set(from, to);
         }
     }
-    return Perm(mappingToCycles(mapping, alphabet))
+    return mapping;
 }
 
 /**
  * Convert a mapping back into an array of cycle strings.
  * `alphabet` controls which symbols to consider and in what order.
  */
-export function mappingToCycles(mapping, alphabet="1234567890ET") {
+Perm.mappingToCycles = function (mapping, alphabet="1234567890ET") {
     const visited = new Set();
     const cycles = [];
 
@@ -242,11 +248,4 @@ export function mappingToCycles(mapping, alphabet="1234567890ET") {
     }
 
     return cycles;
-}
-
-export function composePerms(listOfPerms) {
-    if (listOfPerms.length === 0) {
-        throw new Error("composePerms: Need at least one permutation");
-    }
-    return listOfPerms.reduce((acc, perm) => composePermPair(acc, perm));
 }

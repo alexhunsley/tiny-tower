@@ -62,7 +62,7 @@ const rep = (n, x) => Array(n).fill(x);
 /// named changes
 
 // queens = { cycles: [ '1', '532', '674' ], period: 3 }
-console.log("queens =", Perm.fromOneLine('1357246'));
+console.log("queens =", Perm.fromOneLine('1357246').toString());
 
 
 /// GRANDSIRE
@@ -71,19 +71,29 @@ console.log("queens =", Perm.fromOneLine('1357246'));
 // const gp = '1253746';
 
 const gp = Perm.fromOneLine('1253746')
-console.log("g P =", gp);
+console.log("g P =", gp.toString());
 
 // handstroke of lead (lead end)
 // g P' = { cycles: [ '1', '352', '74', '6' ], period: 6 }
 const gpH = Perm.fromOneLine('1527364')
-console.log("g P' =", gpH);
+console.log("g P' =", gpH.toString());
 
 // g - = { cycles: [ '1', '472', '653' ], period: 3 }
 const gb = Perm.fromOneLine('1752634')
-console.log("gb =", gb);
+console.log("gb =", gb.toString());
 
 const gs = Perm.fromOneLine('1572634')
 console.log("gs =", gs.toString());
+
+const callStr = "PBS";
+const charToPerm = { 'P' : gp, 'B' : gb, 'S' : gs };
+
+const allCallPerms = callStr.split("").map(c => charToPerm[c]);
+
+console.log('allCallPerms: ', allCallPerms);
+
+console.log('Compose all: ', Perm.composePerms(allCallPerms));
+
 
 // const c1 = composeCycles([gb, gb, gp, gp]);
 // const cyc1 = derivePermCycles(c1)
