@@ -5,7 +5,7 @@ import {
     initAudioUnlock
 } from "./audioEngine.js";
 import {isSafariFamily} from "./utils.js";
-import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation} from "./notation.js";
+import {generateList, validateStage, symbolToIndex, roundsForStage, collapsePlaceNotation} from "./notation.js";
 import {renderBlueLineOverlay} from "./blueLine.js";
 import {
     evaluatePNAndStage, count87s, measureTopPairDistances
@@ -39,7 +39,7 @@ function readURLParams() {
 function writeURLParams({pn, stage}) {
     const q = new URLSearchParams(location.search);
     if (pn && pn.trim()) q.set("pn", pn.trim()); else q.delete("pn");
-    q.set("st", String(clampStage(stage)));
+    q.set("st", String(stage));
     const newUrl = `${location.pathname}?${q.toString()}${location.hash}`;
     history.replaceState(null, "", newUrl); // no reload
 }
@@ -101,7 +101,6 @@ function renderGeneratedList(list, blueLines = ["2"]) {
         out.innerHTML = '<em class="muted">— nothing generated —</em>';
         return;
     }
-    const stage = clampStage(el("stage").value);
 
     out.innerHTML = list
         .map((row, i) => {
@@ -163,7 +162,7 @@ function wireNotation() {
     el("stage").addEventListener("blur", () => {
         const n = parseStageLoose(el("stage").value);
         if (n === null) return; // leave empty if user cleared it
-        const s = clampStage(n);
+        const s = validateStage(n);
         if (String(el("stage").value) !== String(s)) el("stage").value = s;
         writeURLParams({pn: el("placeNotation").value, stage: s});
     });
@@ -172,7 +171,7 @@ function wireNotation() {
     el("generate").addEventListener("click", () => {
         const pnString = (el("placeNotation").value || "").trim();
         const n = parseStageLoose(el("stage").value);
-        const stage = clampStage(n == null ? 6 : n);
+        const stage = validateStage(n == null ? 6 : n);
         el("stage").value = stage; // normalize
 
         console.log(" PART 1: updating UI control for stage to ", stage);
@@ -184,7 +183,7 @@ function wireNotation() {
         if (playState.playing && !playState.paused) return; // prevent double start
 
         if (!generatedRows.length) {
-            const stage = clampStage(el("stage").value);
+            const stage = validateStage(el("stage").value);
             const pnString = (el("placeNotation").value || "").trim();
             // Use the same centralized flow so report/overlay are consistent
             generateAndRender({pnString});
@@ -280,7 +279,7 @@ async function waitBeatsDynamic(beatsTarget, checkPausedAbort) {
 }
 
 async function playAllRows() {
-    const stage = clampStage(el("stage").value);
+    const stage = validateStage(el("stage").value);
 
     const checkPausedAbort = (mode) => {
         if (mode === "abort") return playState.abort;
@@ -344,7 +343,7 @@ function generateAndRender({pnString, stageFromUI, maxChanges = 6000}) {
 
     const {pnTokens} = evaluatePNAndStage(pnString, stageFromUI) ?? {};
 
-    const s = clampStage(stageFromUI);
+    const s = validateStage(stageFromUI);
 
     console.log("pnTokens = ", pnTokens, " pnString = ", pnString);
 
@@ -374,13 +373,13 @@ function init() {
 
         const {pn, stage} = readURLParams();
         if (pn) el("placeNotation").value = pn;
-        if (stage != null) el("stage").value = clampStage(stage);
+        if (stage != null) el("stage").value = validateStage(stage);
         applyDefaultsToControls();
 
         initAudioUnlock();
 
         if (pn && stage != null && DEFAULTS.autoGenerateOnLoad) {
-            const s = clampStage(el("stage").value);
+            const s = validateStage(el("stage").value);
             const pnString = (el("placeNotation").value || "").trim();
             generateAndRender({pnString, stageFromUI: s});
 
@@ -443,7 +442,7 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     console.log(" calling evaluateExpressionInternal....");
 
     const lines = [];
-    // const s = clampStage(resolvedStage);
+    // const s = validateStage(resolvedStage);
     const rounds = roundsForStage(stage);
 
     // const tokens = expandPlaceNotation(pnString, s);

@@ -9,8 +9,8 @@ export const CANONICAL_X_CHAR = "x";
 
 const X_CHARS = new Set(["X", "-"]);
 
-export function clampStage(n) {
-    log("clampStage: ", n);
+export function validateStage(n) {
+    log("validateStage: ", n);
 
     const v = Number(n);
     return Math.max(MIN_STAGE, Math.min(v, MAX_STAGE));
@@ -21,8 +21,7 @@ export function isXChar(ch) {
 }
 
 export function roundsForStage(stage) {
-    const s = clampStage(stage);
-    return STAGE_SYMBOLS.substring(0, s);
+    return STAGE_SYMBOLS.substring(0, validateStage(stage));
 }
 
 /**
@@ -48,8 +47,7 @@ export function collapsePlaceNotation(tokens) {
 
 /* ---------------- Generate rows by repeating the lead token list ---------------- */
 export function generateList({leadTokens, stage, maxChanges = 6000}) {
-    const s = clampStage(stage);
-    const rounds = roundsForStage(s);
+    const rounds = roundsForStage(stage);
 
     // NOTE: expandPlaceNotation now needs stage (for the ';' mapping)
     // const leadTokens = expandPlaceNotation(pnString, s);
@@ -135,7 +133,8 @@ export function indexToSymbol(pos) {
 }
 
 export function mirroredNotate(notate, stage) {
-    const mirroredTokens = [...notate].reverse().map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
+    validateStage(stage);
+    const mirroredTokens = [...notate].reverse().map(tok => mirrorPlacesWithinToken(tok, stage));
     log("Mirrored tokens = ", mirroredTokens);
     log("Mirrored tokens.join() = ", mirroredTokens.join(""));
     return mirroredTokens.join("");
@@ -189,6 +188,7 @@ export function expandCommaPlaceNotation(pnString, stage) {
 //   - with commas: per-segment palindromes (tokens + reverse(tokensWithoutLast))
 //   - without commas: just tokenize (no mirroring)
 export function expandPlaceNotation(pnString, stage) {
+    validateStage(stage);
     let raw = String(pnString || "").trim().toUpperCase();
     if (!raw) return [];
 
@@ -200,7 +200,7 @@ export function expandPlaceNotation(pnString, stage) {
         const rightRaw = raw.slice(semiIdx + 1).trim();
 
         const leftTokens = tokenizeSegment(leftRaw);
-        const rightMirroredTokens = mirroredNotate(rightRaw, clampStage(stage));
+        const rightMirroredTokens = mirroredNotate(rightRaw, stage);
 
         log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
 
@@ -209,7 +209,7 @@ export function expandPlaceNotation(pnString, stage) {
         const leftTail = leftTokens.slice(0, -1 - stage % 2)
             // const leftTail = leftTokens.slice(0, -1)
             .reverse()
-            .map(tok => mirrorPlacesWithinToken(tok, clampStage(stage)));
+            .map(tok => mirrorPlacesWithinToken(tok, stage));
 
         log("  left tail: ", leftTail);
 

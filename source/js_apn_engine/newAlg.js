@@ -16,7 +16,7 @@
  *       Either side may be empty -> that side yields [].
  */
 
-import {clampStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR} from "./notation.js";
+import {validateStage, isXChar, STAGE_SYMBOLS, CANONICAL_X_CHAR} from "./notation.js";
 
 const ParserContext = {stage: null};
 
@@ -474,7 +474,7 @@ function evaluatePNAndStage(input, fallbackStage) {
 
         log("Parsing this: ", input, " stage is : ", ParserContext.stage);
     } else if (fallbackStage !== undefined && fallbackStage != null) {
-        ParserContext.stage = clampStage(fallbackStage);
+        ParserContext.stage = validateStage(fallbackStage);
         log("Using stage from UI textbox: ", ParserContext.stage)
     }
 
