@@ -11,55 +11,76 @@ import {Perm} from './Permutation.js';
 util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 
 ////////////////////////////////////////////////
-// perm cycle tests (differential detection)
+// perm cycle tests (*active*)
 
-test('example: "234561" → ["654321"], period 6', () => {
-    let p = Perm.fromOneLine('234561');
-    assert.deepEqual(p.cycles, ['654321']);
-    assert.equal(p.period(), 6);
-});
+// we could test the old ones and pass active=true flag (or use other func/obv type to avoid confusion?)
 
-test('example: "345612" → ["531", "642"], period 6', () => {
-    let p = Perm.fromOneLine('345612');
-    assert.deepEqual(p.cycles, ['531', '642']);
+test('PB4 first LE: "1324" → ["234"], period 3', () => {
+    let p = Perm.fromOneLine('1342');
+    assert.deepEqual(p.cycles, ['243']);
     assert.equal(p.period(), 3);
 });
 
-// // TODO only assert on lexicographic equals (i.e. sort both strings same lexicographic order, then assert equals)
+test('PB6 first LE: "135264" → ["24653"], period 3', () => {
+    let p = Perm.fromOneLine('135264');
+    assert.deepEqual(p.cycles, ['24653']);
+    assert.equal(p.period(), 5);
+});
+
+test('example: "234561" → ["654321"], period 6', () => {
+    // we could test the old ones and pass active=true flag (or use other func/obv type to avoid confusion?)
+    let p = Perm.fromOneLine('234561');
+    assert.deepEqual(p.cycles, ['165432']);
+    assert.equal(p.period(), 6);
+});
+
+test('example: "345612" → ["153", "264"], period 6', () => {
+    let p = Perm.fromOneLine('345612');
+    assert.deepEqual(p.cycles, ['153', '264']);
+    assert.equal(p.period(), 3);
+});
+
 test('example: "612345" → ["654321"], period 6', () => {
     let p = Perm.fromOneLine('612345');
-    assert.deepEqual(p.cycles, ['234561']);
+    assert.deepEqual(p.cycles, ['123456']);
     assert.equal(p.period(), 6);
+});
+
+test('example: "561234" → ["135", "246"], period 6', () => {
+    let p = Perm.fromOneLine('561234');
+    assert.deepEqual(p.cycles, ['135', '246']);
+    assert.equal(p.period(), 3);
 });
 
 test('example: "21453" → ["12","543"], period 6', () => {
     let p = Perm.fromOneLine('21453');
-    assert.deepEqual(p.cycles, ['21', '543']);
+    assert.deepEqual(p.cycles, ['12', '354']);
     assert.equal(p.period(), 6);
 });
 
 
 test('identity permutation returns singletons; period 1', () => {
     let p = Perm.fromOneLine('12345');
-    assert.deepEqual(p.cycles, ['1','2','3','4','5']);
+    assert.deepEqual(p.cycles, []);
     assert.equal(p.period(), 1);
 });
 
-test('reverse permutation "54321" → ["51","42","3"]; period 2', () => {
+test('reverse permutation "54321" → ["15","24"]; period 2', () => {
     let p = Perm.fromOneLine('54321');
-    assert.deepEqual(p.cycles, ['3', '42', '51']);
+    assert.deepEqual(p.cycles, ['15', '24']);
     assert.equal(p.period(), 2);
 });
 
 test('reverse permutation with non-numeric chars "DCBATE0987654321" → ["1D", "2C", "3B", "4A", "5T", "6E", "70", "89"]; period 2', () => {
     let p = Perm.fromOneLine('DCBATE0987654321');
-    assert.deepEqual(p.cycles, ['07', '98', 'A4', 'B3', 'C2', 'D1', 'E6', 'T5' ]);
+    assert.deepEqual(p.cycles, ['1D', '2C', '3B', '4A', '5T', '6E', '70', '89']);
     assert.equal(p.period(), 2);
 });
 
 test('large LCM: cycles (12)(345)(6789) → period 12', () => {
     let p = Perm.fromOneLine('214537896');
-    assert.deepEqual(p.cycles, ['21','543','9876']);
+    assert.deepEqual(p.cycles, ['12', '354', '6987']);
+    // assert.deepEqual(p.cycles, ['12', '345', '6789']);
     assert.equal(p.period(), 12);
 });
 
@@ -67,12 +88,12 @@ test('custom/extended alphabet: rotation on first 12 symbols "1234567890ET"', ()
     // use L instead of 1 in the alphabet
     const explicitAlphabet = 'L234567890ET';
     let p = Perm.fromOneLine('234567890ETL', explicitAlphabet);
-    assert.deepEqual(p.cycles, ['TE098765432L']);
+    assert.deepEqual(p.cycles, ['LTE098765432']);
     assert.equal(p.period(), 12);
 });
 
 test('invalid: not a permutation (duplicate symbol)', () => {
-  assert.throws(() => Perm.fromOneLine('1123'), /not a permutation/i);
+  assert.throws(() => Perm.fromOneLine('1123'), /Duplicate symbol/i);
 });
 
 test('invalid: symbol not in subset (n too small)', () => {
@@ -84,7 +105,7 @@ test('invalid: symbol not in subset (n too small)', () => {
 test('criteria for differential detection behave as expected (oneLine inputs)', () => {
 
     // all hunts bells should be considered differential
-    assert.equal(Perm.fromOneLine('12345').isConsideredDifferential(), true);
+    assert.equal(Perm.fromOneLine('12345').isConsideredDifferential(), false);
 
     // one hunt bells and full cycle is not differential
     assert.equal(Perm.fromOneLine('13452').isConsideredDifferential(), false);

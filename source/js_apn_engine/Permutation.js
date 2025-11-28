@@ -114,7 +114,6 @@ export function Perm(cycles) {
 }
 
 Perm.fromOneLine = function (oneLine, alphabetIn) {
-    // return Perm(derivePermCycles(str));
     const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
     if (typeof oneLine !== "string" || oneLine.length === 0) {
@@ -126,40 +125,48 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
         throw new Error(`Permutation length ${n} exceeds alphabet length ${alphabet.length}`);
     }
 
-    // Use only the first n symbols of the alphabet
+    // Base row: first n symbols of the alphabet, e.g. "1234"
     const subset = alphabet.slice(0, n);
 
-    // Map symbol -> 1-based index within subset
-    const idxOf = new Map();
-    for (let i = 0; i < n; i++) idxOf.set(subset[i], i + 1);
+    // Map base-row symbol -> index in base row (1-based)
+    const idxOfBase = new Map();
+    for (let i = 0; i < n; i++) {
+        idxOfBase.set(subset[i], i + 1);
+    }
 
-    // Build mapping p: i -> p(i), with i in 1..n
-    const p = new Array(n + 1);
-    for (let i = 1; i <= n; i++) {
-        const ch = oneLine[i - 1];
-        const v = idxOf.get(ch);
-        if (v == null) {
-            throw new Error(`Invalid symbol '${ch}' at position ${i}; expected one of "${subset}"`);
+    // Map symbol -> position in the one-line row (1-based).
+    // Also validate that oneLine is a permutation of subset.
+    const posOf = new Map();
+    for (let pos = 1; pos <= n; pos++) {
+        const ch = oneLine[pos - 1];
+
+        if (!idxOfBase.has(ch)) {
+            throw new Error(
+                `Invalid symbol '${ch}' at position ${pos}; expected one of "${subset}"`
+            );
         }
-        p[i] = v;
-    }
-
-    // Validate it's a permutation (all images unique)
-    const seenVals = new Set();
-    for (let i = 1; i <= n; i++) {
-        if (p[i] < 1 || p[i] > n) {
-            throw new Error(`Image out of range at ${i}: ${p[i]}`);
+        if (posOf.has(ch)) {
+            throw new Error(
+                `Duplicate symbol '${ch}' in oneLine; must be a permutation of "${subset}"`
+            );
         }
-        seenVals.add(p[i]);
-    }
-    if (seenVals.size !== n) {
-        throw new Error(`Input is not a permutation of the first ${n} symbols of the alphabet`);
+        posOf.set(ch, pos);
     }
 
-    // Extract cycles
+    // Build passive permutation σ on positions:
+    // σ(i) = new position of the symbol that started in position i.
+    //
+    // That is: the symbol at subset[i-1] moves to position posOf(subset[i-1]).
+    const p = new Array(n + 1); // 1-based
+    for (let i = 1; i <= n; i++) {
+        const ch = subset[i - 1];   // symbol that starts in position i
+        const newPos = posOf.get(ch);
+        p[i] = newPos;
+    }
+
+    // Extract cycles of this permutation on {1, ..., n}
     const visited = new Array(n + 1).fill(false);
     const cycles = [];
-    const lengths = [];
 
     for (let start = 1; start <= n; start++) {
         if (visited[start]) continue;
@@ -172,22 +179,20 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
             cur = p[cur];
         }
 
-        // Convert indices to alphabet symbols for the cycle string,
-        // then reverse to avoid the "sorted" (increasing) look.
-        const cycleStr = cycleIdx
-            .map(i => subset[i - 1])
-            .reverse()
-            .join("");
+        if (cycleIdx.length > 1) {
+            // Convert position indices to symbols from the base row.
+            // NOTE: no reversal here – the cycle direction matches the passive mapping.
+            const cycleStr = cycleIdx
+                .map(i => subset[i - 1])
+                .join("");
 
-        cycles.push(cycleStr);
-        // lengths.push(cycleIdx.length);
+            cycles.push(cycleStr);
+        }
     }
 
-    return Perm(cycles.sort())
-
-    // TODO put period derivation into Perm
-    // return {cycles, period};
-}
+    // If everything was fixed, represent as identity (empty cycles array or however Perm expects it)
+    return Perm(cycles.sort());
+};
 
 /**
  * Compose two Perms P and Q given as arrays of cycle strings.

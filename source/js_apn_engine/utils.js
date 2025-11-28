@@ -20,3 +20,9 @@ export function repeatList(list, n) {
     for (let i = 0; i < n; i++) out.push(...list);
     return out;
 }
+
+export function toCSVRow(arr) {
+    return arr
+        .map(s => `"${String(s).replace(/"/g, '""')}"`)
+        .join(",");
+}

@@ -1,6 +1,7 @@
 import {reverseString} from "./newAlg.util.js";
 import {Perm} from "./Permutation.js";
 import {repeatList} from "./utils.js";
+import {toCSVRow} from "./utils.js";
 
 import {STAGE_SYMBOLS} from "./notation.js";
 
@@ -87,14 +88,25 @@ console.log("gb =", gb.toString());
 const gs = Perm.fromOneLine('1572634')
 console.log("gs =", gs.toString());
 
+//  1364257  (1) (4) (5632) (7)  period: 4
+const solve = Perm.fromOneLine('1364257')
+console.log("solve =", solve.toString());
+
+const charToPerm = { 'P' : gp, 'B' : gb, 'S' : gs };
 
 function composeCalls(callStr, reps=1) {
-    const charToPerm = { 'P' : gp, 'B' : gb, 'S' : gs };
     const allCallPerms = callStr.split("").map(c => charToPerm[c]);
     const composedPerm = Perm.composePerms(repeatList(allCallPerms, reps))
     console.log('calls: ', callStr, ' x ', reps, '  composedPerm: ', composedPerm.toString());
 }
 
+function composeCallsBlog(title, callStr, reps=1) {
+    const allCallPerms = callStr.split("").map(c => charToPerm[c]);
+    const composedPerm = Perm.composePerms(repeatList(allCallPerms, reps))
+
+    console.log(toCSVRow([title, callStr, composedPerm.toString()]));
+    // console.log(title, ',', callStr, ',', composedPerm.toString());
+}
 
 const callStr = "PBS";
 // console.log('allCallPerms: ', allCallPerms);
@@ -104,37 +116,70 @@ const callStr = "PBS";
 // composeCalls('BBPP');
 // composeCalls('BBPP', 3);
 
-composeCalls('BBPP');
-composeCalls('PBBP');
-composeCalls('PPBB');
-composeCalls('BPPB');
-
-console.log("\n=================\n");
-
-composeCalls('PPSS');
-composeCalls('PSSP');
-composeCalls('SSPP');
-composeCalls('SPPS');
-
-console.log("\n=================\n");
-
-composeCalls('SBPP');
-composeCalls('PSBP');
-composeCalls('PPSB');
-composeCalls('BPPS');
-
-console.log("\n=================\n");
 
 
-composeCalls('BPPP');
-composeCalls('PBPP');
-composeCalls('PPBP');
-composeCalls('PPPB');
+//
+// composeCalls('BBPP');
+// composeCalls('PBBP');
+// composeCalls('PPBB');
+// composeCalls('BPPB');
+//
+// console.log("\n=================\n");
+//
+// composeCalls('PPSS');
+// composeCalls('PSSP');
+// composeCalls('SSPP');
+// composeCalls('SPPS');
+//
+// console.log("\n=================\n");
+//
+// composeCalls('SBPP');
+// composeCalls('PSBP');
+// composeCalls('PPSB');
+// composeCalls('BPPS');
+//
+// console.log("\n=================\n");
+//
+//
+// composeCalls('BPPP');
+// composeCalls('PBPP');
+// composeCalls('PPBP');
+// composeCalls('PPPB');
+
+
+
 
 //
 // composeCalls('SPSP');
 // queens in 4 leads
-composeCalls('PSPSPP');
+
+console.log("\n=================\n RW diary g7 code bits:\n");
+
+// grandsire common courses for blog
+composeCallsBlog('a', 'BBPP');
+
+// composeCalls('BBPP');
+// composeCalls('PBBP');
+// composeCalls('SPB');
+// composeCalls('PPPB');
+// composeCalls('PPPBBBPP');
+//
+//
+// // defo queens:
+// composeCalls('PSPS');
+// composeCalls('SPSP');
+//
+// composeCalls('PSPSPSPS');
+// // composeCalls('PSPSPSPSP');
+// composeCalls('PSPSPSPSPBPPS'); // just need to unscramble 3, 5 now
+//
+// composeCalls('PSPSPSPSPBPPS'); // just need to unscramble 3, 5 now
+
+// composeCalls('BSPB');
+
+//                           ^   ^
+// composeCalls('SPSPSPSP');
+// composeCalls('SPSPSPSPBPPS'); // just need to unscramble 3, 5 now
 
 // console.log('Compose all: ', );
 // console.log('Compose all: ', composeCalls('PP'));
