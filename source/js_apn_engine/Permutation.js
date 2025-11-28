@@ -31,27 +31,31 @@ export function Perm(cycles) {
         },
 
         toOneLine() {
-            const map = {};
+            // Passive permutation map: position i → new position σ(i)
+            const posMap = {};
 
             for (const cycle of cycles) {
                 const len = cycle.length;
                 for (let i = 0; i < len; i++) {
-                    const from = cycle[i];
-                    const to = cycle[(i + 1) % len];
-                    // I swapped this, was from, to originally, but wrong way round
-                    map[to] = from;
+                    const from = Number(cycle[i]);
+                    const to   = Number(cycle[(i + 1) % len]);
+                    posMap[from] = to;
                 }
             }
 
-            // console.log("map: ", map);
-            // FIX: cast keys to numbers
-            const max = Math.max(...Object.keys(map).map(Number));
+            // Determine how many positions we’re dealing with
+            const max = Math.max(...Object.keys(posMap).map(Number), 0);
 
-            let result = "";
-            for (let i = 1; i <= max; i++) {
-                result += map[i] ?? i;
+            // oneLine[newPos] = oldPos
+            const arr = new Array(max + 1);
+
+            for (let oldPos = 1; oldPos <= max; oldPos++) {
+                const newPos = posMap[oldPos] ?? oldPos;  // fixed points stay put
+                arr[newPos] = String(oldPos);
             }
-            return result;
+
+            // Convert 1-based array to a string
+            return arr.slice(1).join("");
         },
 
         permutationString() {

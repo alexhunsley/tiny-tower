@@ -15,10 +15,28 @@ util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: I
 
 // we could test the old ones and pass active=true flag (or use other func/obv type to avoid confusion?)
 
-test('PB4 first LE: "1324" → ["234"], period 3', () => {
-    let p = Perm.fromOneLine('1342');
+test('PB4 first LE: "1342" → ["243"], period 3', () => {
+    const oneLine = '1342';
+    let p = Perm.fromOneLine(oneLine);
     assert.deepEqual(p.cycles, ['243']);
+    assert.deepEqual(p.toOneLine(), oneLine);
     assert.equal(p.period(), 3);
+});
+
+test('toOneLine(fromOneLine()) return orig input for cycles', () => {
+    for (const oneLine of ["21", "1243", "2431", "4123"]) {
+        // const oneLine = '1243';
+        let p = Perm.fromOneLine(oneLine);
+        // assert.deepEqual(p.cycles, ['243']);
+        assert.deepEqual(p.toOneLine(), oneLine);
+    }
+});
+
+test('toOneLine(fromOneLine()) is empty string for identity inputs', () => {
+    for (const oneLine of ["1", "12", "123", "1234", "1234567890ET"]) {
+        // const oneLine = '1243';
+        assert.deepEqual(Perm.fromOneLine(oneLine).toOneLine(), '');
+    }
 });
 
 test('PB6 first LE: "135264" → ["24653"], period 3', () => {
@@ -120,6 +138,7 @@ test('criteria for differential detection behave as expected (oneLine inputs)', 
 
 test('criteria for differential detection behave as expected (cycle inputs)', () => {
 
+    // hmm. technically if all are hunt bells, it IS a differential?
     assert.equal(Perm(["12345"]).isConsideredDifferential(), false);
     assert.equal(Perm(["2345", "1"]).isConsideredDifferential(), false);
 

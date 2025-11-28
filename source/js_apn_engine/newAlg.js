@@ -648,7 +648,6 @@ export function measureTopPairDistances(stage, rows) {
     const hiChar = alphabet[stage - 1];
     const belowChar = alphabet[stage - 2];
 
-    console.log("got rows: ", rows);
     // all possible separations (1...stage-1)
     const counts = Array(stage - 1).fill(0);
 
@@ -660,7 +659,6 @@ export function measureTopPairDistances(stage, rows) {
         const distance = Math.abs(hiIndex - lowIndex); // 0-based separation
         // sub 1 for 0-based separation
         counts[distance - 1] += 1;
-        console.log("Reg 1 for dist = ", distance, " from hi, low = ", hiIndex, " ", lowIndex);
     }
     const total = rows.length || 1;
     // percentages

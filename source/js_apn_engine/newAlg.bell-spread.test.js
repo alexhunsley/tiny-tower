@@ -32,8 +32,6 @@ test('stage 7: basic distribution for top two bells (7 & 6)', () => {
     ];
     const out = measureTopPairDistances(7, rows);
 
-    console.log("dists: ", out);
-
     // Expect percentages over 5 rows
     const expected = [40, 20, 0, 20, 0, 20];
     // Compare after rounding to whole percentages for readability

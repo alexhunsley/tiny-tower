@@ -28,36 +28,36 @@ import {STAGE_SYMBOLS} from "./notation.js";
  *
  * Example: ["12","34"] → "2143"  (1→2, 2→1, 3→4, 4→3)
  */
-function cyclesToPermutationString(cycles) {
-    // Find the highest symbol used: assumed to be digits ("1","2",...)
-    const maxSymbol = Math.max(...cycles.join("").split("").map(Number)) || 0;
-
-    // Start with identity mapping
-    const map = {};
-    for (let i = 1; i <= maxSymbol; i++) {
-        map[i] = String(i);
-    }
-
-    // Apply each cycle
-    for (const cycIn of cycles) {
-        // note we reverse, because we want perms to be PB order
-        // (we also reverse when converting the other way)
-        const cyc = reverseString(cycIn);
-        const n = cyc.length;
-        for (let i = 0; i < n; i++) {
-            const from = cyc[i];
-            const to   = cyc[(i + 1) % n];
-            map[from] = to;
-        }
-    }
-
-    // Build the final one-line permutation string
-    let result = "";
-    for (let i = 1; i <= maxSymbol; i++) {
-        result += map[i];
-    }
-    return result;
-}
+// function cyclesToPermutationString(cycles) {
+//     // Find the highest symbol used: assumed to be digits ("1","2",...)
+//     const maxSymbol = Math.max(...cycles.join("").split("").map(Number)) || 0;
+//
+//     // Start with identity mapping
+//     const map = {};
+//     for (let i = 1; i <= maxSymbol; i++) {
+//         map[i] = String(i);
+//     }
+//
+//     // Apply each cycle
+//     for (const cycIn of cycles) {
+//         // note we reverse, because we want perms to be PB order
+//         // (we also reverse when converting the other way)
+//         const cyc = reverseString(cycIn);
+//         const n = cyc.length;
+//         for (let i = 0; i < n; i++) {
+//             const from = cyc[i];
+//             const to   = cyc[(i + 1) % n];
+//             map[from] = to;
+//         }
+//     }
+//
+//     // Build the final one-line permutation string
+//     let result = "";
+//     for (let i = 1; i <= maxSymbol; i++) {
+//         result += map[i];
+//     }
+//     return result;
+// }
 
 const rep = (n, x) => Array(n).fill(x);
 
