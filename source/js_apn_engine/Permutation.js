@@ -58,8 +58,19 @@ export function Perm(cycles) {
             return arr.slice(1).join("");
         },
 
-        permutationString() {
-            return cycles.map(c => '(' + c + ')').sort().join(' ');
+        permutationString(cyclesIn=cycles) {
+            return cyclesIn.map(c => '(' + c + ')').sort().join(' ');
+            // return cycles.map(c => '(' + c.join('') + ')').sort().join(' ');
+        },
+
+        // drops any single (non-moving) items, e.g. '(1) (2) (7)',
+        // and outputs "(no permutation)" for identiity
+        permutationStringPretty() {
+            const prettyString = this.permutationString(cycles.filter(c => c.length > 1))
+            if (prettyString.length == 0) {
+                return "(no permutation)";
+            }
+            return prettyString;
         },
 
         period() {
@@ -194,8 +205,32 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
         }
     }
 
+// cycles is a string[], e.g. ["3412", "5142", "32"]
+
+    for (let i = 0; i < cycles.length; i++) {
+        const s = cycles[i];
+        if (s.length <= 1) continue; // nothing to rotate
+
+        // Find index of the minimum character
+        let minChar = s[0];
+        let minIdx = 0;
+        for (let j = 1; j < s.length; j++) {
+            const ch = s[j];
+            if (ch < minChar) {
+                minChar = ch;
+                minIdx = j;
+            }
+        }
+
+        // Rotate so that minChar is at the front
+        cycles[i] = s.slice(minIdx) + s.slice(0, minIdx);
+    }
+
+// Now sort the whole array of normalized cycles
+    cycles.sort();
+
     // If everything was fixed, represent as identity (empty cycles array or however Perm expects it)
-    return Perm(cycles.sort());
+    return Perm(cycles);
 };
 
 /**

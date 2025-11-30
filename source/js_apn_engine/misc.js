@@ -81,6 +81,12 @@ console.log("g P =", gp.toString());
 const gpH = Perm.fromOneLine('1527364')
 console.log("g P' =", gpH.toString());
 
+console.log(Perm.fromOneLine('2135476').toString());
+console.log(Perm.fromOneLine('2314567').toString());
+console.log(Perm.fromOneLine('3241657').toString());
+
+console.log("g P' =", gpH.toString());
+
 // g - = { cycles: [ '1', '472', '653' ], period: 3 }
 const gb = Perm.fromOneLine('1752634')
 console.log("gb =", gb.toString());
@@ -104,12 +110,297 @@ function composeCallsBlog(title, callStr, reps=1) {
     const allCallPerms = callStr.split("").map(c => charToPerm[c]);
     const composedPerm = Perm.composePerms(repeatList(allCallPerms, reps))
 
-    console.log(toCSVRow([title, callStr, composedPerm.toString()]));
+    // const permStr = composedPerm.toOneLine() + ' ' + composedPerm.permutationString();
+    // const permStr = composedPerm.toOneLine() + ',' + composedPerm.permutationStringPretty();
+    // console.log('permStr: ', permStr);
+    console.log(toCSVRow([title, callStr, composedPerm.toOneLine(), composedPerm.permutationStringPretty()]));
     // console.log(title, ',', callStr, ',', composedPerm.toString());
 }
 
-const callStr = "PBS";
-// console.log('allCallPerms: ', allCallPerms);
+// grandsire common courses for blog
+
+console.log("\n===== Non-course bits:\n");
+
+composeCallsBlog('a', 'B');
+
+console.log("\n===== Courses:\n");
+
+// three bobs = indentity
+composeCallsBlog('a', 'BBB');
+
+// B
+
+// 7 in hunt
+// composeCallsBlog('a', 'BPPPP');
+composeCallsBlog('a', 'PBPPP');
+// false, has 5 Ps
+// composeCallsBlog('a', 'PPBPPPPPP');
+// false, has 5 Ps
+// composeCallsBlog('a', 'PPPBPPPPP');
+composeCallsBlog('a', 'PPPPBP');
+
+// BB
+composeCallsBlog('a', 'BBPP');
+composeCallsBlog('b', 'PBBP');
+
+composeCallsBlog('b', 'PPBBPPPP');
+composeCallsBlog('b', 'PPPPBBPPP');
+
+
+// S
+composeCallsBlog('a', 'SPPP');
+composeCallsBlog('a', 'PPSP');
+composeCallsBlog('a', 'PPPS');
+
+// SS
+composeCallsBlog('a', 'SSP');
+composeCallsBlog('a', 'PSSPP');
+composeCallsBlog('a', 'PPSSPPPP');
+composeCallsBlog('a', 'PPPSSPPP');
+
+// SSS
+composeCallsBlog('a', 'SSSPPPP');
+composeCallsBlog('a', 'PSSS');
+composeCallsBlog('a', 'PPPSSSP');
+composeCallsBlog('a', 'PPPPSSSPP');
+
+// SSSS
+composeCallsBlog('a', 'PSSSSPPP');
+composeCallsBlog('a', 'PPSSSSPP');
+composeCallsBlog('a', 'PPPSSSSPPPP');
+composeCallsBlog('a', 'PPPPSSSS');
+
+// SSSSS
+composeCallsBlog('a', 'SSSSSPP');
+composeCallsBlog('a', 'PSSSSSP');
+composeCallsBlog('a', 'PPPPSSSSSPPP');
+
+// SSSSSS
+composeCallsBlog('a', 'SSSSSS');
+
+// PS etc.
+composeCallsBlog('(queens)', 'PSPS');
+composeCallsBlog('(queens+tittums)', 'PSPSPSPS');
+
+console.log('\n=========== the tenor mixy up ones:');
+
+// puts 7 in the hunt
+composeCallsBlog('b', 'PPPBB');
+composeCallsBlog('b', 'PPPBBB');
+
+composeCallsBlog('b', 'PPPBSPPP');
+
+// puts 7 in hunt
+composeCallsBlog('a', 'SSSS');
+
+// puts 7 in hunt
+composeCallsBlog('a', 'PPPSSSSS');
+
+// 7 in hunt
+composeCallsBlog('a', 'PPSSS');
+
+// puts 7 in hunt
+composeCallsBlog('a', 'PSPPP');
+
+console.log('\n=========== others like mixes s+b\n');
+
+composeCallsBlog('a', 'SBP');
+composeCallsBlog('a', 'PSBPP');
+
+composeCallsBlog('a', 'PPSBPPPP');
+
+composeCallsBlog('a', 'BSPP');
+composeCallsBlog('a', 'PBSP');
+composeCallsBlog('a', 'PPBSPPPP');
+
+composeCallsBlog('a', 'SSBPPPP');
+composeCallsBlog('a', 'PSSB');
+
+console.log('\n=========== cycle compose play:\n');
+
+// const c1 = Perm.fromOneLine('231456');
+// const c2 = Perm.fromOneLine('123564');
+
+// const c1 = Perm(['132']);
+
+// 2 3s, 1 overlapping, end up with a 5.
+// (16542)
+const c1 = Perm(['142']);
+const c2 = Perm(['465']);
+console.log(c1);
+console.log(c2);
+
+const cc = Perm.composePerms([c1, c2]);
+console.log('combined: ', cc.permutationStringPretty());
+
+console.log("\n")
+
+{
+// 2 overlapping (2, 4):
+// end up with 3 cycle (162)
+    const c1 = Perm(['142']);
+    const c2 = Perm(['246']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+// note order of application is left->right in way it's set up. (usually it's right to left)
+
+{
+// 3 overlapping
+// end up with no perm (as they're reverse of each other?)
+    const c1 = Perm(['142']);
+    const c2 = Perm(['124']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+// 3 overlapping
+// end up with (124)
+    // and this and above are only two possibilities with 3 overlapping -- either direction
+    const c1 = Perm(['142']);
+    const c2 = Perm(['214']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+// 4 items, 2 overlapping
+// end up with (13) (4256), period 4
+    const c1 = Perm(['1423']);
+    const c2 = Perm(['3564']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+// 4 items, 1 overlapping
+// end up with (1425673)  period 7  (2x4 - 1)
+    const c1 = Perm(['1423']);
+    const c2 = Perm(['3567']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // makes (264)
+    const c1 = Perm(['25']);
+    const c2 = Perm(['2564']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // makes (43652)
+    const c1 = Perm(['42']);   // PPPS
+    const c2 = Perm(['3652']); // PSSS
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // makes (24) (35)
+    const c1 = Perm(['234']); //
+    const c2 = Perm(['345']); // ? don't have this!
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // reverse order of above: makes  (32) (45)
+    // const c1 = Perm(['325']); //
+    const c1 = Perm(['345']); // ? don't have this!!
+    const c2 = Perm(['234']); // BBPP
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // reverse order of above: makes  (32) (45)
+    // const c1 = Perm(['325']); //
+    const c1 = Perm(['345']); //
+    const c2 = Perm(['234']); // BBPP
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // makes (2534)
+    const c1 = Perm(['25']);
+    const c2 = Perm(['234']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // makes (2345)
+    const c1 = Perm(['234']);
+    const c2 = Perm(['25']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // combo of above two: makes (543)
+    const c1 = Perm(['2534']);
+    const c2 = Perm(['2345']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+{
+    // reverse combo of above two: makes (243)
+    const c1 = Perm(['2345']);
+    const c2 = Perm(['2534']);
+    console.log(c1);
+    console.log(c2);
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+}
+
+// puts 7 in the hunt
+// composeCallsBlog('a', 'PPPPSS');
 
 // composeCalls('P');
 // composeCalls('PPPPP');
@@ -155,8 +446,6 @@ const callStr = "PBS";
 
 console.log("\n=================\n RW diary g7 code bits:\n");
 
-// grandsire common courses for blog
-composeCallsBlog('a', 'BBPP');
 
 // composeCalls('BBPP');
 // composeCalls('PBBP');
@@ -252,17 +541,7 @@ composeCallsBlog('a', 'BBPP');
 // console.log("compPSPBS = ", compPSPBS, cyclesToPermutationString(compPSPBS));
 //
 //
-let p = Perm([[1, 2], [3, 4]]);
-let p2 = Perm([[1, 2], [3, 4]]);
-let p3 = Perm([[1, 2]]);
-//
-console.log("p = ", p.toString());
-console.log("p2 = ", p2.toString());
-console.log("p3 = ", p3.toString());
-console.log(p == p2);
-console.log(p === p2);
-console.log(p.equals(p2));
-console.log(p.equals(p3));
+
 
 
 // composePerms([])
