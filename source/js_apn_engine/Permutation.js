@@ -127,15 +127,27 @@ export function Perm(cycles) {
             }
 
             return true;
+        },
+
+        cyclesToMapping() {
+            const mapping = new Map();
+
+            for (let cyc of cycles) {
+                const n = cyc.length;
+                if (n === 0) continue;
+                for (let i = 0; i < n; i++) {
+                    const from = cyc[i];
+                    const to   = cyc[(i + 1) % n];
+                    mapping.set(from, to);
+                }
+            }
+            return mapping;
         }
+
     };
     return Object.freeze(obj);
 }
 
-// Perm.fromOneLine = function (oneLine, alphabetIn) {
-//     const alphabet = alphabetIn ?? STAGE_SYMBOLS;
-
-// Perm.fromOneLine = function (oneLine, alphabetIn, omitOneCycles=false) {
 Perm.fromOneLine = function (oneLine, { alphabet=STAGE_SYMBOLS, omitOneCycles = true} = {}) {
     // const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
@@ -261,8 +273,8 @@ Perm.composePermPair = function (permA, permB) {
     ];
 
     // Build mapping for P and Q
-    const mapA = Perm.cyclesToMapping(permA);
-    const mapB = Perm.cyclesToMapping(permB);
+    const mapA = permA.cyclesToMapping();
+    const mapB = permB.cyclesToMapping();
 
     // console.log("maps: ", mapA, mapB);
 
@@ -283,26 +295,6 @@ Perm.composePerms = function (listOfPerms) {
         throw new Error("composePerms: Need at least one permutation");
     }
     return listOfPerms.reduce((acc, perm) => Perm.composePermPair(acc, perm));
-}
-
-/**
- * Convert a list of cycle strings into a mapping value -> image.
- *
- * Example: ["472","653"] means (4 7 2)(6 5 3)
- */
-Perm.cyclesToMapping = function (perm) {
-    const mapping = new Map();
-
-    for (let cyc of perm.cycles) {
-        const n = cyc.length;
-        if (n === 0) continue;
-        for (let i = 0; i < n; i++) {
-            const from = cyc[i];
-            const to   = cyc[(i + 1) % n];
-            mapping.set(from, to);
-        }
-    }
-    return mapping;
 }
 
 /**

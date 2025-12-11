@@ -91,7 +91,6 @@ test('example: "21453" → ["12","543"], period 6', () => {
     assert.equal(p.period(), 6);
 });
 
-
 test('identity permutation returns singletons; period 1', () => {
     let p = Perm.fromOneLine('12345');
     assert.deepEqual(p.cycles, ['1', '2', '3', '4', '5']);
@@ -122,7 +121,6 @@ test('custom/extended alphabet: rotation on first 12 symbols "1234567890ET"', ()
     // use L instead of 1 in the alphabet
     const explicitAlphabet = 'L234567890ET';
     let p = Perm.fromOneLine('234567890ETL', {alphabet: explicitAlphabet});
-    // todo when I sort out stages > 10, this will fail
     assert.deepEqual(p.cycles, ['098765432LTE']);
     assert.equal(p.period(), 12);
 });
@@ -173,4 +171,54 @@ test('criteria for differential detection behave as expected (cycle inputs)', ()
 
     // two cycles of length 1 are considered a differential
     assert.equal(Perm(["1", "2"]).isConsideredDifferential(), true);
+});
+
+test('cyclesToMapping []', () => {
+    assert.deepEqual(Perm([]).cyclesToMapping(),
+        new Map());
+});
+
+test('cyclesToMapping ["1"]', () => {
+    assert.deepEqual(Perm(["1"]).cyclesToMapping(),
+        new Map([
+            ['1', '1']
+        ]));
+});
+
+test('cyclesToMapping ["3", "4", "5"]', () => {
+    assert.deepEqual(Perm(["3", "4", "5"]).cyclesToMapping(),
+        new Map([
+            ['3', '3'],
+            ['4', '4'],
+            ['5', '5']
+        ]));
+});
+
+test('cyclesToMapping ["123", "4", "7"]', () => {
+    assert.deepEqual(Perm(["123", "4", "7"]).cyclesToMapping(),
+        new Map([
+            ['1', '2'],
+            ['2', '3'],
+            ['3', '1'],
+            ['4', '4'],
+            ['7', '7']
+        ]));
+});
+
+test('cyclesToMapping ["123"]', () => {
+    assert.deepEqual(Perm(["123"]).cyclesToMapping(),
+        new Map([
+            ['1', '2'],
+            ['2', '3'],
+            ['3', '1']
+        ]));
+});
+
+test('cyclesToMapping ["431"]', () => {
+    assert.deepEqual(Perm(["431"]).cyclesToMapping(),
+        new Map([
+            ['1', '4'],
+            ['3', '1'],
+            ['4', '3']
+        ]));
 });
