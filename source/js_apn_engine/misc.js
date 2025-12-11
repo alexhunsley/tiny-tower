@@ -1,73 +1,12 @@
-import {reverseString} from "./newAlg.util.js";
 import {Perm} from "./Permutation.js";
 import {repeatList} from "./utils.js";
 import {toCSVRow} from "./utils.js";
 import {Render} from "./render.js";
 
-import {STAGE_SYMBOLS} from "./notation.js";
-
-// console.log("G7:\n\nPlain lead: ", derivePermCycles('1253746'));
-//
-// console.log("Bob: ", derivePermCycles('1752634'));
-
-// // outputs 1432 -- incorrect wrt PBs -- it's backwards
-// console.log(derivePermCycles('4123'));
-//
-// // outputs 1234 -- incorrect wrt PBs -- it's backwards
-// console.log(derivePermCycles('2341'));
-//
-// // outputs 13, 24 -- correct wrt PBs
-// console.log(derivePermCycles('3412'));
-//
-// // outputs 12, 345 -- correct for 12, incorrect for 345! so yes some sorting thing.
-// console.log(derivePermCycles('21453'));
-
-/**
- * Given a list of cycle strings (e.g. ["12","34"]),
- * return the one-line permutation string, assuming
- * the underlying set is {1,2,...,maxSymbol}.
- *
- * Example: ["12","34"] → "2143"  (1→2, 2→1, 3→4, 4→3)
- */
-// function cyclesToPermutationString(cycles) {
-//     // Find the highest symbol used: assumed to be digits ("1","2",...)
-//     const maxSymbol = Math.max(...cycles.join("").split("").map(Number)) || 0;
-//
-//     // Start with identity mapping
-//     const map = {};
-//     for (let i = 1; i <= maxSymbol; i++) {
-//         map[i] = String(i);
-//     }
-//
-//     // Apply each cycle
-//     for (const cycIn of cycles) {
-//         // note we reverse, because we want perms to be PB order
-//         // (we also reverse when converting the other way)
-//         const cyc = reverseString(cycIn);
-//         const n = cyc.length;
-//         for (let i = 0; i < n; i++) {
-//             const from = cyc[i];
-//             const to   = cyc[(i + 1) % n];
-//             map[from] = to;
-//         }
-//     }
-//
-//     // Build the final one-line permutation string
-//     let result = "";
-//     for (let i = 1; i <= maxSymbol; i++) {
-//         result += map[i];
-//     }
-//     return result;
-// }
-
-// const rep = (n, x) => Array(n).fill(x);
-
 /// named changes
 
-// queens = { cycles: [ '1', '532', '674' ], period: 3 }
 console.log("queens =", Perm.fromOneLine('1357246').toString());
 console.log("tittums =", Perm.fromOneLine('1526374').toString());
-// console.log('to one line: ', Perm([[1,4], [2,3]]).toOneLine());
 
 /// PB6
 
