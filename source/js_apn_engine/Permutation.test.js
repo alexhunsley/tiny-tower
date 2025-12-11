@@ -10,8 +10,8 @@ import {Perm} from './Permutation.js';
 
 util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: Infinity};
 
-////////////////////////////////////////////////
-// perm cycle tests (*active*)
+/////////////////////////////////////////////////////////////////////////////////////////
+// fromOneLine / toOneLine
 
 // we could test the old ones and pass active=true flag (or use other func/obv type to avoid confusion?)
 
@@ -151,6 +151,9 @@ test('criteria for differential detection behave as expected (oneLine inputs)', 
 
 });
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// isConsideredDifferential
+
 test('criteria for differential detection behave as expected (cycle inputs)', () => {
 
     // hmm. technically if all are hunt bells, it IS a differential?
@@ -172,6 +175,10 @@ test('criteria for differential detection behave as expected (cycle inputs)', ()
     // two cycles of length 1 are considered a differential
     assert.equal(Perm(["1", "2"]).isConsideredDifferential(), true);
 });
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// cyclesToMapping
 
 test('cyclesToMapping []', () => {
     assert.deepEqual(Perm([]).cyclesToMapping(),
