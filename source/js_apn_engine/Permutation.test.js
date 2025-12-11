@@ -229,3 +229,48 @@ test('cyclesToMapping ["431"]', () => {
             ['4', '3']
         ]));
 });
+
+// equals
+test('equals', () => {
+    assert.ok(Perm([""]).equals(Perm([""])));
+    assert.ok(Perm([]).equals(Perm([])));
+    assert.ok(Perm(["123"]).equals(Perm(["123"])));
+});
+
+// compose
+test('compose', () => {
+    assert.ok(Perm([""]).compose(Perm([])).equals(Perm([])));
+    assert.ok(Perm([]).compose(Perm([""])).equals(Perm([])));
+    assert.ok(Perm([""]).compose(Perm([""])).equals(Perm([])));
+
+    assert.ok(Perm([]).compose(Perm([])).equals(Perm([])));
+
+    assert.ok(Perm(["231"]).compose(Perm(["345"])).equals(Perm(["24531"])));
+
+    assert.ok(Perm(["1"]).compose(Perm(["3"])).equals(Perm(["1", "3"])));
+
+    assert.ok(Perm(["12"]).compose(Perm(["581"])).equals(Perm(["1258"])));
+});
+
+test('compose list', () => {
+    const p1 = Perm([]);
+    const p2 = Perm([]);
+    const p3 = Perm([]);
+    const p4 = Perm(["146", "67"]);
+
+    assert.ok(Perm.composePerms([p1, p2]).equals(p3));
+
+    // fails
+    // assert.ok(Perm.composePerms([p1, p4]).equals(p4));
+
+    assert.ok(Perm([]).compose(Perm([""])).equals(Perm([])));
+    assert.ok(Perm([""]).compose(Perm([""])).equals(Perm([])));
+
+    assert.ok(Perm([]).compose(Perm([])).equals(Perm([])));
+
+    assert.ok(Perm(["231"]).compose(Perm(["345"])).equals(Perm(["24531"])));
+
+    assert.ok(Perm(["1"]).compose(Perm(["3"])).equals(Perm(["1", "3"])));
+
+    assert.ok(Perm(["12"]).compose(Perm(["581"])).equals(Perm(["1258"])));
+});

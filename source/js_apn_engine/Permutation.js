@@ -142,8 +142,40 @@ export function Perm(cycles) {
                 }
             }
             return mapping;
-        }
+        },
 
+        /**
+         * Compose two Perms P and Q given as arrays of cycle strings.
+         * Returns an array of cycle strings for Q ∘ P (apply P first, then Q).
+         *
+         * Example:
+         *   P = ["1","472","653"]
+         *   Q = ["1","473652"]
+         *   composePerms(P, Q)  // => ["1","435627"]
+         */
+        compose(other) {
+            // Alphabet: all symbols that appear anywhere, in first-seen order
+            const alphabet = [
+                ...new Set(cycles.join("") + other.cycles.join(""))
+            ];
+
+            // Build mapping for P and Q
+            const mapA = this.cyclesToMapping();
+            const mapB = other.cyclesToMapping();
+
+            // console.log("maps: ", mapA, mapB);
+
+            // Compose: (Q ∘ P)(x) = Q(P(x))
+            const composed = new Map();
+            for (const x of alphabet) {
+                const y = mapA.get(x) ?? x;      // P_a(x)
+                const z = mapB.get(y) ?? y;      // P_b(P_a(x))
+                composed.set(x, z);
+            }
+            // Turn mapping back into cycle strings
+            // return mappingToCycles(composed, alphabet);
+            return Perm(Perm.mappingToCycles(composed, alphabet));
+        }
     };
     return Object.freeze(obj);
 }
@@ -257,44 +289,11 @@ Perm.fromOneLine = function (oneLine, { alphabet=STAGE_SYMBOLS, omitOneCycles = 
     return Perm(cycles);
 };
 
-/**
- * Compose two Perms P and Q given as arrays of cycle strings.
- * Returns an array of cycle strings for Q ∘ P (apply P first, then Q).
- *
- * Example:
- *   P = ["1","472","653"]
- *   Q = ["1","473652"]
- *   composePerms(P, Q)  // => ["1","435627"]
- */
-Perm.composePermPair = function (permA, permB) {
-    // Alphabet: all symbols that appear anywhere, in first-seen order
-    const alphabet = [
-        ...new Set(permA.cycles.join("") + permB.cycles.join(""))
-    ];
-
-    // Build mapping for P and Q
-    const mapA = permA.cyclesToMapping();
-    const mapB = permB.cyclesToMapping();
-
-    // console.log("maps: ", mapA, mapB);
-
-    // Compose: (Q ∘ P)(x) = Q(P(x))
-    const composed = new Map();
-    for (const x of alphabet) {
-        const y = mapA.get(x) ?? x;      // P_a(x)
-        const z = mapB.get(y) ?? y;      // P_b(P_a(x))
-        composed.set(x, z);
-    }
-    // Turn mapping back into cycle strings
-    // return mappingToCycles(composed, alphabet);
-    return Perm(Perm.mappingToCycles(composed, alphabet));
-}
-
 Perm.composePerms = function (listOfPerms) {
     if (listOfPerms.length === 0) {
         throw new Error("composePerms: Need at least one permutation");
     }
-    return listOfPerms.reduce((acc, perm) => Perm.composePermPair(acc, perm));
+    return listOfPerms.reduce((acc, perm) => acc.compose(perm));
 }
 
 /**

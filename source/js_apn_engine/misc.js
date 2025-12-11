@@ -60,7 +60,7 @@ import {STAGE_SYMBOLS} from "./notation.js";
 //     return result;
 // }
 
-const rep = (n, x) => Array(n).fill(x);
+// const rep = (n, x) => Array(n).fill(x);
 
 /// named changes
 
