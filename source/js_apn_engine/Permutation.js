@@ -37,25 +37,36 @@ export function Perm(cycles) {
             for (const cycle of cycles) {
                 const len = cycle.length;
                 for (let i = 0; i < len; i++) {
-                    const from = Number(cycle[i]);
-                    const to   = Number(cycle[(i + 1) % len]);
+                    const from = STAGE_SYMBOLS.indexOf(cycle[i]);
+                    const to   = STAGE_SYMBOLS.indexOf(cycle[(i + 1) % len]);
+                    // const from = Number(cycle[i]);
+                    // const to   = Number(cycle[(i + 1) % len]);
                     posMap[from] = to;
                 }
             }
+
+            // TODO Make decision on:
+            //    if we allow creation of perm with no one-cycles,
+            //    it means we can't necessarily calculate max here,
+            //    as the highest char might map to itself and hence be
+            //    missing.
 
             // Determine how many positions we’re dealing with
             const max = Math.max(...Object.keys(posMap).map(Number), 0);
 
             // oneLine[newPos] = oldPos
-            const arr = new Array(max + 1);
+            // const arr = new Array(max + 1);
+            const arr = STAGE_SYMBOLS.slice(0, max+1).split("");
 
-            for (let oldPos = 1; oldPos <= max; oldPos++) {
+            // this 1?
+            for (let oldPos = 0; oldPos <= max; oldPos++) {
                 const newPos = posMap[oldPos] ?? oldPos;  // fixed points stay put
-                arr[newPos] = String(oldPos);
+                arr[newPos] = STAGE_SYMBOLS[oldPos];
             }
 
             // Convert 1-based array to a string
-            return arr.slice(1).join("");
+            return arr.join("");
+            // return arr.slice(1).join("");
         },
 
         permutationString(cyclesIn=cycles) {
@@ -96,11 +107,11 @@ export function Perm(cycles) {
                 // Edge case: technically a perm cycle list of one single char string isn't
                 // a differential (e.g. permCycle = ["1"]).
                 // This check could be omitted if you never expect this to come up.
-                if (cycles.length === 0 || cycles.length === 1 && cycles[0].length === 1) {
+                if (cycles.length === 0 || (cycles.length === 1 && cycles[0].length === 1)) {
                     return false;
                 }
-                const filt = cycles.filter(cycle => cycle.length > 1);
-                _isConsideredDifferential = filt.length !== 1;
+                const nonOneCycles = cycles.filter(cycle => cycle.length > 1);
+                _isConsideredDifferential = nonOneCycles.length !== 1;
             }
             return _isConsideredDifferential;
         },
@@ -128,8 +139,12 @@ export function Perm(cycles) {
     return Object.freeze(obj);
 }
 
-Perm.fromOneLine = function (oneLine, alphabetIn) {
-    const alphabet = alphabetIn ?? STAGE_SYMBOLS;
+// Perm.fromOneLine = function (oneLine, alphabetIn) {
+//     const alphabet = alphabetIn ?? STAGE_SYMBOLS;
+
+// Perm.fromOneLine = function (oneLine, alphabetIn, omitOneCycles=false) {
+Perm.fromOneLine = function (oneLine, { alphabet=STAGE_SYMBOLS, omitOneCycles = true} = {}) {
+    // const alphabet = alphabetIn ?? STAGE_SYMBOLS;
 
     if (typeof oneLine !== "string" || oneLine.length === 0) {
         throw new Error("oneLine must be a non-empty string");
@@ -194,7 +209,11 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
             cur = p[cur];
         }
 
-        if (cycleIdx.length > 1) {
+        // I've added something here so one cycles can be omitted (omitOneCycles).
+        // However that breaks things later (e.g. toOneLine).
+        // So we shouldn't have the option of doing that when making the Perm --
+        // it should be a flag at interpretation time!
+        // if (cycleIdx.length > 1 || !omitOneCycles) {
             // Convert position indices to symbols from the base row.
             // NOTE: no reversal here – the cycle direction matches the passive mapping.
             const cycleStr = cycleIdx
@@ -202,7 +221,7 @@ Perm.fromOneLine = function (oneLine, alphabetIn) {
                 .join("");
 
             cycles.push(cycleStr);
-        }
+        // }
     }
 
 // cycles is a string[], e.g. ["3412", "5142", "32"]

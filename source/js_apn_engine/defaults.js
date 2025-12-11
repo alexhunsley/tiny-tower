@@ -1,6 +1,6 @@
 // defaults.js
 
-export const TT_VERSION = "0.97";
+export const TT_VERSION = "0.981";
 
 export const DEFAULTS = {
     // Core method inputs

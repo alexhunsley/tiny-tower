@@ -108,9 +108,20 @@ body { margin:0; background:linear-gradient(180deg,#0b1023,#0f172a); color:var(-
 }
 
 .ghost-digit {
-    color: transparent;              /* no visible ink */
+    /*color: rgb(255 255 255 / 0.6);*/
+    /*text-decoration-color: rgb(255 255 255 / 0.6);*/
+    color: transparent;
     text-decoration-color: transparent;
-    /* keep their width / layout */
+}
+
+.perm-cycle-strong {
+    color: #888 !important;
+    /*font-size: 0.6rem !important;*/
+}
+
+.perm-cycle-weak {
+    color: #444 !important;
+    /*font-size: 0.6rem !important;*/
 }
 
 /* The actual scroller with generated rows */

@@ -11,6 +11,7 @@ import {
     evaluatePNAndStage, count87s, measureTopPairDistances
 } from "./newAlg.js";
 import { Perm } from "./Permutation.js";
+import { Render } from "./Render.js";
 
 function el(id) {
     const n = document.getElementById(id);
@@ -94,41 +95,55 @@ function setRowControls({playing, paused}) {
 }
 
 // Renderer
-function renderGeneratedList(list, blueLines = ["2"]) {
-    console.log("renderGeneratedList: list len = ", list.length, " blueLines = ", blueLines);
+function renderGeneratedList(list, render) {
+    console.log("renderGeneratedList: list len = ", list.length, " render = ", render);
     const out = el("notationOutput");
     if (!list || !list.length) {
         out.innerHTML = '<em class="muted">— nothing generated —</em>';
         return;
     }
-    const stage = clampStage(el("stage").value);
 
-    out.innerHTML = list
-        .map((row, i) => {
-            const display = formatRowForDisplay(row, blueLines);
-            return `<div class="row-item" data-row="${i}"><code>${display}</code></div>`;
-        })
-        .join("");
+    // out.innerHTML = "adsasd";
 
-    const blueLineContainer = document.getElementById("notationOutput");
-    if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
+    // if this doesn't run, lines can't appear either
+    // if (render.drawDigits) {
+        out.innerHTML = list
+            .map((row, i) => {
+                const display = formatRowForDisplay(row, render);
+                return `<div class="row-item" data-row="${i}"><code>${display}</code></div>`;
+            })
+            .join("");
+    // }
 
-    console.log("renderGeneratedList: list len 2 = ", list.length);
+    if (render.drawLines) {
+        const lineColors = ["tomato", "deepskyblue", "limegreen", "gold", "orchid", "cyan", "orange"];
 
-    // stage 9 to render 3 lines (differential):
-    //    7.14589
-    const lineColors = ["deepskyblue", "tomato", "limegreen", "gold", "orchid", "cyan", "orange",];
+        const blueLineContainer = document.getElementById("notationOutput");
+        if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
 
-    blueLines.forEach((targetChar, i) => {
-        const color = lineColors[i % lineColors.length];
-        renderBlueLineOverlay({
-            scroller: blueLineContainer,
-            rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
-            // options: { color: "red", width: 2 }
-            targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
-            options: {color: color, width: 2}
+        render.huntingLines.forEach((targetChar, i) => {
+            const color = lineColors[i % lineColors.length];
+            renderBlueLineOverlay({
+                scroller: blueLineContainer,
+                rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
+                // options: { color: "red", width: 2 }
+                targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
+                options: {color: lineColors[0], width: 2}
+            });
         });
-    });
+
+        render.workingLines.forEach((targetChar, i) => {
+            const color = lineColors[i % lineColors.length];
+            renderBlueLineOverlay({
+                scroller: blueLineContainer,
+                rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
+                // options: { color: "red", width: 2 }
+                targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
+                options: {color: lineColors[1+i], width: 3}
+            });
+        });
+    }
+    console.log("renderGeneratedList: list len 2 = ", list.length);
 }
 
 function wireNotation() {
@@ -346,15 +361,15 @@ function generateAndRender({pnString, stageFromUI, maxChanges = 6000}) {
 
     const s = clampStage(stageFromUI);
 
-    console.log("pnTokens = ", pnTokens, " pnString = ", pnString);
+    // console.log("pnTokens = ", pnTokens, " pnString = ", pnString);
 
     // generatedRows = generateList(pnString, stage);
 
     generatedRows = generateList({leadTokens: pnTokens, stage: s, maxChanges: 6000});
 
-    console.log("generatedRows = ", generatedRows);
+    // console.log("generatedRows = ", generatedRows);
 
-    const {reportLines, blueLineIndexes} = buildGenerationReport({
+    const {reportLines, render} = buildGenerationReport({
         pnTokens, stage: s, rows: generatedRows, maxChanges
     });
     renderReport(reportLines);
@@ -362,7 +377,9 @@ function generateAndRender({pnString, stageFromUI, maxChanges = 6000}) {
     // const blueLineIndexes = [1, 7, 8];
     // console.log("================ got blueLine indexes = ", blueLineIndexes, " report lines = ", reportLines);
 
-    renderGeneratedList(generatedRows, blueLineIndexes);
+    console.log(" using render", render);
+
+    renderGeneratedList(generatedRows, render);
     clearRowHighlight();
 
     return generatedRows;
@@ -431,7 +448,7 @@ function renderReport(lines) {
         if (s.startsWith("[ALERT]")) return `<div class="alert">${s.slice(7)}</div>`;
         if (s.startsWith("[WARN]")) return `<div class="warn">${s.slice(6)}</div>`;
         if (s.startsWith("[OK]")) return `<div class="ok">${s.slice(4)}</div>`;
-        return `<div>${s}</div>`;
+        return `<div>${s}&nbsp;</div>`;
     }).join("");
 }
 
@@ -457,13 +474,20 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     const returned = rows.length > 0 && rows[rows.length - 1] === rounds;
     const firstLeadEndRow = rows[leadLen];
 
-    // return {rows: ["12345678"], blueLineIndexes: [1]};
+    // console.log("first row:", rows[leadLen]);
 
+    const firstLeadEndCycles = Perm.fromOneLine(rows[leadLen]).permutationStringPretty();
+
+    // const firstLeadEndCyclesFormatted = `<span class="perm-cycle-strong">` + firstLeadEndCycles + '</span>';
+
+    // return {rows: ["12345678"], blueLineIndexes: [1]};
 
     // Facts
     lines.push(`Length: ${rows.length - 1}`);
     lines.push(`Lead length: ${leadLen}`);
     lines.push(`Leads: ${fullLeads}` + (remainder ? ` + ${remainder} steps` : ""));
+
+    // lines.push(`Lead end: ${firstLeadEndRow} ${firstLeadEndCyclesFormatted}`);
     lines.push(`Lead end: ${firstLeadEndRow}`);
 
     lines.push(`[OK] Expanded PN: ${fullPN} (length ${pnTokens.length})`);
@@ -476,14 +500,41 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     // TODO make this helper more comprehensive and return the cycle
     // too (for when not differential) and also hunt bell count
     if (perm.isConsideredDifferential()) {
-        lines.push(`[WARN] DIFFERENTIAL: period=${period} cycles=${cycles}`);
+        const period = perm.period();
+        lines.push(`[WARN] DIFFERENTIAL: period=${period}, PB cycles=${perm.permutationStringPretty()}`);
     } else {
         const pbOrder = perm.cycles.filter(cycle => cycle.length > 1)[0];
         lines.push(`[OK] PB ORDER: ${pbOrder}`)
     }
 
-    // // first number of each group tells us which blue lines to draw
-    const blueLines = perm.cycles.map(s => s[0]);
+    // first number of each group tells us which blue lines to draw
+    // const blueLines = perm.cycles.map(s => s[0]);
+
+    console.log("   GOT perm.cycles = ", perm.cycles);
+
+    var huntingBlueLines = perm.cycles
+        .filter(s => (s.length == 1))
+        .map(s => s[0]);
+
+    console.log("asdsadsa  huntingBlueLines = ", huntingBlueLines);
+
+    const workingBlueLines = perm.cycles
+        .filter(s => s.length > 1)
+        .map(s => s[0]);
+
+    console.log("bluelines: hunts = ", huntingBlueLines, " workingBlueLines = ", workingBlueLines);
+
+    const render = Render(huntingBlueLines,
+        workingBlueLines,
+        false,
+        true,
+        true,
+        0.5);
+
+    if (huntingBlueLines.length === 0 && workingBlueLines.length === 0) {
+        huntingBlueLines = [].concat(...perm.cycles); //.join("");
+        console.log(" ... but got 0 lens, so setting hunt lines to joined thing, got: ", huntingBlueLines);
+    }
 
     const backwardTenorsCount = count87s(rows, stage);
     console.log(`Back tenor count: ${backwardTenorsCount}`);
@@ -496,11 +547,11 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     const distancesList = measureTopPairDistances(stage, rows);
     const results = distancesList.map((x, i) => `${i}: ${x}%`);
 
+    lines.push(`\n`);
     lines.push(`[OK] -----------------------`);
     lines.push(`[OK] tenor distances report:`);
 
     lines.push(...results);
-
 
     // --- Duplicate/early-rounds detection (exclude the final row) ---
     if (Array.isArray(rows) && rows.length > 1) {
@@ -544,7 +595,8 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     }
 
     return {
-        reportLines: lines, blueLineIndexes: blueLines,
+        reportLines: lines, render: render,
+        // reportLines: lines, blueLineIndexes: workingBlueLines,
     };
 }
 

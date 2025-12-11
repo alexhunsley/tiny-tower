@@ -18,9 +18,18 @@ util.inspect.defaultOptions = {depth: null, maxArrayLength: null, breakLength: I
 test('PB4 first LE: "1342" → ["243"], period 3', () => {
     const oneLine = '1342';
     let p = Perm.fromOneLine(oneLine);
-    assert.deepEqual(p.cycles, ['243']);
+    assert.deepEqual(p.cycles, ['1', '243']);
+
+    // Expected :1342
+    // Actual   :231
     assert.deepEqual(p.toOneLine(), oneLine);
     assert.equal(p.period(), 3);
+
+    // // again, with explicit one-cycles
+    // let p2 = Perm.fromOneLine(oneLine, {omitOneCycles: false});
+    // assert.deepEqual(p2.cycles, ['1', '243']);
+    // assert.deepEqual(p2.toOneLine(), oneLine);
+    // assert.equal(p2.period(), 3);
 });
 
 test('toOneLine(fromOneLine()) return orig input for cycles', () => {
@@ -34,14 +43,20 @@ test('toOneLine(fromOneLine()) return orig input for cycles', () => {
 
 test('toOneLine(fromOneLine()) is empty string for identity inputs', () => {
     for (const oneLine of ["1", "12", "123", "1234", "1234567890ET"]) {
-        // const oneLine = '1243';
-        assert.deepEqual(Perm.fromOneLine(oneLine).toOneLine(), '');
+        assert.deepEqual(Perm.fromOneLine(oneLine).toOneLine(), oneLine);
+    }
+});
+
+test('toOneLine(fromOneLine(omitCycles = true)) is NOT empty string for identity inputs', () => {
+    for (const oneLine of ["1", "12", "123", "1234", "1234567890ET"]) {
+    // for (const oneLine of ["1234567890ET"]) {
+        assert.notDeepEqual(Perm.fromOneLine(oneLine, {omitOneCycles: false}).toOneLine(), '');
     }
 });
 
 test('PB6 first LE: "135264" → ["24653"], period 3', () => {
     let p = Perm.fromOneLine('135264');
-    assert.deepEqual(p.cycles, ['24653']);
+    assert.deepEqual(p.cycles, ['1', '24653']);
     assert.equal(p.period(), 5);
 });
 
@@ -79,13 +94,13 @@ test('example: "21453" → ["12","543"], period 6', () => {
 
 test('identity permutation returns singletons; period 1', () => {
     let p = Perm.fromOneLine('12345');
-    assert.deepEqual(p.cycles, []);
+    assert.deepEqual(p.cycles, ['1', '2', '3', '4', '5']);
     assert.equal(p.period(), 1);
 });
 
 test('reverse permutation "54321" → ["15","24"]; period 2', () => {
     let p = Perm.fromOneLine('54321');
-    assert.deepEqual(p.cycles, ['15', '24']);
+    assert.deepEqual(p.cycles, ['15', '24', '3']);
     assert.equal(p.period(), 2);
 });
 
@@ -106,7 +121,7 @@ test('large LCM: cycles (12)(345)(6789) → period 12', () => {
 test('custom/extended alphabet: rotation on first 12 symbols "1234567890ET"', () => {
     // use L instead of 1 in the alphabet
     const explicitAlphabet = 'L234567890ET';
-    let p = Perm.fromOneLine('234567890ETL', explicitAlphabet);
+    let p = Perm.fromOneLine('234567890ETL', {alphabet: explicitAlphabet});
     // todo when I sort out stages > 10, this will fail
     assert.deepEqual(p.cycles, ['098765432LTE']);
     assert.equal(p.period(), 12);
@@ -125,7 +140,7 @@ test('invalid: symbol not in subset (n too small)', () => {
 test('criteria for differential detection behave as expected (oneLine inputs)', () => {
 
     // all hunts bells should be considered differential
-    assert.equal(Perm.fromOneLine('12345').isConsideredDifferential(), false);
+    assert.equal(Perm.fromOneLine('12345').isConsideredDifferential(), true);
 
     // one hunt bells and full cycle is not differential
     assert.equal(Perm.fromOneLine('13452').isConsideredDifferential(), false);

@@ -2,6 +2,7 @@ import {reverseString} from "./newAlg.util.js";
 import {Perm} from "./Permutation.js";
 import {repeatList} from "./utils.js";
 import {toCSVRow} from "./utils.js";
+import {Render} from "./render.js";
 
 import {STAGE_SYMBOLS} from "./notation.js";
 
@@ -67,6 +68,12 @@ const rep = (n, x) => Array(n).fill(x);
 console.log("queens =", Perm.fromOneLine('1357246').toString());
 console.log("tittums =", Perm.fromOneLine('1526374').toString());
 // console.log('to one line: ', Perm([[1,4], [2,3]]).toOneLine());
+
+/// PB6
+
+const pb_p = Perm.fromOneLine('123564')
+console.log("PB6: pb_p =", pb_p.toString());
+
 
 /// GRANDSIRE
 
@@ -577,3 +584,6 @@ console.log("\n=================\n RW diary g7 code bits:\n");
 //
 //     }
 // }
+
+const r = Render([], []);
+console.log("render = ", r);

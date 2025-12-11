@@ -2,5 +2,8 @@
   "type": "module",
   "devDependencies": {
     "esbuild": "^0.25.10"
+  },
+  "scripts": {
+    "serve": "http-server -c-1"
   }
 }
