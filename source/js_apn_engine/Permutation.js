@@ -30,7 +30,7 @@ export function Perm(cycles) {
             return _string;
         },
 
-        toOneLine() {
+        toOneLine(omitOneCycles = false) {
             // Passive permutation map: position i → new position σ(i)
             const posMap = {};
 
@@ -45,12 +45,6 @@ export function Perm(cycles) {
                 }
             }
 
-            // TODO Make decision on:
-            //    if we allow creation of perm with no one-cycles,
-            //    it means we can't necessarily calculate max here,
-            //    as the highest char might map to itself and hence be
-            //    missing.
-
             // Determine how many positions we’re dealing with
             const max = Math.max(...Object.keys(posMap).map(Number), 0);
 
@@ -58,14 +52,13 @@ export function Perm(cycles) {
             // const arr = new Array(max + 1);
             const arr = STAGE_SYMBOLS.slice(0, max+1).split("");
 
-            // this 1?
             for (let oldPos = 0; oldPos <= max; oldPos++) {
                 const newPos = posMap[oldPos] ?? oldPos;  // fixed points stay put
                 arr[newPos] = STAGE_SYMBOLS[oldPos];
             }
 
             // Convert 1-based array to a string
-            return arr.join("");
+            return arr.filter(cycle => (cycle.length > 1 || !omitOneCycles)).join("");
             // return arr.slice(1).join("");
         },
 

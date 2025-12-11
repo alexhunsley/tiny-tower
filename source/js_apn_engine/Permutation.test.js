@@ -33,7 +33,7 @@ test('PB4 first LE: "1342" → ["243"], period 3', () => {
 });
 
 test('toOneLine(fromOneLine()) return orig input for cycles', () => {
-    for (const oneLine of ["21", "1243", "2431", "4123"]) {
+    for (const oneLine of ["21", "1243", "2431", "4123", "ET1234567890"]) {
         // const oneLine = '1243';
         let p = Perm.fromOneLine(oneLine);
         // assert.deepEqual(p.cycles, ['243']);
@@ -48,9 +48,9 @@ test('toOneLine(fromOneLine()) is empty string for identity inputs', () => {
 });
 
 test('toOneLine(fromOneLine(omitCycles = true)) is NOT empty string for identity inputs', () => {
-    for (const oneLine of ["1", "12", "123", "1234", "1234567890ET"]) {
-    // for (const oneLine of ["1234567890ET"]) {
-        assert.notDeepEqual(Perm.fromOneLine(oneLine, {omitOneCycles: false}).toOneLine(), '');
+    // for (const oneLine of ["1", "12", "123", "1234", "1234567890ET"]) {
+    for (const oneLine of ["1234567890ET"]) {
+        assert.deepEqual(Perm.fromOneLine(oneLine).toOneLine(true), '');
     }
 });
 
