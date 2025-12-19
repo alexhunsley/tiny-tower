@@ -7,6 +7,7 @@ INDEX = ROOT / "index.html"
 CSS   = ROOT / "styles.css"
 MAIN  = ROOT / "main.js"
 DEFS  = ROOT / "defaults.js"
+SNOW  = ROOT / "snowflake.js"
 OUT   = ROOT / "tower.html"
 BUND  = ROOT / "bundle.inline.js"
 
@@ -29,6 +30,10 @@ def build_bundle():
     imports = []
     if DEFS.exists():
         imports.append(f'import "{abs_posix(DEFS)}";')
+
+    if SNOW.exists():
+        imports.append(f'import "{abs_posix(SNOW)}";')
+
     imports.append(f'import "{abs_posix(MAIN)}";')
     entry_code = "\n".join(imports) + "\n"
 
