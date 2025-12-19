@@ -1,46 +1,70 @@
 (() => {
-    console.log("SNOWFLAKE loaded");
-    const DURATION = 5000; // ms
+    const INITIAL_FADE_MS = 5000; // page-load fade
+    const TOGGLE_FADE_MS  = 1000; // 's' toggle fade
     const FLAKES = 150;
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+    let canvas, ctx, rafId;
+    let flakes = [];
 
-    Object.assign(canvas.style, {
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        zIndex: 9999,
-    });
+    let snowOn = false;     // target state
+    let alpha = 1;          // start visible
+    let lastTime = 0;
+    let fadeMs = INITIAL_FADE_MS; // current fade duration
 
-    document.body.appendChild(canvas);
+    function createCanvas() {
+        if (canvas) return;
 
-    const resize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
+        canvas = document.createElement("canvas");
+        ctx = canvas.getContext("2d");
 
-    const flakes = Array.from({length: FLAKES}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 3 + 1,
-        s: Math.random() * 1 + 0.5,
-        d: Math.random() * Math.PI * 2,
-    }));
+        Object.assign(canvas.style, {
+            position: "fixed",
+            inset: "0",
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            zIndex: 9999,
+        });
 
-    const start = performance.now();
+        document.body.appendChild(canvas);
 
-    function draw(now) {
-        const elapsed = now - start;
-        const fade = Math.max(1 - elapsed / DURATION, 0);
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener("resize", resize);
+
+        flakes = Array.from({ length: FLAKES }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 3 + 1,
+            s: Math.random() * 1 + 0.5,
+            d: Math.random() * Math.PI * 2,
+        }));
+    }
+
+    function destroyCanvas() {
+        if (!canvas) return;
+        cancelAnimationFrame(rafId);
+        rafId = null;
+        canvas.remove();
+        canvas = ctx = null;
+        flakes = [];
+    }
+
+    function tick(now) {
+        if (!canvas) return;
+
+        const dt = now - lastTime;
+        lastTime = now;
+
+        const delta = dt / fadeMs;
+        alpha += snowOn ? delta : -delta;
+        alpha = Math.max(0, Math.min(1, alpha));
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = fade;
+        ctx.globalAlpha = alpha;
         ctx.fillStyle = "white";
 
         for (const f of flakes) {
@@ -58,13 +82,37 @@
             }
         }
 
-        if (fade > 0) {
-            requestAnimationFrame(draw);
-        } else {
-            canvas.remove();
-            window.removeEventListener("resize", resize);
+        if (alpha === 0 && !snowOn) {
+            destroyCanvas();
+            return;
+        }
+
+        rafId = requestAnimationFrame(tick);
+    }
+
+    function ensureRunning() {
+        if (!canvas) {
+            createCanvas();
+            lastTime = performance.now();
+            rafId = requestAnimationFrame(tick);
         }
     }
 
-    requestAnimationFrame(draw);
+    // ---- keyboard toggle ----
+    window.addEventListener(
+        "keydown",
+        (e) => {
+            if (e.key !== "s" && e.key !== "S") return;
+            if (e.repeat) return;
+
+            snowOn = !snowOn;
+            fadeMs = TOGGLE_FADE_MS; // faster fade for user toggle
+            ensureRunning();
+        },
+        true
+    );
+
+    // ---- initial behaviour: visible → slow fade out ----
+    fadeMs = INITIAL_FADE_MS;
+    ensureRunning();
 })();
