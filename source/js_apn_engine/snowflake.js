@@ -1,3 +1,4 @@
+
 (() => {
     const INITIAL_FADE_MS = 5000; // page-load fade
     const TOGGLE_FADE_MS  = 1000; // 's' toggle fade
@@ -10,6 +11,9 @@
     let alpha = 1;                // start visible (then fade out)
     let lastTime = 0;
     let fadeMs = INITIAL_FADE_MS; // current fade duration
+
+    // 'f' toggles draw style
+    let drawMode = "crystal"; // "circle" | "crystal"
 
     function createCanvas() {
         if (canvas) return;
@@ -35,16 +39,18 @@
         resize();
         window.addEventListener("resize", resize);
 
-        // "crystals": each flake has size, drift, angle, spin
+        // flakes have both circle + crystal params; mode just changes drawing
         flakes = Array.from({ length: FLAKES }, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 2,                // 2..5 px-ish
-            fall: Math.random() * 1.1 + 0.4,            // speed
+            // circle-ish size (also used as crystal size)
+            size: Math.random() * 3 + 2,                // 2..5
+            fall: Math.random() * 1.1 + 0.4,
             driftAmp: Math.random() * 0.7 + 0.2,
             driftPhase: Math.random() * Math.PI * 2,
+            // crystal rotation
             angle: Math.random() * Math.PI * 2,
-            spin: (Math.random() * 2 - 1) * 0.0025,     // rad/ms (subtle)
+            spin: (Math.random() * 2 - 1) * 0.0025,     // rad/ms
         }));
     }
 
@@ -57,17 +63,21 @@
         flakes = [];
     }
 
-    // Draw a little "crystal": 3 crossed lines (6 arms) + tiny center
+    function drawCircle(x, y, r) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 3 crossed lines (6 arms) + tiny center
     function drawCrystal(x, y, size, angle) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
 
-        // line thickness scales a bit with size
         ctx.lineWidth = Math.max(1, size * 0.25);
         ctx.lineCap = "round";
 
-        // arms
         ctx.beginPath();
         for (let i = 0; i < 3; i++) {
             ctx.rotate(Math.PI / 3); // 60°
@@ -76,7 +86,6 @@
         }
         ctx.stroke();
 
-        // tiny center dot
         ctx.beginPath();
         ctx.arc(0, 0, Math.max(0.7, size * 0.18), 0, Math.PI * 2);
         ctx.fill();
@@ -97,9 +106,9 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.globalAlpha = alpha;
 
-        // crystals look better stroked + filled
-        ctx.strokeStyle = "white";
+        // common styles
         ctx.fillStyle = "white";
+        ctx.strokeStyle = "white";
 
         for (const f of flakes) {
             // motion
@@ -116,7 +125,12 @@
             if (f.x < -20) f.x = canvas.width + 20;
             if (f.x > canvas.width + 20) f.x = -20;
 
-            drawCrystal(f.x, f.y, f.size, f.angle);
+            // draw
+            if (drawMode === "circle") {
+                drawCircle(f.x, f.y, f.size);
+            } else {
+                drawCrystal(f.x, f.y, f.size, f.angle);
+            }
         }
 
         if (alpha === 0 && !snowOn) {
@@ -135,16 +149,26 @@
         }
     }
 
-    // 's' toggles, always works mid-fade
+    // Key controls:
+    // - 's' toggles snow on/off (1s fade)
+    // - 'f' toggles draw mode circle <-> crystal (no fade change)
     window.addEventListener(
         "keydown",
         (e) => {
-            if (e.key !== "s" && e.key !== "S") return;
             if (e.repeat) return;
 
-            snowOn = !snowOn;
-            fadeMs = TOGGLE_FADE_MS; // faster fade for user toggle
-            ensureRunning();
+            if (e.key === "s" || e.key === "S") {
+                snowOn = !snowOn;
+                fadeMs = TOGGLE_FADE_MS;
+                ensureRunning();
+                return;
+            }
+
+            if (e.key === "f" || e.key === "F") {
+                drawMode = (drawMode === "circle") ? "crystal" : "circle";
+                ensureRunning(); // if canvas is gone, recreate so mode change is visible when on
+                return;
+            }
         },
         true
     );
