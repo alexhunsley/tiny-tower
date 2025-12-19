@@ -1,19 +1,66 @@
-
 (() => {
     const INITIAL_FADE_MS = 5000; // page-load fade
-    const TOGGLE_FADE_MS  = 1000; // 's' toggle fade
+    const TOGGLE_FADE_MS = 1000;  // 's' toggle fade
     const FLAKES = 150;
 
     let canvas, ctx, rafId;
     let flakes = [];
 
-    let snowOn = false;           // target state
-    let alpha = 1;                // start visible (then fade out)
+    let snowOn = false;            // target state
+    let alpha = 1;                 // start visible (then fade out)
     let lastTime = 0;
-    let fadeMs = INITIAL_FADE_MS; // current fade duration
+    let fadeMs = INITIAL_FADE_MS;  // current fade duration
 
     // 'f' toggles draw style
     let drawMode = "crystal"; // "circle" | "crystal"
+
+    // ---- Random gust model ----
+    // Gust lasts 1-3s. During that time we apply ONLY a single half-wave (180°):
+    //   sin(πt) where t ∈ [0,1].
+    // This naturally ramps in/out and never changes direction mid-gust.
+    // We also scale the effect up (bigger px/s).
+    let gustActive = false;
+    let gustStart = 0;
+    let gustDuration = 0;
+    let gustAmpPxPerSec = 0; // +/- px/s (bigger than before)
+    let nextGustAt = 0;
+
+    function rand(min, max) {
+        return min + Math.random() * (max - min);
+    }
+
+    function scheduleNextGust(now) {
+        const gapMs = rand(4000, 14000); // 4..14 seconds between gusts
+        nextGustAt = now + gapMs;
+    }
+
+    function maybeStartGust(now) {
+        if (gustActive) return;
+        if (now < nextGustAt) return;
+
+        gustActive = true;
+        gustStart = now;
+        gustDuration = rand(500, 6000); // 1..3 seconds
+
+        // Stronger than before:
+        // (previous was ~40..160 px/s)
+        gustAmpPxPerSec = rand(140, 420) * (Math.random() < 0.5 ? -1 : 1);
+    }
+
+    function gustVelocityPxPerSec(now) {
+        if (!gustActive) return 0;
+
+        const t = (now - gustStart) / gustDuration; // 0..1
+        if (t >= 1) {
+            gustActive = false;
+            scheduleNextGust(now);
+            return 0;
+        }
+
+        // 180° wave across the whole gust:
+        // sin(πt) goes 0 -> 1 -> 0 (one half-cycle), always same direction.
+        return gustAmpPxPerSec * Math.sin(Math.PI * t);
+    }
 
     function createCanvas() {
         if (canvas) return;
@@ -39,19 +86,19 @@
         resize();
         window.addEventListener("resize", resize);
 
-        // flakes have both circle + crystal params; mode just changes drawing
         flakes = Array.from({ length: FLAKES }, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            // circle-ish size (also used as crystal size)
-            size: Math.random() * 3 + 2,                // 2..5
+            size: Math.random() * 3 + 2,             // 2..5
             fall: Math.random() * 1.1 + 0.4,
             driftAmp: Math.random() * 0.7 + 0.2,
             driftPhase: Math.random() * Math.PI * 2,
-            // crystal rotation
             angle: Math.random() * Math.PI * 2,
-            spin: (Math.random() * 2 - 1) * 0.0025,     // rad/ms
+            spin: (Math.random() * 2 - 1) * 0.0025,  // rad/ms
         }));
+
+        const now = performance.now();
+        scheduleNextGust(now);
     }
 
     function destroyCanvas() {
@@ -69,7 +116,6 @@
         ctx.fill();
     }
 
-    // 3 crossed lines (6 arms) + tiny center
     function drawCrystal(x, y, size, angle) {
         ctx.save();
         ctx.translate(x, y);
@@ -99,25 +145,28 @@
         const dt = now - lastTime;
         lastTime = now;
 
-        const delta = dt / fadeMs;
-        alpha += snowOn ? delta : -delta;
+        // fade
+        const deltaFade = dt / fadeMs;
+        alpha += snowOn ? deltaFade : -deltaFade;
         alpha = Math.max(0, Math.min(1, alpha));
+
+        // gust: maybe start and compute dx for this frame
+        maybeStartGust(now);
+        const gustV = gustVelocityPxPerSec(now); // px/s
+        const gustDx = gustV * (dt / 1000);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.globalAlpha = alpha;
 
-        // common styles
         ctx.fillStyle = "white";
         ctx.strokeStyle = "white";
 
         for (const f of flakes) {
-            // motion
             f.y += f.fall;
-            f.x += Math.sin(f.driftPhase) * f.driftAmp;
+            f.x += Math.sin(f.driftPhase) * f.driftAmp + gustDx;
             f.driftPhase += 0.01;
             f.angle += f.spin * dt;
 
-            // wrap
             if (f.y > canvas.height + 10) {
                 f.y = -10;
                 f.x = Math.random() * canvas.width;
@@ -125,7 +174,6 @@
             if (f.x < -20) f.x = canvas.width + 20;
             if (f.x > canvas.width + 20) f.x = -20;
 
-            // draw
             if (drawMode === "circle") {
                 drawCircle(f.x, f.y, f.size);
             } else {
@@ -149,9 +197,6 @@
         }
     }
 
-    // Key controls:
-    // - 's' toggles snow on/off (1s fade)
-    // - 'f' toggles draw mode circle <-> crystal (no fade change)
     window.addEventListener(
         "keydown",
         (e) => {
@@ -166,7 +211,7 @@
 
             if (e.key === "f" || e.key === "F") {
                 drawMode = (drawMode === "circle") ? "crystal" : "circle";
-                ensureRunning(); // if canvas is gone, recreate so mode change is visible when on
+                ensureRunning();
                 return;
             }
         },
