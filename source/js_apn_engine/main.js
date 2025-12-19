@@ -451,7 +451,7 @@ function init() {
     }
 
     document.querySelectorAll(".version").forEach(el => {
-        el.textContent = `v${TT_VERSION}`;
+        el.textContent = `${TT_VERSION}`;
     });
 }
 
