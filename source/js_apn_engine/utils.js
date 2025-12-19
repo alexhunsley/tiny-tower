@@ -26,3 +26,8 @@ export function toCSVRow(arr) {
         .map(s => `"${String(s).replace(/"/g, '""')}"`)
         .join(",");
 }
+
+export function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => v === b[i]);
+}

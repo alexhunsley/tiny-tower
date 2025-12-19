@@ -7,7 +7,7 @@ import {
 import {isSafariFamily} from "./utils.js";
 import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation, expandPlaceNotation} from "./notation.js";
 import {renderBlueLineOverlay, renderLeadSeparators} from "./blueLine.js";
-import {stedmanPNForStage} from "./methods.js";
+import {isStedman} from "./methods.js";
 import {
     evaluatePNAndStage, count87s, measureTopPairDistances
 } from "./newAlg.js";
@@ -126,7 +126,7 @@ function renderGeneratedList(list, leadLength, render) {
         leadLength: render.leadLength,
         leadHeadOffset: render.leadHeadOffset,
         // options: { color: "red", width: 2 }
-        options: {color: "#fff", width: 1}
+        options: {color: "#fff", width: DEFAULTS.lineWidth_leadHeadSeparator}
     });
 
     if (render.drawLines) {
@@ -139,7 +139,7 @@ function renderGeneratedList(list, leadLength, render) {
                 rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
                 // options: { color: "red", width: 2 }
                 targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
-                options: {color: lineColors[0], width: 2}
+                options: {color: lineColors[0], width: DEFAULTS.lineWidth_huntBell}
             });
         });
 
@@ -150,7 +150,7 @@ function renderGeneratedList(list, leadLength, render) {
                 rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
                 // options: { color: "red", width: 2 }
                 targetChar: targetChar, // "2",                 // e.g. bell 2; later can be a user choice
-                options: {color: lineColors[1+i], width: 3}
+                options: {color: lineColors[1+i], width: DEFAULTS.lineWidth_workingBell}
             });
         });
     }
@@ -477,11 +477,6 @@ function renderReport(lines) {
     }).join("");
 }
 
-function arraysEqual(a, b) {
-    if (a.length !== b.length) return false;
-    return a.every((v, i) => v === b[i]);
-}
-
 function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     console.log("buildGenerationReport, pnTokens = ", pnTokens, " stage = ", stage);
@@ -553,21 +548,14 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     console.log("bluelines: hunts = ", huntingBlueLines, " workingBlueLines = ", workingBlueLines);
 
+    const isSted = isStedman(pnTokens, stage);
 
-    const stedmanFullPN = stedmanPNForStage(stage);
-    // const stedmanFullPNList = expandPlaceNotation(stedmanFullPN, stage).join('\0')
-    const stedmanFullPNList = expandPlaceNotation(stedmanFullPN, stage)
-
-    const isStedman = arraysEqual(pnTokens, stedmanFullPNList);
-
-    console.log("Comparing: ", pnTokens, stedmanFullPNList, " isStedman = ", isStedman);
-
-    const leadLength = isStedman ? 6 : pnTokens.length;
-    const leadHeadOffset = isStedman ? 3 : 0;
+    const leadLength = isSted ? 6 : pnTokens.length;
+    const leadHeadOffset = isSted ? 3 : 0;
 
     const render = Render(huntingBlueLines,
         workingBlueLines,
-        false,
+        false, // getting crash in blueline rendering when we do this. because of added style for ghosting?
         true,
         true,
         leadLength,

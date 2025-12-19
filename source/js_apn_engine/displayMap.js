@@ -31,12 +31,14 @@ export function formatRowForDisplay(row, render) {
         }
     }
 
-    const style = row[0] === '1' ? 'perm-cycle-strong' : 'perm-cycle-weak';
+    if (render.showRowPermToRounds) {
+        const style = row[0] === '1' ? 'perm-cycle-strong' : 'perm-cycle-weak';
 
-    // const cycle_info = '<span class="ghost-digit">' + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
-    const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
-    // const cycle_info = '<span class="perm-cycle">sffsddffs</span>';
+        // const cycle_info = '<span class="ghost-digit">' + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
+        const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
+        // const cycle_info = '<span class="perm-cycle">sffsddffs</span>';
 
-    html = html + "  " + cycle_info;
+        html = html + "  " + cycle_info;
+    }
     return html;
 }

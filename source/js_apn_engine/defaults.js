@@ -12,4 +12,7 @@ export const DEFAULTS = {
     // UI/behavior
     autoGenerateOnLoad: true,   // set true to auto-generate when URL has no params
     startHighlightAtRow0: true,
+    lineWidth_leadHeadSeparator: 1,
+    lineWidth_huntBell: 2,
+    lineWidth_workingBell: 2
 };
