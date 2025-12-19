@@ -560,7 +560,8 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
         true,
         leadLength,
         leadHeadOffset,
-        0.5
+        0.5,
+        false
         );
 
     if (huntingBlueLines.length === 0 && workingBlueLines.length === 0) {
