@@ -1,7 +1,10 @@
 // import {STAGE_SYMBOLS} from "./notation.js";
 
 export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
-                       drawLines=true, drawDigits=true, lineScaleY=1.0) {
+                       drawLines=true, drawDigits=true,
+                       leadLength,
+                       leadHeadOffset=0,
+                       lineScaleY=1.0) {
     // let _huntingLines = [];
     // let _workingLines = [];
 
@@ -11,6 +14,8 @@ export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
         ghostDigitsUnderBluelines: ghostDigitsUnderBluelines,
         drawLines: drawLines,
         drawDigits: drawDigits,
+        leadLength: leadLength,
+        leadHeadOffset: leadHeadOffset,
         lineScaleY: lineScaleY
     };
 

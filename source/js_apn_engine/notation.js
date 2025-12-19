@@ -1,4 +1,4 @@
-import {log} from './newAlg.js';
+import {log, tokenizeFlat} from './newAlg.js';
 
 const MAX_STAGE = 30;
 const MIN_STAGE = 1;
@@ -165,7 +165,7 @@ export function expandCommaPlaceNotation(pnString, stage) {
         const segments = raw.split(",").map(s => s.trim()).filter(Boolean);
         const out = [];
         for (const seg of segments) {
-            const toks = tokenizeSegment(seg);
+            const toks = tokenizeFlat(seg);
             if (!toks.length) continue;
             const mirror = toks.slice(0, -1).reverse(); // plain mirror (no place reversal)
             out.push(...toks, ...mirror);
@@ -199,7 +199,7 @@ export function expandPlaceNotation(pnString, stage) {
         const leftRaw = raw.slice(0, semiIdx).trim();
         const rightRaw = raw.slice(semiIdx + 1).trim();
 
-        const leftTokens = tokenizeSegment(leftRaw);
+        const leftTokens = tokenizeFlat(leftRaw);
         const rightMirroredTokens = mirroredNotate(rightRaw, clampStage(stage));
 
         log("right raw, right mirrored = ", rightRaw, " ", rightMirroredTokens);
@@ -227,7 +227,7 @@ export function expandPlaceNotation(pnString, stage) {
     }
 
     // No commas: simple tokenize, no mirroring
-    return tokenizeSegment(raw);
+    return tokenizeFlat(raw);
 }
 
 

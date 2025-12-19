@@ -9,6 +9,9 @@
 <h1>Basic JSON Editor Example</h1>
 
 <div id='editor_holder'></div>
+
+<h1>asdsadsad</h1>
+
 <button id='submit'>Submit (console.log)</button>
 
 <script>
@@ -18,6 +21,21 @@
             type: "object",
             title: "Car",
             properties: {
+                draw_one_hunt_bell: {
+                    "title": "Draw one hunt bell",
+                    "type": "boolean",
+                    "format": "checkbox"
+                },
+                draw_one_working_bell: {
+                    "title": "Draw one working bell",
+                    "type": "boolean",
+                    "format": "checkbox"
+                },
+                draw_number_under_blueline: {
+                    "title": "Draw numbers under blueline",
+                    "type": "boolean",
+                    "format": "checkbox"
+                },
                 make: {
                     type: "string",
                     enum: [
@@ -29,9 +47,9 @@
                         "VW"
                     ]
                 },
-                model: {
-                    type: "string"
-                },
+                // model: {
+                //     type: "string"
+                // },
                 year: {
                     type: "integer",
                     enum: [

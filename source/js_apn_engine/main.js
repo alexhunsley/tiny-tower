@@ -5,8 +5,9 @@ import {
     initAudioUnlock
 } from "./audioEngine.js";
 import {isSafariFamily} from "./utils.js";
-import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation} from "./notation.js";
-import {renderBlueLineOverlay} from "./blueLine.js";
+import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation, expandPlaceNotation} from "./notation.js";
+import {renderBlueLineOverlay, renderLeadSeparators} from "./blueLine.js";
+import {stedmanPNForStage} from "./methods.js";
 import {
     evaluatePNAndStage, count87s, measureTopPairDistances
 } from "./newAlg.js";
@@ -95,7 +96,7 @@ function setRowControls({playing, paused}) {
 }
 
 // Renderer
-function renderGeneratedList(list, render) {
+function renderGeneratedList(list, leadLength, render) {
     console.log("renderGeneratedList: list len = ", list.length, " render = ", render);
     const out = el("notationOutput");
     if (!list || !list.length) {
@@ -115,11 +116,21 @@ function renderGeneratedList(list, render) {
             .join("");
     // }
 
+    const blueLineContainer = document.getElementById("notationOutput");
+    if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
+
+    renderLeadSeparators({
+        scroller: blueLineContainer,
+        rows: list, // targetChar: "1",                 // e.g. bell 2; later can be a user choice
+        // leadLength: leadLength,
+        leadLength: render.leadLength,
+        leadHeadOffset: render.leadHeadOffset,
+        // options: { color: "red", width: 2 }
+        options: {color: "#fff", width: 1}
+    });
+
     if (render.drawLines) {
         const lineColors = ["tomato", "deepskyblue", "limegreen", "gold", "orchid", "cyan", "orange"];
-
-        const blueLineContainer = document.getElementById("notationOutput");
-        if (!blueLineContainer) throw new Error("blueLine: couldn't get blueLineContainer in main.js");
 
         render.huntingLines.forEach((targetChar, i) => {
             const color = lineColors[i % lineColors.length];
@@ -156,7 +167,20 @@ function wireNotation() {
     // PN: update URL (debounced) only when not composing
     el("placeNotation").addEventListener("input", () => {
         if (composingPN) return;
-        const pn = el("placeNotation").value;
+
+        const pnEl = el("placeNotation");
+        const pn = pnEl.value;
+        const upperPN = pn.toUpperCase();
+
+        // actually update the textbox
+        if (upperPN !== pn) {
+            const { selectionStart, selectionEnd } = pnEl;
+            pnEl.value = upperPN;
+            pnEl.setSelectionRange(selectionStart, selectionEnd);
+        }
+
+        console.log("To upper case: ", pn);
+
         if (pn.trim()) {
             writeURLParamsDebounced({pn, stage: parseStageLoose(el("stage").value) ?? undefined});
         }
@@ -379,7 +403,8 @@ function generateAndRender({pnString, stageFromUI, maxChanges = 6000}) {
 
     console.log(" using render", render);
 
-    renderGeneratedList(generatedRows, render);
+    renderGeneratedList(generatedRows, pnTokens.length, render);
+
     clearRowHighlight();
 
     return generatedRows;
@@ -452,7 +477,11 @@ function renderReport(lines) {
     }).join("");
 }
 
-// herus
+function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => v === b[i]);
+}
+
 function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     console.log("buildGenerationReport, pnTokens = ", pnTokens, " stage = ", stage);
@@ -524,12 +553,27 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     console.log("bluelines: hunts = ", huntingBlueLines, " workingBlueLines = ", workingBlueLines);
 
+
+    const stedmanFullPN = stedmanPNForStage(stage);
+    // const stedmanFullPNList = expandPlaceNotation(stedmanFullPN, stage).join('\0')
+    const stedmanFullPNList = expandPlaceNotation(stedmanFullPN, stage)
+
+    const isStedman = arraysEqual(pnTokens, stedmanFullPNList);
+
+    console.log("Comparing: ", pnTokens, stedmanFullPNList, " isStedman = ", isStedman);
+
+    const leadLength = isStedman ? 6 : pnTokens.length;
+    const leadHeadOffset = isStedman ? 3 : 0;
+
     const render = Render(huntingBlueLines,
         workingBlueLines,
         false,
         true,
         true,
-        0.5);
+        leadLength,
+        leadHeadOffset,
+        0.5
+        );
 
     if (huntingBlueLines.length === 0 && workingBlueLines.length === 0) {
         huntingBlueLines = [].concat(...perm.cycles); //.join("");
