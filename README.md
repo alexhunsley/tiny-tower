@@ -25,6 +25,9 @@ Here's some other things I've found a bit lacking:
 
 Detect common patterns in a method (including wrap-around) -- to spot music potential.
 
+Show permutation cycles for every row in plain course -- to assist exploration of music potential (or coming round at unusual places, etc.) ( -- now implemented but not published yet)
+
+
 ## Implementation
 
 Tiny Tower is currently written in bare javascript. I may use a lightweight SPA lib at some point (something like Mithril), and possibly Skeleton UI or similar.
