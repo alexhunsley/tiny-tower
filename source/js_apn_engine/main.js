@@ -4,7 +4,7 @@ import {
     stopAll, pause as pauseAudio, resume as resumeAudio, triggerPlace,   // used by live, note-by-note scheduler
     initAudioUnlock
 } from "./audioEngine.js";
-import {isSafariFamily} from "./utils.js";
+import {isSafariFamily, uniquePreserveOrder, csvNumbered} from "./utils.js";
 import {generateList, clampStage, symbolToIndex, roundsForStage, collapsePlaceNotation, expandPlaceNotation} from "./notation.js";
 import {renderBlueLineOverlay, renderLeadSeparators} from "./blueLine.js";
 import {isStedman} from "./methods.js";
@@ -13,6 +13,7 @@ import {
 } from "./newAlg.js";
 import { Perm } from "./Permutation.js";
 import { Render } from "./Render.js";
+import {canonicalRotation} from "./newAlg.util.js";
 
 function el(id) {
     const n = document.getElementById(id);
@@ -555,13 +556,13 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
 
     const render = Render(huntingBlueLines,
         workingBlueLines,
-        false, // getting crash in blueline rendering when we do this. because of added style for ghosting?
-        true,
-        true,
+        false, // ghostDigitsUnderBluelines
+        true, // drawLines
+        true, // drawDigits
         leadLength,
         leadHeadOffset,
-        0.5,
-        false
+        0.5, // lineScaleY
+        true  // showRowPermToRounds
         );
 
     if (huntingBlueLines.length === 0 && workingBlueLines.length === 0) {
@@ -627,6 +628,10 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
         lines.push(`[WARN] Did not return to rounds within safety cutoff of ${maxChanges} changes.`);
     }
 
+    if (isSted) {
+        doStedmanReport(rows, lines);
+    }
+
     return {
         reportLines: lines, render: render,
         // reportLines: lines, blueLineIndexes: workingBlueLines,
@@ -668,3 +673,49 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
         }
     });
 })();
+
+function doStedmanReport(rows, lines) {
+    lines.push(`\n`);
+    lines.push(`[OK] -----------------------`);
+    lines.push(`[OK] Stedman report:`);
+    lines.push(`\n`);
+
+    const {bobPerms, singlePerms} = doStedmanAnalysis(rows);
+    lines.push(`[OK] Bob perms for six:`);
+    lines.push(...csvNumbered(bobPerms));
+
+    lines.push(``);
+    lines.push(`[OK] Single perms for six:`);
+    lines.push(...csvNumbered(singlePerms));
+
+    // const bobPermsCanonical = bobPerms.map(perm => canonicalRotation(perm));
+    const bobPermsCanonicalSorted = uniquePreserveOrder(bobPerms, true, true)
+
+    lines.push(``);
+    lines.push(`[OK] Bob perms (canonical+sorted):`);
+    lines.push(...bobPermsCanonicalSorted);
+
+    const singlePermsCanonicalSorted = uniquePreserveOrder(singlePerms, true, true)
+
+    lines.push(``);
+    lines.push(`[OK] Single perms (unique+canonical+sorted):`);
+    lines.push(...singlePermsCanonicalSorted);
+}
+
+function doStedmanAnalysis(rows) {
+    const bobPerms = [];
+    const singlePerms = [];
+
+    const startRow = 3;
+    for (let i = startRow; i < rows.length; i += 6) {
+        const row = rows[i];
+        console.log("Row for ", i, ": ", row);
+        if (typeof row === "string" && row.length >= 3) {
+            const bobBells = row.slice(-3);
+            bobPerms.push(bobBells.split("").reverse().join(""));
+            const singleBells = row.slice(-3, -1);
+            singlePerms.push(singleBells.split("").reverse().join(""));
+        }
+    }
+    return {bobPerms: bobPerms, singlePerms: singlePerms};
+}

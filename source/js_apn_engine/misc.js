@@ -1,6 +1,5 @@
 import {Perm} from "./Permutation.js";
-import {repeatList} from "./utils.js";
-import {toCSVRow} from "./utils.js";
+import {repeatList, toCSVRow} from "./utils.js";
 import {Render} from "./render.js";
 
 /// named changes
@@ -171,17 +170,21 @@ console.log('\n=========== cycle compose play:\n');
 
 // 2 3s, 1 overlapping, end up with a 5.
 // (16542)
+console.log("---- Perm try: 1");
 const c1 = Perm(['142']);
 const c2 = Perm(['465']);
-console.log(c1);
-console.log(c2);
+console.log(c1.toString());
+console.log(c2.toString());
 
 const cc = Perm.composePerms([c1, c2]);
 console.log('combined: ', cc.permutationStringPretty());
+const ccRev = Perm.composePerms([c2, c1]);
+console.log('combined rev: ', ccRev.permutationStringPretty());
 
 console.log("\n")
 
 {
+    console.log("---- Perm try: 2");
 // 2 overlapping (2, 4):
 // end up with 3 cycle (162)
     const c1 = Perm(['142']);
@@ -196,6 +199,8 @@ console.log("\n")
 // note order of application is left->right in way it's set up. (usually it's right to left)
 
 {
+    console.log("---- Perm try: 3");
+
 // 3 overlapping
 // end up with no perm (as they're reverse of each other?)
     const c1 = Perm(['142']);
@@ -526,3 +531,64 @@ console.log("\n=================\n RW diary g7 code bits:\n");
 
 const r = Render([], []);
 console.log("render = ", r);
+
+{
+    console.log("---- Perm try: x1");
+    const c1 = Perm(['1234']);
+    const c2 = Perm(['34']);
+    console.log(c1.toString());
+    console.log(c2.toString());
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+    const ccRev = Perm.composePerms([c2, c1]);
+    console.log('combined rev: ', ccRev.permutationStringPretty());
+
+    console.log("\n")
+}
+
+
+{
+    console.log("---- Perm try: x2");
+    const c1 = Perm(['123']);
+    const c2 = Perm(['345']);
+    console.log(c1.toString());
+    console.log(c2.toString());
+
+    const cc = Perm.composePerms([c1, c2]);
+    console.log('combined: ', cc.permutationStringPretty());
+    const ccRev = Perm.composePerms([c2, c1]);
+    console.log('combined rev: ', ccRev.permutationStringPretty());
+
+    console.log("\n")
+}
+
+
+{
+    console.log("---- Perm try: x3");
+
+    const cc = Perm.composePerms([Perm(['632']), Perm(['261']), Perm(['756'])]);
+    console.log('combined: ', cc.permutationStringPretty());
+
+    console.log("\n")
+}
+
+
+// -1: 756
+// -qa: 261
+// -qb: 632
+
+// so we are perming around the numbers themselves, NOT locations.
+//
+//   1234 (34)
+// = 1243  (1234)
+// = 4132   which is (124)
+
+//   1234 (1234)
+// = 4123 (34)
+// = 3124 -- which is (312).
+
+// so this agrees with code result. The order DOES matter.
+// When we call composePerms, the order is right to left as expected.
+// So to calc call A then B, do reverse compose(B, A).
+

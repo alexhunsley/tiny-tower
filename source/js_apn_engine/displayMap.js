@@ -21,8 +21,8 @@ export function formatRowForDisplay(row, render) {
     // }
     const digitsToGhost = render.huntingLines.concat(render.workingLines);
 
-    console.log("digitsToGhost (huntingLines) = ", render.huntingLines);
-    console.log("digitsToGhost = ", digitsToGhost);
+    // console.log("digitsToGhost (huntingLines) = ", render.huntingLines);
+    // console.log("digitsToGhost = ", digitsToGhost);
 
     if (render.ghostDigitsUnderBluelines) {
         for (const d of digitsToGhost) {
@@ -35,7 +35,15 @@ export function formatRowForDisplay(row, render) {
         const style = row[0] === '1' ? 'perm-cycle-strong' : 'perm-cycle-weak';
 
         // const cycle_info = '<span class="ghost-digit">' + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
-        const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
+
+        // const targetRow = "1357246";
+        const targetRow = "1234567";
+        // const targetRow = "1526374";
+
+        const cycle_info = `<span class="${style}">` + Perm.fromOneLine(targetRow, {alphabet: row}).permutationStringPretty() + '</span>';
+        // const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row, {alphabet: "1357246"}).permutationStringPretty() + '</span>';
+
+        // const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row, {alphabet: "7531246"}).permutationStringPretty() + '</span>';
         // const cycle_info = '<span class="perm-cycle">sffsddffs</span>';
 
         html = html + "  " + cycle_info;
