@@ -554,6 +554,8 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
     const leadLength = isSted ? 6 : pnTokens.length;
     const leadHeadOffset = isSted ? 3 : 0;
 
+    console.log("got ROUNDS = ", rounds);
+
     const render = Render(huntingBlueLines,
         workingBlueLines,
         false, // ghostDigitsUnderBluelines
@@ -562,9 +564,28 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
         leadLength,
         leadHeadOffset,
         0.5, // lineScaleY
-        true  // showRowPermToRounds
-        );
+        true,  // showRowPermToRounds
+        !isSted, // highlightPermsWithTrebleLeading,
+        // ["1526374"] // tittums
+        ["7531246"] // tittums
+        // ["1357246"] // queen
+        // [rounds] // targetRowsForPerms
+    );
 
+    // tittums in stedman 7:
+
+    // backstroke in six 12:
+    // (17) (36).
+    // get (17) with s2.
+    // Get (36):   (263) -5, (23) s10 (or 5, but 5 already used)
+    //
+    // (23)(263): (26)(3)
+    // (263)(23): (2)(36)
+    //
+    // so bob+single to get a diff single: need single first, then bob, in this case, to get (36)
+    //
+    // KINGS: (34) (567), order unimportant. s7 is (34), -1 is (567).
+    // Yes it works. Kings at hand. So good for muffled?
     if (huntingBlueLines.length === 0 && workingBlueLines.length === 0) {
         huntingBlueLines = [].concat(...perm.cycles); //.join("");
         console.log(" ... but got 0 lens, so setting hunt lines to joined thing, got: ", huntingBlueLines);

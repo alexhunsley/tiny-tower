@@ -13,6 +13,8 @@
  */
 import {Perm} from "./Permutation.js";
 
+import { roundsForStage } from './notation.js';
+
 export function formatRowForDisplay(row, render) {
     let html = render.drawDigits ? row : '<span class="ghost-digit">' + row + '</span>';
 
@@ -31,14 +33,16 @@ export function formatRowForDisplay(row, render) {
         }
     }
 
-    if (render.showRowPermToRounds) {
-        const style = row[0] === '1' ? 'perm-cycle-strong' : 'perm-cycle-weak';
+    if (render.showRowPermToRounds && render.targetRowsForPerms.length > 0) {
+        const style = (row[0] === '1' || !render.highlightPermsWithTrebleLeading) ? 'perm-cycle-strong' : 'perm-cycle-weak';
 
         // const cycle_info = '<span class="ghost-digit">' + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
 
         // const targetRow = "1357246";
-        const targetRow = "1234567";
-        // const targetRow = "1526374";
+
+        // for now just use the first target row
+        const targetRow = render.targetRowsForPerms[0];
+        console.log("targetRow = ", targetRow);
 
         const cycle_info = `<span class="${style}">` + Perm.fromOneLine(targetRow, {alphabet: row}).permutationStringPretty() + '</span>';
         // const cycle_info = `<span class="${style}">` + Perm.fromOneLine(row, {alphabet: "1357246"}).permutationStringPretty() + '</span>';

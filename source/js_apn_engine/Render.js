@@ -5,7 +5,9 @@ export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
                        leadLength,
                        leadHeadOffset=0,
                        lineScaleY=1.0,
-                       showRowPermToRounds=false) {
+                       showRowPermToRounds=false,
+                       highlightPermsWithTrebleLeading=true,
+                       targetRowsForPerms=[]) {
     // let _huntingLines = [];
     // let _workingLines = [];
 
@@ -18,7 +20,9 @@ export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
         leadLength: leadLength,
         leadHeadOffset: leadHeadOffset,
         lineScaleY: lineScaleY,
-        showRowPermToRounds: showRowPermToRounds
+        showRowPermToRounds: showRowPermToRounds,
+        highlightPermsWithTrebleLeading: highlightPermsWithTrebleLeading,
+        targetRowsForPerms: targetRowsForPerms
     };
 
     return Object.freeze(obj);
