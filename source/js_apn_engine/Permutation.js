@@ -187,6 +187,8 @@ Perm.fromOneLine = function (oneLine, { alphabet=STAGE_SYMBOLS, omitOneCycles = 
         throw new Error("oneLine must be a non-empty string");
     }
 
+    // console.log("fromOneLine: alphabet = ", alphabet, " oneLine = ", oneLine);
+
     const n = oneLine.length;
     if (n > alphabet.length) {
         throw new Error(`Permutation length ${n} exceeds alphabet length ${alphabet.length}`);

@@ -566,10 +566,10 @@ function buildGenerationReport({pnTokens, stage, rows, maxChanges = 6000}) {
         0.5, // lineScaleY
         true,  // showRowPermToRounds
         !isSted, // highlightPermsWithTrebleLeading,
-        // ["1526374"] // tittums
-        ["7531246"] // tittums
+        // ["1526374"] // tittums // if stage is not 7, we crash due to this hardcodedness, obv
+        // ["7531246"] // tittums
         // ["1357246"] // queen
-        // [rounds] // targetRowsForPerms
+        [rounds] // targetRowsForPerms
     );
 
     // tittums in stedman 7:
