@@ -5,7 +5,6 @@ export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
                        leadLength,
                        leadHeadOffset=0,
                        lineScaleY=1.0,
-                       showRowPermToRounds=false,
                        highlightPermsWithTrebleLeading=true,
                        targetRowsForPerms=[]) {
     // let _huntingLines = [];
@@ -20,7 +19,6 @@ export function Render(huntingLines, workingLines, ghostDigitsUnderBluelines,
         leadLength: leadLength,
         leadHeadOffset: leadHeadOffset,
         lineScaleY: lineScaleY,
-        showRowPermToRounds: showRowPermToRounds,
         highlightPermsWithTrebleLeading: highlightPermsWithTrebleLeading,
         targetRowsForPerms: targetRowsForPerms
     };

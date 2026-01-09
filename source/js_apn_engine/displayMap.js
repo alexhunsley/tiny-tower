@@ -33,7 +33,7 @@ export function formatRowForDisplay(row, render) {
         }
     }
 
-    if (render.showRowPermToRounds && render.targetRowsForPerms.length > 0) {
+    if (render.targetRowsForPerms.length > 0) {
         const style = (row[0] === '1' || !render.highlightPermsWithTrebleLeading) ? 'perm-cycle-strong' : 'perm-cycle-weak';
 
         // const cycle_info = '<span class="ghost-digit">' + Perm.fromOneLine(row).permutationStringPretty() + '</span>';
